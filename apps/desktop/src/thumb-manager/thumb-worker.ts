@@ -251,6 +251,18 @@ function getHeifColorProfile(data: Uint8Array): AvifColorProfile | null {
   return null;
 }
 
+function hasComfyUiPqVae(source: string): boolean {
+  // ComfyUI embeds its workflow in PNG text chunks. This targeted marker also
+  // covers files whose HDR colour-profile chunks (cICP/mDCV/cLLI) are absent.
+  // Search the raw PNG bytes so both tEXt and uncompressed iTXt metadata work.
+  try {
+    const data = require('node:fs').readFileSync(source) as Buffer;
+    return data.includes(Buffer.from('sdxlRec2100PQVAEFor_v10.safetensors', 'ascii'));
+  } catch {
+    return false;
+  }
+}
+
 function getPngColorProfile(source: string): AvifColorProfile | null {
   let fd: number | undefined;
 
@@ -377,7 +389,7 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
     extname(source).toLowerCase() === '.png') {
     const profile = getPngColorProfile(source);
 
-    if (profile?.primaries === 9 && profile.transfer === 16) {
+    if ((profile?.primaries === 9 && profile.transfer === 16) || hasComfyUiPqVae(source)) {
       // Convert 8-bit Rec. 2020 PQ codes to the 16-bit LUT domain.
       using encodedRgb = fullImage.extractBand(0, { n: 3 }).cast(vips.BandFormat.ushort).linear([ 257 ], [ 0 ]);
       using lut = vips.Image.newFromMemory(getHdrTransferLut(16), 65536, 1, 1, vips.BandFormat.float);
