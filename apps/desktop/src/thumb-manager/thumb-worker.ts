@@ -1,3 +1,4 @@
+import { closeSync, openSync, readSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { extname } from 'node:path';
 import { parentPort } from 'node:worker_threads';
@@ -250,6 +251,56 @@ function getHeifColorProfile(data: Uint8Array): AvifColorProfile | null {
   return null;
 }
 
+function getPngColorProfile(source: string): AvifColorProfile | null {
+  let fd: number | undefined;
+
+  try {
+    fd = openSync(source, 'r');
+    const signature = Buffer.alloc(8);
+
+    if (readSync(fd, signature, 0, signature.length, 0) !== signature.length ||
+      !signature.equals(Buffer.from([ 137, 80, 78, 71, 13, 10, 26, 10 ]))) {
+      return null;
+    }
+
+    let offset = 8;
+
+    // PNG colour-profile chunks, including cICP, appear before the image data.
+    while (true) {
+      const header = Buffer.alloc(8);
+
+      if (readSync(fd, header, 0, header.length, offset) !== header.length) {
+        return null;
+      }
+
+      const length = header.readUInt32BE(0);
+      const type = header.toString('ascii', 4, 8);
+
+      if (type === 'cICP' && length >= 4) {
+        const profile = Buffer.alloc(4);
+
+        if (readSync(fd, profile, 0, profile.length, offset + 8) !== profile.length) {
+          return null;
+        }
+
+        return { primaries: profile[0], transfer: profile[1] };
+      }
+
+      if (type === 'IDAT' || type === 'IEND') {
+        return null;
+      }
+
+      offset += 12 + length;
+    }
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) {
+      closeSync(fd);
+    }
+  }
+}
+
 function getHdrTransferLut(transfer: number): Float32Array {
   const cached = transferLuts.get(transfer);
   if (cached) {
@@ -311,6 +362,7 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
   const sdrMax = sdrPixels instanceof Uint8Array ? 255 : sdrPixels instanceof Uint16Array ? 65535 : 1;
   const pixelCount = Math.floor(sdrPixels.length / 3);
   let hdrPixels: typeof sdrPixels | null = null;
+  let pq8BitPng = false;
 
   try {
     using hdrImage = fullImage.uhdr2scRGB();
@@ -319,6 +371,27 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
     hdrPixels = hdrRgb.writeToMemory();
   } catch {
     // Ordinary SDR images do not contain an Ultra HDR gain map.
+  }
+
+  if (!hdrPixels && fullImage.format === 'uchar' && fullImage.bands >= 3 &&
+    extname(source).toLowerCase() === '.png') {
+    const profile = getPngColorProfile(source);
+
+    if (profile?.primaries === 9 && profile.transfer === 16) {
+      // Convert 8-bit Rec. 2020 PQ codes to the 16-bit LUT domain.
+      using encodedRgb = fullImage.extractBand(0, { n: 3 }).cast(vips.BandFormat.ushort).linear([ 257 ], [ 0 ]);
+      using lut = vips.Image.newFromMemory(getHdrTransferLut(16), 65536, 1, 1, vips.BandFormat.float);
+      using linearRec2020 = encodedRgb.maplut(lut);
+      using matrix = vips.Image.newMatrix(3, 3, [
+        1.660491, -0.587641, -0.072850,
+        -0.124550, 1.132900, -0.008349,
+        -0.018151, -0.100579, 1.118730
+      ]);
+      using linearScRgb = linearRec2020.recomb(matrix);
+      using smallHdr = scale < 1 ? linearScRgb.resize(scale, { kernel: vips.Kernel.linear }) : linearScRgb.copy();
+      hdrPixels = smallHdr.writeToMemory();
+      pq8BitPng = true;
+    }
   }
 
   if (!hdrPixels && fullImage.format === 'ushort' && fullImage.bands >= 3 &&
@@ -346,6 +419,34 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
 
   for (let index = 0; index < pixelCount; index++) {
     const offset = index * 3;
+
+    if (pq8BitPng && hdrPixels && offset + 2 < hdrPixels.length) {
+      const hdrRed = Number(hdrPixels[offset]);
+      const hdrGreen = Number(hdrPixels[offset + 1]);
+      const hdrBlue = Number(hdrPixels[offset + 2]);
+      const hdrLuminance = 0.2126 * hdrRed + 0.7152 * hdrGreen + 0.0722 * hdrBlue;
+
+      // scRGB is scaled to 80 cd/m² per unit: 100 cd/m² is 1.25 scRGB.
+      // Keep each pixel on exactly one side of the SDR/HDR reference-white boundary.
+      if (hdrLuminance <= 1.25) {
+        const r = Math.max(0, hdrRed / 1.25);
+        const g = Math.max(0, hdrGreen / 1.25);
+        const b = Math.max(0, hdrBlue / 1.25);
+        const sdrLuminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        sdrBins[sdrBin(sdrLuminance)]++;
+        sdrRedBins[sdrBin(r)]++;
+        sdrGreenBins[sdrBin(g)]++;
+        sdrBlueBins[sdrBin(b)]++;
+      } else {
+        hdrBins[luminanceBin(hdrLuminance)]++;
+        hdrRedBins[luminanceBin(hdrRed)]++;
+        hdrGreenBins[luminanceBin(hdrGreen)]++;
+        hdrBlueBins[luminanceBin(hdrBlue)]++;
+      }
+
+      continue;
+    }
+
     const r = Number(sdrPixels[offset]) / sdrMax;
     const g = Number(sdrPixels[offset + 1]) / sdrMax;
     const b = Number(sdrPixels[offset + 2]) / sdrMax;
