@@ -1,5 +1,6 @@
 import { app, IpcMainInvokeEvent } from 'electron';
 import { SystemPathMapping } from 'internal-api';
+import { stat } from 'node:fs/promises';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import App from '../app/app';
@@ -8,7 +9,14 @@ import { environment } from '../environments/environment';
 
 export class ProcessManager {
   @IpcHandler({ name: 'ProcessManager.getAppVersion' })
-  readonly getAppVersion = async (): Promise<string> => environment.version;
+  readonly getAppVersion = async (): Promise<string> => {
+    try {
+      const { mtime } = await stat(process.execPath);
+      return `${environment.version} Mod ${mtime.toLocaleString('de-AT')}`;
+    } catch (_) {
+      return environment.version;
+    }
+  };
 
   @IpcHandler({ name: 'ProcessManager.quit' })
   readonly quit = async (_: IpcMainInvokeEvent, code: number): Promise<void> => app.exit(code);

@@ -1,24 +1,113 @@
-@let totalCacheSize = cacheSize();
+@let currentCache = cacheInfo();
+@let clearResult = lastClearResult();
 
 <ui-dialog>
   <header>
     <ui-title>Light Matter Settings</ui-title>
   </header>
   <section>
-    <ui-toolbar>
-      <ui-text [multiLine]="true"
-               [important]="true">
-        Cache size &ndash; {{ totalCacheSize | byteSize }}
-      </ui-text>
+    <div class="cache-overview">
+      <div class="cache-categories">
+        <div class="cache-category">
+          <div>
+            <span>Full-size conversions</span>
+            <strong>{{ currentCache.fullSize.entries }} files · {{ currentCache.fullSize.bytes | byteSize }}</strong>
+          </div>
+          <button class="cache-button warning"
+                  type="button"
+                  [disabled]="currentCache.fullSize.entries === 0 || isClearing()"
+                  (click)="deleteFullSizeCache()">
+            Delete full-size cache
+          </button>
+        </div>
 
-      <aside>
-        <ui-flat-button variant="warn"
-                        [disabled]="totalCacheSize === 0"
-                        (pressed)="deleteCache()">
-          Delete cache
-        </ui-flat-button>
+        <div class="cache-category">
+          <div>
+            <span>Thumbnail files</span>
+            <strong>{{ currentCache.thumbnails.entries }} files · {{ currentCache.thumbnails.bytes | byteSize }}</strong>
+          </div>
+          <button class="cache-button"
+                  type="button"
+                  [disabled]="currentCache.thumbnails.entries === 0 || isClearing()"
+                  (click)="deleteThumbnailsCache()">
+            Delete thumbnails
+          </button>
+        </div>
+
+        <div class="cache-total">
+          <span>Total cache</span>
+          <strong>{{ currentCache.entries }} files · {{ currentCache.bytes | byteSize }}</strong>
+        </div>
+      </div>
+      <div class="cache-path">
+        <span>Cache location</span>
+        <code>{{ currentCache.path }}</code>
+      </div>
+      <aside class="cache-actions">
+        <button class="cache-button warning"
+                type="button"
+                [disabled]="currentCache.bytes === 0 || isClearing()"
+                (click)="deleteCache()">
+          Delete entire cache
+        </button>
+        <button class="cache-button"
+                type="button"
+                [disabled]="isClearing()"
+                (click)="openCacheFolder()">
+          Open cache folder
+        </button>
       </aside>
-    </ui-toolbar>
+    </div>
+
+    @if (openFolderError() !== null) {
+      <p class="cache-status error" role="alert">Could not open cache folder: {{ openFolderError() }}</p>
+    }
+
+    @if (isClearing()) {
+      <p class="cache-status" role="status">Clearing cache…</p>
+    } @else if (clearResult !== null) {
+      <p class="cache-status" role="status">
+        Deleted {{ clearResult.entries }} entries · freed {{ clearResult.bytes | byteSize }}.
+      </p>
+    } @else if (clearError() !== null) {
+      <p class="cache-status error" role="alert">Cache clearing failed: {{ clearError() }}</p>
+    }
+
+    <details class="format-details">
+      <summary>Supported image formats</summary>
+      <p class="format-note">Bit depth is per channel unless noted. Support for optional features can vary by file.</p>
+      <div class="format-list">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Format</th>
+              <th scope="col">HDR</th>
+              <th scope="col">Bit depth</th>
+              <th scope="col">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (format of supportedFormats; track format.name) {
+              <tr>
+                <td>
+                  <strong>{{ format.name }}</strong>
+                  <span class="extensions">{{ format.extensions.join(', ') }}</span>
+                </td>
+                <td>
+                  @if (format.hdr) {
+                    <span class="dynamic-range hdr">HDR</span>
+                  } @else {
+                    <span class="sdr-marker">SDR</span>
+                  }
+                </td>
+                <td>{{ format.bitDepth }}</td>
+                <td>{{ format.details }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </details>
   </section>
   <footer>
     <ui-action-button (pressed)="dialogRef.close(false)">

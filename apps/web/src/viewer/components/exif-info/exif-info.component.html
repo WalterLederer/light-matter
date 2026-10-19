@@ -1,5 +1,6 @@
 @let exifData = exif();
 @let dims = dimensions();
+@let timestamp = modifiedAt();
 
 <dl>
   @if (exifData === false) {
@@ -9,7 +10,13 @@
     <dt>File name</dt>
     <dd>{{ exifData.FileName }}</dd>
     <dt>File size</dt>
-    <dd>{{ exifData.FileSize }}</dd>
+    <dd>{{ fileSize() | byteSize }}</dd>
+    <dt>Bit depth</dt>
+    <dd>{{ bitDepth() ?? '—' }}</dd>
+    @if (timestamp !== undefined) {
+      <dt>Last modified</dt>
+      <dd>{{ timestamp | date: 'yyyy-MM-dd HH:mm:ss' }}</dd>
+    }
     <dt>Format</dt>
     <dd>{{ exifData.FileType }}</dd>
     <dt>MIME type</dt>
@@ -25,16 +32,6 @@
     @if (exifData.ColorComponents !== undefined) {
       <dt>Color components</dt>
       <dd>{{ exifData.ColorComponents }}</dd>
-    }
-
-    @if (exifData.BitsPerSample !== undefined) {
-      <dt>Bits per sample</dt>
-      <dd>{{ exifData.BitsPerSample }}</dd>
-    }
-
-    @if (exifData.ImagePixelDepth !== undefined) {
-      <dt>Image pixel depth</dt>
-      <dd>{{ exifData.ImagePixelDepth }}</dd>
     }
 
     @if (exifData.ChromaFormat !== undefined) {

@@ -1,15 +1,20 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
-import { ChangeDetectionStrategy, Component, effect, ElementRef, input, output, viewChild } from '@angular/core';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { distinctUntilChanged, map } from 'rxjs';
 import {
   ActionButtonComponent,
   IconComponent,
-  MenuSeparatorComponent,
   PopupMenuComponent,
+  SliderComponent,
   StopPropagation,
   TextComponent,
   TitleComponent,
   ToolbarComponent
 } from '@light-matter/ui';
+import { ExifTags } from 'internal-api';
 import {
   allSortDirections,
   allSortTypes,
@@ -20,11 +25,16 @@ import {
   ThumbnailSize
 } from 'internal-api';
 import { ImagesComponent } from '../images/images.component';
+import { ExifService } from '../../../ipc/exif';
+import { imageDynamicRange } from '../../../viewer/utils/image-dynamic-range';
+import { ThemeService } from '../../../system/services/theme/theme.service';
 
 @Component({
   selector: 'app-image-grid',
   imports: [
     ImagesComponent,
+    DatePipe,
+    DecimalPipe,
     ToolbarComponent,
     TitleComponent,
     ActionButtonComponent,
@@ -35,7 +45,8 @@ import { ImagesComponent } from '../images/images.component';
     CdkMenuItem,
     PopupMenuComponent,
     TextComponent,
-    MenuSeparatorComponent
+    SliderComponent,
+    ReactiveFormsModule,
   ],
   templateUrl: './image-grid.component.html',
   styleUrl: './image-grid.component.scss',
@@ -62,11 +73,90 @@ export class ImageGridComponent {
 
   readonly thumbSizeChanged = output<ThumbnailSize>();
 
+  readonly hoveredImage = signal<FileInfo | null>(null);
+
+  readonly hoveredTags = signal<ExifTags | null>(null);
+
+  protected readonly imageDynamicRange = imageDynamicRange;
+
+  private readonly exif = inject(ExifService);
+
+  protected readonly theme = inject(ThemeService);
+
+  private readonly destroyRef = inject(DestroyRef);
+
+  protected readonly thumbSizeSlider = new FormControl(0, { nonNullable: true });
+
+  private readonly thumbnailSizes: ThumbnailSize[] = [ 'small', 'smallMedium', 'medium', 'mediumLarge', 'large' ];
+
+  private hoverClearTimer: ReturnType<typeof setTimeout> | null = null;
+
   /* State */
   private readonly scrollBox = viewChild<ElementRef<HTMLDivElement>>('scrollBox');
 
+  readonly onThumbnailHovered = async (image: FileInfo | null) => {
+    if (image === null) {
+      if (this.hoverClearTimer !== null) {
+        clearTimeout(this.hoverClearTimer);
+      }
+
+      this.hoverClearTimer = setTimeout(() => {
+        this.hoverClearTimer = null;
+        this.hoveredImage.set(null);
+        this.hoveredTags.set(null);
+      }, 120);
+      return;
+    }
+
+    if (this.hoverClearTimer !== null) {
+      clearTimeout(this.hoverClearTimer);
+      this.hoverClearTimer = null;
+    }
+
+    if (this.hoveredImage()?.path === image.path) {
+      return;
+    }
+
+    this.hoveredImage.set(image);
+    this.hoveredTags.set(null);
+
+    const currentPath = image.path;
+    const result = await this.exif.read(currentPath);
+
+    if (this.hoveredImage()?.path === currentPath && result.success) {
+      this.hoveredTags.set(result.data);
+    }
+  };
+
   /* Constructor */
   constructor() {
+    this.thumbSizeSlider.valueChanges
+      .pipe(
+        map(value => Math.max(0, Math.min(4, Math.round(value)))),
+        distinctUntilChanged(),
+        takeUntilDestroyed()
+      )
+      .subscribe(index => {
+        if (this.thumbSizeSlider.value !== index) {
+          this.thumbSizeSlider.setValue(index, { emitEvent: false });
+        }
+
+        this.thumbSizeChanged.emit(this.thumbnailSizes[index]);
+      });
+
+    effect(() => {
+      const index = this.thumbnailSizes.indexOf(this.thumbSize());
+      if (index >= 0 && this.thumbSizeSlider.value !== index) {
+        this.thumbSizeSlider.setValue(index, { emitEvent: false });
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      if (this.hoverClearTimer !== null) {
+        clearTimeout(this.hoverClearTimer);
+      }
+    });
+
     effect(() => {
       this.selectedLocation();
       const scrollBox = this.scrollBox();

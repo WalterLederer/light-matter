@@ -12,6 +12,132 @@
 
   position: relative;
 
+  .histogram-overlay {
+    position: absolute;
+    z-index: 11;
+    right: var(--dim-x-large);
+    bottom: var(--dim-x-large);
+    width: min(640px, calc(100vw - 2 * var(--dim-x-large)));
+    padding: var(--dim-large);
+    border: 1px solid rgb(255 255 255 / 20%);
+    border-radius: var(--border-radius-large);
+    color: #fff;
+    background: rgb(18 20 24 / 94%);
+    box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
+
+    header,
+    .histogram-legend,
+    .histogram-axis {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--dim-large);
+    }
+
+    header {
+      margin-bottom: var(--dim-small);
+    }
+
+    .histogram-legend {
+      justify-content: flex-start;
+      font-size: 0.8rem;
+    }
+
+    .sdr-legend {
+      color: #ffffff;
+    }
+
+    .hdr-legend {
+      color: #ffffff;
+    }
+
+    .red-legend {
+      color: #ff5a5f;
+    }
+
+    .histogram-red {
+      stroke: #ff5a5f;
+    }
+
+    .green-legend {
+      color: #55d98a;
+    }
+
+    .histogram-green {
+      stroke: #55d98a;
+    }
+
+    .blue-legend {
+      color: #58a6ff;
+    }
+
+    .histogram-blue {
+      stroke: #58a6ff;
+    }
+
+    .histogram-plot {
+      display: block;
+      width: 100%;
+      overflow: visible;
+    }
+
+    .histogram-grid {
+      fill: none;
+      stroke: rgb(255 255 255 / 16%);
+      stroke-width: 1;
+    }
+
+    .histogram-divider {
+      fill: none;
+      stroke: rgb(255 255 255 / 70%);
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .histogram-sdr,
+    .histogram-hdr,
+    .histogram-red,
+    .histogram-green,
+    .histogram-blue {
+      fill: none;
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .histogram-sdr {
+      stroke: #ffffff;
+    }
+
+    .histogram-hdr {
+      stroke: #ffffff;
+    }
+
+    .histogram-axis {
+      color: rgb(255 255 255 / 68%);
+      font-size: 0.7rem;
+    }
+
+    .histogram-sdr-axis,
+    .histogram-hdr-axis {
+      display: flex;
+      justify-content: space-between;
+      width: calc(50% - 8px);
+    }
+
+    .histogram-readout {
+      min-height: 1.2em;
+      margin-top: var(--dim-small);
+      color: rgb(255 255 255 / 82%);
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &.decoding,
+  &.decoding * {
+    cursor: wait !important;
+  }
+
   app-image-renderer {
     flex: 1;
 
@@ -48,6 +174,27 @@
 
       &.no-shrink {
         flex-shrink: 0;
+      }
+
+      &.status-info {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .dynamic-range {
+        color: var(--color-content-default-medium);
+
+        &.hdr {
+          display: inline-block;
+          padding: 0 var(--dim-small);
+          border-radius: var(--border-radius-small);
+          color: #fff;
+          background: #c43d00;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+        }
       }
 
       &.zoom-info {

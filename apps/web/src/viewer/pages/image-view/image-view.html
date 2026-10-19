@@ -23,24 +23,100 @@
                       [class]="animationState()"
                       (animationend)="onAnimationEnd($event)"
                       (dimensions)="imageDimensions.set($event)"
+                      (loadingChange)="isDecoding.set($event); decodeDuration.set(null); imageLoadFailed.set(false)"
+                      (loadDuration)="decodeDuration.set($event)"
+                      (loadError)="imageLoadFailed.set(true)"
                       (wheel)="onMouseWheel($event)" />
+
+  @if (histogramVisible() && !fullScreen) {
+    <section class="histogram-overlay" role="dialog" aria-label="SDR and HDR image histogram">
+      <header>
+        <strong>Histogram</strong>
+        <ui-action-button title="Close histogram" [compact]="true" (pressed)="closeHistogram()">
+          <ui-text [inherit]="true">Close</ui-text>
+        </ui-action-button>
+      </header>
+
+      @if (histogramLoading()) {
+        <p>Calculating histogram…</p>
+      } @else if (histogramError()) {
+        <p>{{ histogramErrorMessage() }}</p>
+      } @else if (histogramData(); as histogram) {
+        <div class="histogram-legend">
+          <span class="sdr-legend">SDR</span>
+          <span class="hdr-legend">HDR</span>
+          <span class="red-legend">R</span>
+          <span class="green-legend">G</span>
+          <span class="blue-legend">B</span>
+        </div>
+        <svg class="histogram-plot"
+             viewBox="0 0 512 160"
+             role="img"
+             aria-label="SDR histogram on the left and HDR histogram on the right"
+             (mousemove)="onHistogramMouseMove($event)"
+             (mouseleave)="onHistogramMouseLeave()">
+          <path class="histogram-grid" d="M0 8H512 M0 78H512 M0 148H512" />
+          <path class="histogram-divider" d="M256 4V152" />
+          <path class="histogram-sdr" [attr.d]="histogramPaths().sdr" />
+          <path class="histogram-hdr" [attr.d]="histogramPaths().hdr" />
+          <path class="histogram-red" [attr.d]="histogramPaths().sdrRed" />
+          <path class="histogram-green" [attr.d]="histogramPaths().sdrGreen" />
+          <path class="histogram-blue" [attr.d]="histogramPaths().sdrBlue" />
+          <path class="histogram-red" [attr.d]="histogramPaths().hdrRed" />
+          <path class="histogram-green" [attr.d]="histogramPaths().hdrGreen" />
+          <path class="histogram-blue" [attr.d]="histogramPaths().hdrBlue" />
+        </svg>
+        <div class="histogram-axis">
+          <div class="histogram-sdr-axis"><span>SDR · 0%</span><span>100%</span></div>
+          <div class="histogram-hdr-axis"><span>HDR · 0 nits</span><span>80 nits</span><span>10,000 nits</span></div>
+        </div>
+        <div class="histogram-readout" aria-live="polite">
+          {{ histogramHoverStatus() ?? 'Move over the histogram to inspect values' }}
+        </div>
+      }
+    </section>
+  }
 
   @if (!fullScreen) {
     <ui-tool-menu>
       <section>
-        <ui-action-button title="EXIF Information"
+        <ui-action-button title="EXIF Information (E)"
+                          aria-keyshortcuts="E"
                           [compact]="true"
                           [variant]="'default'"
                           (pressed)="toggleExifInfo(selected.path)">
           <ui-icon icon="info"
                    size="large"
                    [inherit]="true" />
+          <ui-text [inherit]="true"><u>E</u>XIF</ui-text>
+        </ui-action-button>
+
+        <ui-action-button title="Open SDR / HDR histogram (H)"
+                          aria-keyshortcuts="H"
+                          [compact]="true"
+                          [variant]="histogramVisible() ? 'primary' : 'default'"
+                          (pressed)="toggleHistogram()">
+          <ui-text [inherit]="true"><u>H</u>istogram</ui-text>
         </ui-action-button>
 
         <app-vertical-divider />
 
-        <ui-text class="no-shrink">
-          {{ dimensions.width }} x {{ dimensions.height }}
+        <ui-text class="status-info">
+          @if (isDecoding()) {
+            Decoding…
+          } @else if (imageLoadFailed()) {
+            Failed to load image
+          } @else {
+            <strong class="dynamic-range"
+                    [class.hdr]="imageDynamicRange(selected.path, imageTags(), imageBitDepth()) === 'HDR'">
+              {{ imageDynamicRange(selected.path, imageTags(), imageBitDepth()) }}
+            </strong>
+            ·
+            {{ dimensions.width }} x {{ dimensions.height }}
+            @if (decodeDuration() !== null) {
+              · {{ decodeDuration() | number: '1.2-2' }} s
+            }
+          }
         </ui-text>
       </section>
 
@@ -107,7 +183,10 @@
   @if (exifVisible()) {
     <ui-info-overlay>
       <app-exif-info [exif]="exif"
-                     [dimensions]="dimensions" />
+                     [dimensions]="dimensions"
+                     [fileSize]="selected.size"
+                     [bitDepth]="imageBitDepth()"
+                     [modifiedAt]="selected.modifiedAt" />
     </ui-info-overlay>
   }
 }

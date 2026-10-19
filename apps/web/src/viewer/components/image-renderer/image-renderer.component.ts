@@ -43,6 +43,12 @@ export class ImageRendererComponent implements OnDestroy {
   /* Outputs */
   readonly dimensions = output<ImageDimensions>();
 
+  readonly loadingChange = output<boolean>();
+
+  readonly loadDuration = output<number>();
+
+  readonly loadError = output<void>();
+
   /* State */
   protected readonly displayUrl = signal<string | null>(null);
 
@@ -66,7 +72,7 @@ export class ImageRendererComponent implements OnDestroy {
       this.imagePositioningService.setViewport(surface.nativeElement);
     });
 
-    effect(this.preloadImage);
+    effect(() => this.preloadImage(this.url()));
   }
 
   /* Events */
@@ -77,29 +83,49 @@ export class ImageRendererComponent implements OnDestroy {
   protected readonly onMouseDown = (event: MouseEvent) => this.imagePositioningService.startPanning(event);
 
   /* Misc */
-  private readonly preloadImage = () => {
+  private readonly preloadImage = (url: string) => {
+    const loadId = ++this.loadId;
+    const startedAt = performance.now();
     this.isLoading.set(true);
+    this.loadingChange.emit(true);
 
-    const url = this.url();
     const image = new Image();
 
     fromEvent(image, 'load')
       .pipe(take(1))
-      .subscribe(this.onImageLoad);
+      .subscribe(() => this.onImageLoad(image, loadId, startedAt));
+
+    fromEvent(image, 'error')
+      .pipe(take(1))
+      .subscribe(() => this.onImageError(loadId));
 
     image.src = url;
   };
 
-  private readonly onImageLoad = (event: Event) => {
-    if (event.target instanceof HTMLImageElement) {
-      this.isLoading.set(false);
+  private loadId = 0;
 
-      const { naturalWidth, naturalHeight } = event.target;
-      const dimensions = { width: naturalWidth, height: naturalHeight };
-
-      this.displayUrl.set(event.target.src);
-      this.imagePositioningService.setImageDimensions(dimensions);
-      this.dimensions.emit(dimensions);
+  private readonly onImageLoad = (image: HTMLImageElement, loadId: number, startedAt: number) => {
+    if (loadId !== this.loadId) {
+      return;
     }
+
+    this.isLoading.set(false);
+    this.loadingChange.emit(false);
+
+    const dimensions = { width: image.naturalWidth, height: image.naturalHeight };
+    this.displayUrl.set(image.src);
+    this.imagePositioningService.setImageDimensions(dimensions);
+    this.dimensions.emit(dimensions);
+    this.loadDuration.emit((performance.now() - startedAt) / 1000);
+  };
+
+  private readonly onImageError = (loadId: number) => {
+    if (loadId !== this.loadId) {
+      return;
+    }
+
+    this.isLoading.set(false);
+    this.loadingChange.emit(false);
+    this.loadError.emit();
   };
 }
