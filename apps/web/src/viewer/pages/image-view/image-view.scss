@@ -38,6 +38,42 @@
       margin-bottom: var(--dim-small);
     }
 
+    .panel-close-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      border-radius: var(--border-radius-medium);
+      color: inherit;
+      background: transparent;
+      font: inherit;
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+
+      &:hover {
+        background: rgb(255 255 255 / 14%);
+      }
+
+      &:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 2px;
+      }
+    }
+
+    .exif-close-button {
+      position: absolute;
+      top: var(--dim-small);
+      right: var(--dim-small);
+      z-index: 1;
+      color: var(--color-content-default-highest);
+      background: var(--color-surface-default-high);
+    }
+
     .histogram-legend {
       display: flex;
       align-items: center;
