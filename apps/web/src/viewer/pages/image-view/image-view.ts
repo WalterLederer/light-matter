@@ -100,6 +100,10 @@ export class ImageView {
 
   protected readonly imageLoadFailed = signal(false);
 
+  protected readonly comparisonMode = signal<'hdr' | 'sdr' | 'side-by-side' | 'stacked'>('hdr');
+
+  protected readonly comparisonSplit = signal(50);
+
   protected readonly imageBitDepth = signal<string | null>(null);
 
   protected readonly imageTags = signal<ExifTags | null>(null);
@@ -236,6 +240,8 @@ export class ImageView {
       .pipe(take(1), takeUntilDestroyed())
       .subscribe(config => {
         this.histogramVisible.set(config.system.histogramVisible === true);
+        this.comparisonMode.set(config.system.comparisonMode ?? 'hdr');
+        this.comparisonSplit.set(config.system.comparisonSplit ?? 50);
         this.exifVisible.set(config.system.exifVisible === true);
         if (this.exifVisible()) {
           this.exifState.set(this.imageTags() ?? false);
@@ -290,6 +296,17 @@ export class ImageView {
     } else {
       await this.document.documentElement.requestFullscreen();
     }
+  };
+
+  protected readonly setComparisonMode = (mode: 'hdr' | 'sdr' | 'side-by-side' | 'stacked') => {
+    this.comparisonMode.set(mode);
+    this.configuration.updateSystemConfig({ comparisonMode: mode });
+  };
+
+  protected readonly setComparisonSplit = (value: string | number) => {
+    const split = Math.max(1, Math.min(99, Number(value) || 50));
+    this.comparisonSplit.set(split);
+    this.configuration.updateSystemConfig({ comparisonSplit: split });
   };
 
   protected readonly toggleHistogram = () => {
