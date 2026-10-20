@@ -93,14 +93,22 @@ export type FileListing = Success<FileListingData> | Failure;
 export type ApiResponse<T> = Success<T> | Failure;
 
 export interface ImageHistogram {
-  sdr: number[];
-  hdr: number[];
-  sdrRed: number[];
-  sdrGreen: number[];
-  sdrBlue: number[];
-  hdrRed: number[];
-  hdrGreen: number[];
-  hdrBlue: number[];
+  linear: {
+    white: number[];
+    red: number[];
+    green: number[];
+    blue: number[];
+  };
+  logarithmic: {
+    white: number[];
+    red: number[];
+    green: number[];
+    blue: number[];
+  };
+  /** Upper bound of the displayed luminance range, based on this image's actual peak. */
+  maximumNits: number;
+  /** Lower bound of the logarithmic luminance range. */
+  minimumLogNits: number;
 }
 
 export const appProtocol = 'atom';
