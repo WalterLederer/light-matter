@@ -230,6 +230,18 @@ export class ImageView {
 
   /* Constructor */
   constructor() {
+    this.configuration.config()
+      .pipe(take(1), takeUntilDestroyed())
+      .subscribe(config => {
+        this.histogramVisible.set(config.system.histogramVisible === true);
+        this.exifVisible.set(config.system.exifVisible === true);
+        if (this.histogramVisible()) {
+          this.selectedImage$
+            .pipe(take(1), filter(image => image !== null))
+            .subscribe(image => this.loadHistogram(image.path));
+        }
+      });
+
     this.trackKeyboard();
 
     this.selectedImage$
@@ -255,6 +267,9 @@ export class ImageView {
       .subscribe(tags => {
         this.imageTags.set(tags);
         this.imageBitDepth.set(tags === null ? null : this.getBitDepth(tags));
+        if (this.exifVisible()) {
+          this.exifState.set(tags ?? false);
+        }
       });
 
     this.zoomSlider
@@ -275,12 +290,14 @@ export class ImageView {
   protected readonly toggleHistogram = () => {
     if (this.histogramVisible()) {
       this.histogramVisible.set(false);
+      this.configuration.updateSystemConfig({ histogramVisible: false });
       this.histogramRequestId++;
       this.histogramLoading.set(false);
       return;
     }
 
     this.histogramVisible.set(true);
+    this.configuration.updateSystemConfig({ histogramVisible: true });
     this.selectedImage$
       .pipe(take(1), filter(image => image !== null))
       .subscribe(image => this.loadHistogram(image.path));
@@ -288,6 +305,7 @@ export class ImageView {
 
   protected readonly closeHistogram = () => {
     this.histogramVisible.set(false);
+    this.configuration.updateSystemConfig({ histogramVisible: false });
     this.histogramRequestId++;
     this.histogramLoading.set(false);
   };
@@ -307,6 +325,7 @@ export class ImageView {
 
     const exifVisible = !this.exifVisible();
     this.exifVisible.set(exifVisible);
+    this.configuration.updateSystemConfig({ exifVisible });
 
     if (exifVisible) {
       const response = await this.exif.read(path);
@@ -317,17 +336,9 @@ export class ImageView {
     }
   };
 
-  protected readonly prevPhoto = () => {
-    this.exifVisible.set(false);
-    this.exifState.set(false);
-    this.viewNavigator.previous();
-  };
+  protected readonly prevPhoto = () => this.viewNavigator.previous();
 
-  protected readonly nextPhoto = () => {
-    this.exifVisible.set(false);
-    this.exifState.set(false);
-    this.viewNavigator.next();
-  };
+  protected readonly nextPhoto = () => this.viewNavigator.next();
 
   protected readonly deletePhoto = () => {
     this.selectedImage$
