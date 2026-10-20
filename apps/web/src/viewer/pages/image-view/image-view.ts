@@ -303,6 +303,10 @@ export class ImageView {
     this.configuration.updateSystemConfig({ comparisonMode: mode });
   };
 
+  protected readonly previewComparisonSplit = (value: string | number) => {
+    this.comparisonSplit.set(Math.max(1, Math.min(99, Number(value) || 50)));
+  };
+
   protected readonly setComparisonSplit = (value: string | number) => {
     const split = Math.max(1, Math.min(99, Number(value) || 50));
     this.comparisonSplit.set(split);
