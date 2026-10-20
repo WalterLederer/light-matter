@@ -249,6 +249,7 @@ export const supportedFileFormats = [
     name: 'WebP',
     extensions: [ 'webp' ],
     hdr: false,
+    fullSizeCache: false,
     bitDepth: '8 bit/channel',
     details: 'Lossy or lossless raster format with transparency and animation.'
   }
