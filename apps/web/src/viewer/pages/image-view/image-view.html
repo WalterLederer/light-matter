@@ -103,8 +103,9 @@
     <ui-tool-menu>
       <section>
         <ui-action-button class="raised-panel-button"
-                          title="Image information (I)"
+                          [title]="exifVisible() ? 'Close image information (I)' : 'Open image information (I)'"
                           aria-keyshortcuts="I"
+                          [attr.aria-pressed]="exifVisible()"
                           [compact]="true"
                           [variant]="exifVisible() ? 'primary' : 'default'"
                           (pressed)="toggleExifInfo(selected.path)">
@@ -115,8 +116,9 @@
         </ui-action-button>
 
         <ui-action-button class="raised-panel-button"
-                          title="Open SDR / HDR histogram (H)"
+                          [title]="histogramVisible() ? 'Close SDR / HDR histogram (H)' : 'Open SDR / HDR histogram (H)'"
                           aria-keyshortcuts="H"
+                          [attr.aria-pressed]="histogramVisible()"
                           [compact]="true"
                           [variant]="histogramVisible() ? 'primary' : 'default'"
                           (pressed)="toggleHistogram()">
