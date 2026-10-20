@@ -441,10 +441,11 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
       const hdrLuminanceNits = Math.max(0, 0.2126 * hdrRed + 0.7152 * hdrGreen + 0.0722 * hdrBlue) * 80;
 
       if (hdrLuminanceNits <= 100) {
-        // Put this pixel only in the SDR half, normalized so 100 cd/m² maps to 100%.
-        const r = Math.max(0, hdrRed / 1.25);
-        const g = Math.max(0, hdrGreen / 1.25);
-        const b = Math.max(0, hdrBlue / 1.25);
+        // Use the original SDR-decoded pixels for SDR bins. scRGB channels can
+        // be negative or exceed reference white even when pixel luminance is SDR.
+        const r = Number(sdrPixels[offset]) / sdrMax;
+        const g = Number(sdrPixels[offset + 1]) / sdrMax;
+        const b = Number(sdrPixels[offset + 2]) / sdrMax;
         const sdrLuminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
         sdrBins[sdrBin(sdrLuminance)]++;
         sdrRedBins[sdrBin(r)]++;
