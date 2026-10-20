@@ -147,6 +147,17 @@
               <option value="side-by-side" [disabled]="!isHdrImage">SDR + HDR nebeneinander</option>
               <option value="stacked" [disabled]="!isHdrImage">SDR + HDR übereinander</option>
             </select>
+            @if (isHdrImage && (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked')) {
+              <input class="comparison-split-slider"
+                     type="range"
+                     min="1"
+                     max="99"
+                     aria-label="Position der SDR/HDR-Trennlinie"
+                     [value]="comparisonSplit()"
+                     (input)="previewComparisonSplit($any($event.target).value)"
+                     (change)="setComparisonSplit($any($event.target).value)" />
+              <span class="comparison-split-value">{{ comparisonSplit() }}%</span>
+            }
             ·
             {{ dimensions.width }} x {{ dimensions.height }}
             @if (imagePosition !== null) {
