@@ -1,3 +1,41 @@
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dim-large);
+  padding: var(--dim-medium);
+  border: 1px solid var(--color-content-default-low);
+  border-radius: var(--border-radius-medium);
+}
+
+.setting-description {
+  display: grid;
+  gap: var(--dim-small);
+
+  span {
+    color: var(--color-content-default-medium);
+    font-size: 0.85rem;
+  }
+}
+
+.setting-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--dim-small);
+  flex-shrink: 0;
+  cursor: pointer;
+
+  input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--color-content-primary-highest);
+  }
+
+  input:disabled {
+    cursor: wait;
+  }
+}
+
 :host {
   display: block;
   width: min(94vw, 1100px);
