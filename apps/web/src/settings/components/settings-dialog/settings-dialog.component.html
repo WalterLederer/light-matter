@@ -6,6 +6,27 @@
     <ui-title>Light Matter Settings</ui-title>
   </header>
   <section>
+    <div class="setting-row">
+      <div class="setting-description">
+        <strong>Chromium Developer Tools</strong>
+        <span>Show or hide the Chromium DevTools panel. The setting is saved and restored when Light Matter starts.</span>
+      </div>
+      <label class="setting-toggle">
+        <input type="checkbox"
+               [checked]="devToolsOpen()"
+               [disabled]="devToolsLoading()"
+               (change)="setDevToolsOpen($any($event.target).checked)" />
+        <span>Show DevTools</span>
+      </label>
+    </div>
+    @if (devToolsLoading()) {
+      <p class="cache-status" role="status">Loading DevTools setting…</p>
+    } @else if (devToolsError() !== null) {
+      <p class="cache-status error" role="alert">Could not update DevTools setting: {{ devToolsError() }}</p>
+    }
+  </section>
+
+  <section>
     <div class="cache-overview">
       <div class="cache-categories">
         <div class="cache-category">
