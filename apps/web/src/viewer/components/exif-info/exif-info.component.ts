@@ -29,9 +29,9 @@ export class ExifInfoComponent {
       return [];
     }
 
-    const marker = /hdr|gain.?map|hdrgm|\\bpq\\b|\\bhlg\\b|cicp|transfer.?characteristic|color.?primar|colour.?primar|mastering|content.?light|light.?level|smpte|2084|21496|gamma/i;
+    const marker = /hdr|gain.?map|hdrgm|\bpq\b|\bhlg\b|cicp|transfer.?characteristic|color.?primar|colour.?primar|mastering|content.?light|light.?level|smpte|2084|21496|gamma/i;
     return Object.entries(data as Record<string, unknown>)
-      .filter(([ key, value ]) => marker.test(key) || marker.test(String(value ?? '')))
+      .filter(([ key, value ]) => key.toLowerCase() !== 'sourcefile' && (marker.test(key) || marker.test(String(value ?? ''))))
       .map(([ key, value ]) => ({ key, value: Array.isArray(value) ? value.join(', ') : String(value) }))
       .filter(item => item.value.length > 0)
       .sort((a, b) => a.key.localeCompare(b.key));
