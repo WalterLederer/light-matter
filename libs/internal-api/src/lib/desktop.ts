@@ -10,6 +10,7 @@ export interface DesktopProcessManager {
   readonly getPlatform: () => Promise<string>;
   readonly argv: () => Promise<Arguments>;
   readonly getSystemPaths: () => Promise<SystemPathMapping>;
+  readonly openConfigFile: () => Promise<string>;
   readonly quit: (code: number) => Promise<void>;
 }
 
