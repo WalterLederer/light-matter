@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { ExifTags } from 'internal-api';
 import { ByteSizePipe } from '../../../ui/pipes/byte-size/byte-size.pipe';
 import { ImageDimensions } from '../../services/image-positioning/image-positioning.types';
+import { imageDynamicRangeDiagnostics } from '../../utils/image-dynamic-range';
 
 @Component({
   selector: 'app-exif-info',
@@ -22,6 +23,10 @@ export class ExifInfoComponent {
   readonly bitDepth = input<string | null>(null);
 
   readonly modifiedAt = input<number | undefined>(undefined);
+
+  readonly path = input('');
+
+  readonly dynamicRangeDiagnostics = () => imageDynamicRangeDiagnostics(this.path(), this.exif() === false ? null : this.exif(), this.bitDepth());
   /** Raw HDR-related tags exposed by ExifTool, for verifying dynamic-range detection. */
   readonly hdrMetadata = () => {
     const data = this.exif();
