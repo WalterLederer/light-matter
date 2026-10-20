@@ -235,6 +235,9 @@ export class ImageView {
       .subscribe(config => {
         this.histogramVisible.set(config.system.histogramVisible === true);
         this.exifVisible.set(config.system.exifVisible === true);
+        if (this.exifVisible()) {
+          this.exifState.set(this.imageTags() ?? false);
+        }
         if (this.histogramVisible()) {
           this.selectedImage$
             .pipe(take(1), filter(image => image !== null))
@@ -320,20 +323,11 @@ export class ImageView {
 
   protected readonly fitToWindow = () => this.imagePositioningService.setZoom('fit');
 
-  protected readonly toggleExifInfo = async (path: string) => {
-    this.exifState.set(false);
-
+  protected readonly toggleExifInfo = (path: string) => {
     const exifVisible = !this.exifVisible();
     this.exifVisible.set(exifVisible);
     this.configuration.updateSystemConfig({ exifVisible });
-
-    if (exifVisible) {
-      const response = await this.exif.read(path);
-
-      if (response.success) {
-        this.exifState.set(response.data);
-      }
-    }
+    this.exifState.set(exifVisible ? this.imageTags() ?? false : false);
   };
 
   protected readonly prevPhoto = () => this.viewNavigator.previous();
