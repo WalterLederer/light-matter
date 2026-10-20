@@ -102,15 +102,15 @@
   @if (!fullScreen) {
     <ui-tool-menu>
       <section>
-        <ui-action-button title="EXIF Information (E)"
-                          aria-keyshortcuts="E"
+        <ui-action-button title="Image information (I)"
+                          aria-keyshortcuts="I"
                           [compact]="true"
-                          [variant]="'default'"
+                          [variant]="exifVisible() ? 'primary' : 'default'"
                           (pressed)="toggleExifInfo(selected.path)">
           <ui-icon icon="info"
                    size="large"
                    [inherit]="true" />
-          <ui-text [inherit]="true"><u>E</u>XIF</ui-text>
+          <ui-text [inherit]="true"><u>I</u>nfo</ui-text>
         </ui-action-button>
 
         <ui-action-button title="Open SDR / HDR histogram (H)"
