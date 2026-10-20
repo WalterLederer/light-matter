@@ -139,20 +139,20 @@
             Failed to load image
           } @else {
             <select class="dynamic-range-select"
-                    aria-label="Anzeige-Modus"
+                    aria-label="Display mode"
                     [value]="isHdrImage ? comparisonMode() : 'sdr'"
                     (change)="setComparisonMode($any($event.target).value)">
               <option value="hdr" [disabled]="!isHdrImage">HDR</option>
               <option value="sdr">SDR</option>
-              <option value="side-by-side" [disabled]="!isHdrImage">SDR + HDR nebeneinander</option>
-              <option value="stacked" [disabled]="!isHdrImage">SDR + HDR übereinander</option>
+              <option value="side-by-side" [disabled]="!isHdrImage">SDR + HDR side by side</option>
+              <option value="stacked" [disabled]="!isHdrImage">SDR + HDR stacked</option>
             </select>
             @if (isHdrImage && (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked')) {
               <input class="comparison-split-slider"
                      type="range"
                      min="1"
                      max="99"
-                     aria-label="Position der SDR/HDR-Trennlinie"
+                     aria-label="SDR/HDR split position"
                      [value]="comparisonSplit()"
                      (input)="previewComparisonSplit($any($event.target).value)"
                      (change)="setComparisonSplit($any($event.target).value)" />
@@ -180,7 +180,7 @@
                    [inherit]="true" />
         </ui-action-button>
 
-        <ui-action-button title="Back to Dashboard"
+        <ui-action-button title="Back to Gallery"
                           [compact]="true"
                           (pressed)="goBack()">
           <ui-icon icon="dismissCircle"
