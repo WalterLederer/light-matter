@@ -16,8 +16,8 @@ const HDR_MARKERS: Array<{ label: string; pattern: RegExp }> = [
   { label: 'JPEG-R', pattern: /jpegr/i },
   { label: 'HDR image/capacity', pattern: /hdrimage|hdr.?capacity/i },
   { label: 'ISO 21496', pattern: /iso.?21496/i },
-  { label: 'SMPTE 2084 / PQ', pattern: /smpte.?2084|st.?2084|\\bpq\\b/i },
-  { label: 'HLG', pattern: /\\bhlg\\b/i },
+  { label: 'SMPTE 2084 / PQ', pattern: /smpte.?2084|st.?2084|\bpq\b/i },
+  { label: 'HLG', pattern: /\bhlg\b/i },
   { label: 'ARIB', pattern: /arib/i }
 ];
 
