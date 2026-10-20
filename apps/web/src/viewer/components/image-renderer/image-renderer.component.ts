@@ -40,6 +40,26 @@ export class ImageRendererComponent implements OnDestroy {
   /* Inputs */
   readonly url = input.required<string>();
 
+  readonly comparisonMode = input<'hdr' | 'sdr' | 'side-by-side' | 'stacked'>('hdr');
+
+  readonly comparisonSplit = input(50);
+
+  protected readonly sdrClip = () => {
+    const mode = this.comparisonMode();
+    const split = Math.max(1, Math.min(99, this.comparisonSplit()));
+    if (mode === 'side-by-side') return `inset(0 ${100 - split}% 0 0)`;
+    if (mode === 'stacked') return `inset(0 0 ${100 - split}% 0)`;
+    return 'inset(0 0 0 0)';
+  };
+
+  protected readonly hdrClip = () => {
+    const mode = this.comparisonMode();
+    const split = Math.max(1, Math.min(99, this.comparisonSplit()));
+    if (mode === 'side-by-side') return `inset(0 0 0 ${split}%)`;
+    if (mode === 'stacked') return `inset(${split}% 0 0 0)`;
+    return 'inset(0 0 0 0)';
+  };
+
   /* Outputs */
   readonly dimensions = output<ImageDimensions>();
 
