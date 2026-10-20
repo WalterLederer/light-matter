@@ -59,7 +59,10 @@
                  data-scale="linear"
                  (mousemove)="onHistogramMouseMove($event)"
                  (mouseleave)="onHistogramMouseLeave()">
-              <path class="histogram-grid" d="M0 8H256 M0 78H256 M0 148H256" />
+              @for (tick of histogramPaths().linearYTicks; track tick.value) {
+                <path class="histogram-grid" [attr.d]="'M0 ' + tick.y + 'H256'" />
+                <text class="histogram-y-label" x="2" [attr.y]="tick.y - 2">{{ tick.value }}</text>
+              }
               <path class="histogram-divider" [attr.d]="'M' + histogramPaths().linearBoundary + ' 4V152'" />
               <path class="histogram-white" [attr.d]="histogramPaths().linear.white" />
               <path class="histogram-red" [attr.d]="histogramPaths().linear.red" />
@@ -77,7 +80,10 @@
                  data-scale="logarithmic"
                  (mousemove)="onHistogramMouseMove($event)"
                  (mouseleave)="onHistogramMouseLeave()">
-              <path class="histogram-grid" d="M0 8H256 M0 78H256 M0 148H256" />
+              @for (tick of histogramPaths().logarithmicYTicks; track tick.value) {
+                <path class="histogram-grid" [attr.d]="'M0 ' + tick.y + 'H256'" />
+                <text class="histogram-y-label" x="2" [attr.y]="tick.y - 2">{{ tick.value }}</text>
+              }
               <path class="histogram-divider" [attr.d]="'M' + histogramPaths().logarithmicBoundary + ' 4V152'" />
               <path class="histogram-white" [attr.d]="histogramPaths().logarithmic.white" />
               <path class="histogram-red" [attr.d]="histogramPaths().logarithmic.red" />
