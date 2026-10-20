@@ -69,18 +69,20 @@
                     (click)="deleteCache()">
               Delete entire cache
             </button>
-            <button class="cache-button"
-                    type="button"
-                    [disabled]="isClearing()"
-                    (click)="openCacheFolder()">
-              Open cache folder
-            </button>
           </aside>
         </div>
       </div>
       <div class="cache-path">
-        <span>Cache location</span>
-        <code>{{ currentCache.path }}</code>
+        <div class="cache-path-details">
+          <span>Cache location</span>
+          <code>{{ currentCache.path }}</code>
+        </div>
+        <button class="cache-button"
+                type="button"
+                [disabled]="isClearing()"
+                (click)="openCacheFolder()">
+          Open cache folder
+        </button>
       </div>
     </div>
 
