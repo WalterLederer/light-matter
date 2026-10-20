@@ -44,6 +44,9 @@ export class ViewNavigator {
   /* Getters */
   readonly selectedImage = () => this.selectedImage$;
 
+  readonly imagePosition = () => combineLatest([ this.images$, this.selectedIndex$ ])
+    .pipe(map(([ images, index ]) => ({ position: index >= 0 && index < images.length ? index + 1 : 0, total: images.length })));
+
   readonly hasPrevious = () => this.hasPrevious$;
 
   readonly hasNext = () => this.hasNext$;
