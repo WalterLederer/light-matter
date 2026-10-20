@@ -65,15 +65,6 @@
       }
     }
 
-    .exif-close-button {
-      position: absolute;
-      top: var(--dim-small);
-      right: var(--dim-small);
-      z-index: 1;
-      color: var(--color-content-default-highest);
-      background: var(--color-surface-default-high);
-    }
-
     .histogram-legend {
       display: flex;
       align-items: center;
@@ -169,6 +160,15 @@
       font-size: 0.75rem;
       font-variant-numeric: tabular-nums;
     }
+  }
+
+  .exif-close-button {
+    position: absolute;
+    top: var(--dim-small);
+    right: var(--dim-small);
+    z-index: 1;
+    color: var(--color-content-default-highest);
+    background: var(--color-surface-default-high);
   }
 
   &.decoding,
