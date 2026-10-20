@@ -31,7 +31,7 @@ export function imageDynamicRange(path: string, tags: ExifTags | null, bitDepth:
   // Ultra HDR JPEGs commonly signal the gain map through XMP/HDRGM fields.
   // Do not infer HDR from a reported peak-nit value alone: that value can describe
   // the gain map or display capability, not prove that this JPEG contains HDR data.
-  if (/gain.?map|hdr.?gm|jpegr|hdrimage|hdr.?capacity|iso.?21496|smpte.?2084|st.?2084|\\bpq\\b|\\bhlg\\b|arib/i.test(metadata)) {
+  if (/gain.?map|hdr.?gm|jpegr|hdrimage|hdr.?capacity|iso.?21496|smpte.?2084|st.?2084|\bpq\b|\bhlg\b|arib/i.test(metadata)) {
     return 'HDR';
   }
 
