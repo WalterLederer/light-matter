@@ -24,6 +24,8 @@
          [height]="location.height"
          [style.left]="comparisonMode() === 'dual-side-by-side' ? '0%' : (location.x | px)"
          [style.top]="comparisonMode() === 'dual-side-by-side' ? '0%' : (location.y | px)"
+         [style.transform]="comparisonMode() === 'dual-side-by-side' && location.zoom !== 'fit' ? 'scale(' + (location.zoom * 100 / location.fitZoom) + ')' : null"
+         [style.transform-origin]="comparisonMode() === 'dual-side-by-side' ? 'center center' : null"
          [style.clip-path]="sdrClip()"
          [src]="imageUrl"
          (mousedown)="onMouseDown($event)">
@@ -55,6 +57,8 @@
          [height]="location.height"
          [style.left]="comparisonMode() === 'dual-side-by-side' ? '50%' : (location.x | px)"
          [style.top]="comparisonMode() === 'dual-side-by-side' ? '0%' : (location.y | px)"
+         [style.transform]="comparisonMode() === 'dual-side-by-side' && location.zoom !== 'fit' ? 'scale(' + (location.zoom * 100 / location.fitZoom) + ')' : null"
+         [style.transform-origin]="comparisonMode() === 'dual-side-by-side' ? 'center center' : null"
          [style.clip-path]="hdrClip()"
          [src]="imageUrl"
          (mousedown)="onMouseDown($event)">
