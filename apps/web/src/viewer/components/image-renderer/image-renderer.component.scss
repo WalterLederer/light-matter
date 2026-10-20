@@ -29,6 +29,12 @@
       dynamic-range-limit: standard;
     }
 
+    &.dual-side-by-side {
+      width: 50%;
+      height: 100%;
+      object-fit: contain;
+    }
+
     &.hidden-variant {
       display: none;
     }
