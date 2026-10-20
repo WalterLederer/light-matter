@@ -176,6 +176,43 @@
     cursor: wait !important;
   }
 
+  .comparison-controls {
+    position: absolute;
+    z-index: 12;
+    top: var(--dim-large);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: var(--dim-medium);
+    padding: var(--dim-small) var(--dim-medium);
+    border: 1px solid rgb(255 255 255 / 20%);
+    border-radius: var(--border-radius-medium);
+    color: #fff;
+    background: rgb(18 20 24 / 88%);
+    box-shadow: 0 3px 12px rgb(0 0 0 / 24%);
+    font-size: 0.8rem;
+    white-space: nowrap;
+
+    select, input[type='range'] {
+      accent-color: #58a6ff;
+    }
+
+    select {
+      max-width: 220px;
+      padding: 4px 6px;
+      border: 1px solid rgb(255 255 255 / 28%);
+      border-radius: var(--border-radius-small);
+      color: inherit;
+      background: #25282d;
+      font: inherit;
+    }
+
+    input[type='range'] {
+      width: 120px;
+    }
+  }
+
   app-image-renderer {
     flex: 1;
 
