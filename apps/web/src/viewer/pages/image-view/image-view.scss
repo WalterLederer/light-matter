@@ -162,6 +162,10 @@
     }
   }
 
+  ui-info-overlay {
+    position: relative;
+  }
+
   .exif-close-button {
     position: absolute;
     top: var(--dim-small);
