@@ -17,7 +17,7 @@
     z-index: 11;
     right: var(--dim-x-large);
     bottom: var(--dim-x-large);
-    width: min(640px, calc(100vw - 2 * var(--dim-x-large)));
+    width: min(760px, calc(100vw - 2 * var(--dim-x-large)));
     padding: var(--dim-large);
     border: 1px solid rgb(255 255 255 / 20%);
     border-radius: var(--border-radius-large);
@@ -39,40 +39,47 @@
     }
 
     .histogram-legend {
+      display: flex;
+      align-items: center;
       justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: var(--dim-large);
       font-size: 0.8rem;
+      margin-bottom: var(--dim-small);
     }
 
-    .sdr-legend {
+    .white-legend,
+    .histogram-white {
       color: #ffffff;
+      stroke: #ffffff;
     }
 
-    .hdr-legend {
-      color: #ffffff;
+    .red-legend { color: #ff5a5f; }
+    .histogram-red { stroke: #ff5a5f; }
+    .green-legend { color: #55d98a; }
+    .histogram-green { stroke: #55d98a; }
+    .blue-legend { color: #58a6ff; }
+    .histogram-blue { stroke: #58a6ff; }
+
+    .boundary-legend {
+      color: rgb(255 255 255 / 72%);
     }
 
-    .red-legend {
-      color: #ff5a5f;
+    .histogram-plots {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--dim-large);
     }
 
-    .histogram-red {
-      stroke: #ff5a5f;
+    .histogram-chart {
+      min-width: 0;
     }
 
-    .green-legend {
-      color: #55d98a;
-    }
-
-    .histogram-green {
-      stroke: #55d98a;
-    }
-
-    .blue-legend {
-      color: #58a6ff;
-    }
-
-    .histogram-blue {
-      stroke: #58a6ff;
+    .histogram-chart-title {
+      margin-bottom: 2px;
+      color: rgb(255 255 255 / 82%);
+      font-size: 0.75rem;
+      font-weight: 600;
     }
 
     .histogram-plot {
@@ -89,39 +96,28 @@
 
     .histogram-divider {
       fill: none;
-      stroke: rgb(255 255 255 / 70%);
+      stroke: rgb(255 255 255 / 78%);
       stroke-width: 1.5;
+      stroke-dasharray: 3 3;
       vector-effect: non-scaling-stroke;
     }
 
-    .histogram-sdr,
-    .histogram-hdr,
+    .histogram-white,
     .histogram-red,
     .histogram-green,
     .histogram-blue {
       fill: none;
-      stroke-width: 2;
+      stroke-width: 1.5;
       vector-effect: non-scaling-stroke;
     }
 
-    .histogram-sdr {
-      stroke: #ffffff;
-    }
-
-    .histogram-hdr {
-      stroke: #ffffff;
-    }
-
     .histogram-axis {
-      color: rgb(255 255 255 / 68%);
-      font-size: 0.7rem;
-    }
-
-    .histogram-sdr-axis,
-    .histogram-hdr-axis {
       display: flex;
       justify-content: space-between;
-      width: calc(50% - 8px);
+      gap: 4px;
+      color: rgb(255 255 255 / 68%);
+      font-size: 0.65rem;
+      font-variant-numeric: tabular-nums;
     }
 
     .histogram-readout {
