@@ -125,11 +125,25 @@ section {
 }
 
 .cache-total {
-  display: grid;
-  gap: var(--dim-small);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dim-large);
   padding: var(--dim-small) var(--dim-medium);
 
+  > div {
+    display: grid;
+    gap: var(--dim-small);
+  }
+
   span { color: var(--color-content-default-medium); }
+}
+
+.cache-total-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--dim-small);
 }
 
 .cache-actions {
