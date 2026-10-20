@@ -40,7 +40,7 @@ export class ImageRendererComponent implements OnDestroy {
   /* Inputs */
   readonly url = input.required<string>();
 
-  readonly comparisonMode = input<'hdr' | 'sdr' | 'side-by-side' | 'stacked'>('hdr');
+  readonly comparisonMode = input<'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side'>('hdr');
 
   readonly comparisonSplit = input(50);
 
