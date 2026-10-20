@@ -19,6 +19,21 @@
     }
   }
 
+  .comparison-image {
+    clip-path: inset(0 0 0 0);
+    dynamic-range-limit: no-limit;
+    user-select: none;
+    -webkit-user-drag: none;
+
+    &.sdr-image {
+      dynamic-range-limit: standard;
+    }
+
+    &.hidden-variant {
+      display: none;
+    }
+  }
+
   .loading-indicator {
     position: absolute;
     left: 0;
