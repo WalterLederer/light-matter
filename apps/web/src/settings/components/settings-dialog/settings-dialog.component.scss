@@ -1,3 +1,37 @@
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dim-large);
+}
+
+.settings-close-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--border-radius-medium);
+  color: var(--color-content-default-highest);
+  background: transparent;
+  font: inherit;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-surface-default-high);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-content-primary-highest);
+    outline-offset: 2px;
+  }
+}
+
 .setting-row {
   display: flex;
   align-items: center;
