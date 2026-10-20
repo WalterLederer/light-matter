@@ -6,6 +6,7 @@
 @let dimensions = imageDimensions();
 @let exif = exifState();
 @let location = imageLocation$ | async | default:defaultImageLocation;
+@let isHdrImage = imageDynamicRange(selected?.path ?? '', imageTags(), imageBitDepth()) === 'HDR';
 
 @if (selected !== null) {
   @if (!fullScreen) {
@@ -20,25 +21,11 @@
     </ui-tool-menu>
   }
 
-  @if (!fullScreen) {
-    <div class="comparison-controls" role="group" aria-label="SDR and HDR display mode">
-      <label for="comparison-mode">Anzeige</label>
-      <select id="comparison-mode" [value]="comparisonMode()" (change)="setComparisonMode($any($event.target).value)">
-        <option value="hdr">HDR</option>
-        <option value="sdr">SDR</option>
-        <option value="side-by-side">SDR + HDR nebeneinander</option>
-        <option value="stacked">SDR + HDR untereinander</option>
-      </select>
-      @if (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked') {
-        <label for="comparison-split">Trennlinie {{ comparisonSplit() }}%</label>
-        <input id="comparison-split" type="range" min="1" max="99" [value]="comparisonSplit()" (input)="previewComparisonSplit($any($event.target).value)" (change)="setComparisonSplit($any($event.target).value)" />
-      }
-    </div>
-  }
-
   <app-image-renderer [url]="selected.url"
-                      [comparisonMode]="comparisonMode()"
+                      [comparisonMode]="isHdrImage ? comparisonMode() : 'sdr'"
                       [comparisonSplit]="comparisonSplit()"
+                      (comparisonSplitChange)="previewComparisonSplit($event)"
+                      (comparisonSplitCommit)="setComparisonSplit($event)"
                       [class]="animationState()"
                       (animationend)="onAnimationEnd($event)"
                       (dimensions)="imageDimensions.set($event)"
@@ -151,10 +138,15 @@
           } @else if (imageLoadFailed()) {
             Failed to load image
           } @else {
-            <strong class="dynamic-range"
-                    [class.hdr]="imageDynamicRange(selected.path, imageTags(), imageBitDepth()) === 'HDR'">
-              {{ imageDynamicRange(selected.path, imageTags(), imageBitDepth()) }}
-            </strong>
+            <select class="dynamic-range-select"
+                    aria-label="Anzeige-Modus"
+                    [value]="isHdrImage ? comparisonMode() : 'sdr'"
+                    (change)="setComparisonMode($any($event.target).value)">
+              <option value="hdr" [disabled]="!isHdrImage">HDR</option>
+              <option value="sdr">SDR</option>
+              <option value="side-by-side" [disabled]="!isHdrImage">SDR + HDR nebeneinander</option>
+              <option value="stacked" [disabled]="!isHdrImage">SDR + HDR übereinander</option>
+            </select>
             ·
             {{ dimensions.width }} x {{ dimensions.height }}
             @if (imagePosition !== null) {
