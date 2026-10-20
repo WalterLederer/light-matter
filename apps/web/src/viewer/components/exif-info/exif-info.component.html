@@ -28,6 +28,16 @@
     <dt>Dimensions</dt>
     <dd>{{ dims.width }} x {{ dims.height }}</dd>
 
+    @let rangeInfo = dynamicRangeDiagnostics();
+    <dt>HDR classification</dt>
+    <dd class="hdr-classification">
+      <strong>{{ rangeInfo.result }}</strong>
+      <div>Rule: {{ rangeInfo.rule }}</div>
+      <div>Extension: .{{ rangeInfo.extension || 'unknown' }}</div>
+      <div>Bit depth used: {{ rangeInfo.bitDepth === null ? 'unavailable' : rangeInfo.bitDepth + '-bit' }}</div>
+      <div>HDR markers matched: {{ rangeInfo.matchedMarkers.length > 0 ? rangeInfo.matchedMarkers.join(', ') : 'none' }}</div>
+    </dd>
+
     @if (hdrMetadata().length > 0) {
       <dt>HDR / colour metadata</dt>
       <dd class="hdr-metadata">
