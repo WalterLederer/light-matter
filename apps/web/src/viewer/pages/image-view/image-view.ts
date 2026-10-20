@@ -510,7 +510,16 @@ export class ImageView {
         }
 
         const target = event.target;
-        if (target instanceof HTMLElement && target.matches('input, textarea, select, [contenteditable="true"]')) {
+        if (target instanceof HTMLElement && target.matches('input, textarea, [contenteditable="true"]')) {
+          return;
+        }
+
+        if (event.key === 'm' || event.key === 'M') {
+          this.cycleComparisonMode();
+          return;
+        }
+
+        if (target instanceof HTMLSelectElement) {
           return;
         }
 
@@ -525,11 +534,6 @@ export class ImageView {
           case 'h':
           case 'H':
             this.toggleHistogram();
-            break;
-
-          case 'm':
-          case 'M':
-            this.cycleComparisonMode();
             break;
 
           case 'ArrowLeft':
