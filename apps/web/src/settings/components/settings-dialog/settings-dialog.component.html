@@ -49,7 +49,7 @@
             <span>Thumbnail files</span>
             <strong>{{ currentCache.thumbnails.entries }} files · {{ currentCache.thumbnails.bytes | byteSize }}</strong>
           </div>
-          <button class="cache-button"
+          <button class="cache-button warning"
                   type="button"
                   [disabled]="currentCache.thumbnails.entries === 0 || isClearing()"
                   (click)="deleteThumbnailsCache()">
