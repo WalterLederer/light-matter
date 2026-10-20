@@ -119,45 +119,40 @@ export class ImageView {
   protected readonly histogramPaths = computed(() => {
     const data = this.histogramData();
     if (data === null) {
-      return { sdr: '', hdr: '', sdrRed: '', sdrGreen: '', sdrBlue: '', hdrRed: '', hdrGreen: '', hdrBlue: '' };
+      return {
+        linear: { white: '', red: '', green: '', blue: '' },
+        logarithmic: { white: '', red: '', green: '', blue: '' },
+        linearBoundary: 256,
+        logarithmicBoundary: 256
+      };
     }
 
-    const maximum = Math.max(
-      1,
-      ...data.sdr,
-      ...data.hdr,
-      ...data.sdrRed,
-      ...data.sdrGreen,
-      ...data.sdrBlue,
-      ...data.hdrRed,
-      ...data.hdrGreen,
-      ...data.hdrBlue
-    );
-    // Use one shared SDR X stretch for white and all three RGB curves so
-    // their relative channel positions remain comparable.
-    const sdrLastOccupiedBin = Math.max(
-      1,
-      ...data.sdr.map((count, index) => count > 0 ? index : 0),
-      ...data.sdrRed.map((count, index) => count > 0 ? index : 0),
-      ...data.sdrGreen.map((count, index) => count > 0 ? index : 0),
-      ...data.sdrBlue.map((count, index) => count > 0 ? index : 0)
-    );
-    const makePath = (bins: number[], startX: number, endX: number, lastBin = bins.length - 1) =>
-      bins.slice(0, lastBin + 1).map((count, index) => {
-        const x = startX + index / Math.max(1, lastBin) * (endX - startX);
-        const y = 148 - count / maximum * 140;
-        return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    const makePaths = (curves: typeof data.linear) => {
+      const maximumCount = Math.max(1, ...curves.white, ...curves.red, ...curves.green, ...curves.blue);
+      const makePath = (bins: number[]) => bins.map((count, index) => {
+        const x = (index + 0.5) / bins.length * 256;
+        const y = 148 - count / maximumCount * 140;
+        return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
       }).join(' ');
+      return {
+        white: makePath(curves.white),
+        red: makePath(curves.red),
+        green: makePath(curves.green),
+        blue: makePath(curves.blue)
+      };
+    };
+
+    const linearBoundary = Math.max(0, Math.min(256, 100 / data.maximumNits * 256));
+    const logarithmicBoundary = Math.max(0, Math.min(256,
+      Math.log(100 / data.minimumLogNits) /
+      Math.log(data.maximumNits / data.minimumLogNits) * 256
+    ));
 
     return {
-      sdr: makePath(data.sdr, 0, 248, sdrLastOccupiedBin),
-      hdr: makePath(data.hdr, 264, 512),
-      sdrRed: makePath(data.sdrRed, 0, 248, sdrLastOccupiedBin),
-      sdrGreen: makePath(data.sdrGreen, 0, 248, sdrLastOccupiedBin),
-      sdrBlue: makePath(data.sdrBlue, 0, 248, sdrLastOccupiedBin),
-      hdrRed: makePath(data.hdrRed, 264, 512),
-      hdrGreen: makePath(data.hdrGreen, 264, 512),
-      hdrBlue: makePath(data.hdrBlue, 264, 512)
+      linear: makePaths(data.linear),
+      logarithmic: makePaths(data.logarithmic),
+      linearBoundary,
+      logarithmicBoundary
     };
   });
 
@@ -170,32 +165,19 @@ export class ImageView {
       return;
     }
 
-    const x = Math.max(0, Math.min(512, (event.clientX - bounds.left) / bounds.width * 512));
-    const isSdr = x < 256;
-    const startX = isSdr ? 0 : 264;
-    const endX = isSdr ? 248 : 512;
-    const position = Math.max(0, Math.min(1, (x - startX) / (endX - startX)));
-    const sdrLastOccupiedBin = Math.max(
-      1,
-      ...data.sdr.map((count, index) => count > 0 ? index : 0),
-      ...data.sdrRed.map((count, index) => count > 0 ? index : 0),
-      ...data.sdrGreen.map((count, index) => count > 0 ? index : 0),
-      ...data.sdrBlue.map((count, index) => count > 0 ? index : 0)
-    );
-    const bin = Math.min(127, Math.round(position * (isSdr ? sdrLastOccupiedBin : 127)));
-    const white = (isSdr ? data.sdr : data.hdr)[bin] ?? 0;
-    const red = (isSdr ? data.sdrRed : data.hdrRed)[bin] ?? 0;
-    const green = (isSdr ? data.sdrGreen : data.hdrGreen)[bin] ?? 0;
-    const blue = (isSdr ? data.sdrBlue : data.hdrBlue)[bin] ?? 0;
+    const isLogarithmic = svg?.dataset['scale'] === 'logarithmic';
+    const position = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+    const bin = Math.min(127, Math.floor(position * 128));
+    const nits = isLogarithmic
+      ? data.minimumLogNits * Math.pow(data.maximumNits / data.minimumLogNits, (bin + 0.5) / 128)
+      : data.maximumNits * (bin + 0.5) / 128;
+    const curves = isLogarithmic ? data.logarithmic : data.linear;
     const formatCount = (value: number) => new Intl.NumberFormat().format(value);
-    const domain = isSdr
-      ? `SDR ${((bin + 0.5) / 128 * 100).toFixed(1)}%`
-      : `HDR ≈ ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(
-        100 * Math.pow(100, (bin + 0.5) / 128)
-      )} cd/m²`;
+    const formatNits = (value: number) => new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(value);
+    const scaleName = isLogarithmic ? 'Log' : 'Linear';
 
     this.histogramHoverStatus.set(
-      `${domain} · White ${formatCount(white)} · R ${formatCount(red)} · G ${formatCount(green)} · B ${formatCount(blue)}`
+      `${scaleName} ≈ ${formatNits(nits)} cd/m² · White ${formatCount(curves.white[bin] ?? 0)} · R ${formatCount(curves.red[bin] ?? 0)} · G ${formatCount(curves.green[bin] ?? 0)} · B ${formatCount(curves.blue[bin] ?? 0)}`
     );
   };
 
