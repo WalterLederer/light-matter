@@ -32,9 +32,7 @@
     <section class="histogram-overlay" role="dialog" aria-label="SDR and HDR image histogram">
       <header>
         <strong>Histogram</strong>
-        <ui-action-button title="Close histogram" [compact]="true" (pressed)="closeHistogram()">
-          <ui-text [inherit]="true">Close</ui-text>
-        </ui-action-button>
+        <button class="panel-close-button" type="button" title="Close histogram" aria-label="Close histogram" (click)="closeHistogram()">×</button>
       </header>
 
       @if (histogramLoading()) {
@@ -205,6 +203,7 @@
 
   @if (exifVisible()) {
     <ui-info-overlay>
+      <button class="panel-close-button exif-close-button" type="button" title="Close EXIF information" aria-label="Close EXIF information" (click)="toggleExifInfo(selected.path)">×</button>
       <app-exif-info [exif]="exif"
                      [dimensions]="dimensions"
                      [fileSize]="selected.size"
