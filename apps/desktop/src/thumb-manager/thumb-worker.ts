@@ -484,34 +484,6 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
     sdrBlueBins[sdrBin(b)]++;
   }
 
-  // Stretch the SDR curves to the full left-hand plot width. The occupied
-  // SDR range ends at the 100 cd/m² boundary where the HDR curve begins.
-  const sdrLastOccupiedBin = Math.max(
-    0,
-    ...sdrBins.map((count, index) => count > 0 ? index : 0),
-    ...sdrRedBins.map((count, index) => count > 0 ? index : 0),
-    ...sdrGreenBins.map((count, index) => count > 0 ? index : 0),
-    ...sdrBlueBins.map((count, index) => count > 0 ? index : 0)
-  );
-  if (sdrLastOccupiedBin > 0 && sdrLastOccupiedBin < 127) {
-    const stretchBins = (bins: number[]): number[] => {
-      const stretched = new Array<number>(128).fill(0);
-      for (let index = 0; index <= sdrLastOccupiedBin; index++) {
-        const target = Math.min(127, Math.round(index / sdrLastOccupiedBin * 127));
-        stretched[target] += bins[index];
-      }
-      return stretched;
-    };
-    const stretchedSdr = stretchBins(sdrBins);
-    const stretchedSdrRed = stretchBins(sdrRedBins);
-    const stretchedSdrGreen = stretchBins(sdrGreenBins);
-    const stretchedSdrBlue = stretchBins(sdrBlueBins);
-    sdrBins.splice(0, 128, ...stretchedSdr);
-    sdrRedBins.splice(0, 128, ...stretchedSdrRed);
-    sdrGreenBins.splice(0, 128, ...stretchedSdrGreen);
-    sdrBlueBins.splice(0, 128, ...stretchedSdrBlue);
-  }
-
   return {
     sdr: sdrBins,
     hdr: hdrBins,
