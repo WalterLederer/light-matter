@@ -142,8 +142,8 @@
                     (change)="setComparisonMode($any($event.target).value)">
               <option value="hdr" [disabled]="!isHdrImage">HDR̲</option>
               <option value="sdr">SDR̲</option>
-              <option value="side-by-side" [disabled]="!isHdrImage">S̲D̲R̲ + H̲D̲R̲ side by side</option>
-              <option value="stacked" [disabled]="!isHdrImage">S̲D̲R̲ + H̲D̲R̲ stacked</option>
+              <option value="side-by-side" [disabled]="!isHdrImage">SDR̲ + HDR̲ side by side</option>
+              <option value="stacked" [disabled]="!isHdrImage">SDR̲ + HDR̲ stacked</option>
             </select>
             @if (isHdrImage && (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked')) {
               <input class="comparison-split-slider"
