@@ -474,8 +474,8 @@ export class ImageView {
         }
 
         switch (event.key) {
-          case 'e':
-          case 'E':
+          case 'i':
+          case 'I':
             this.selectedImage$
               .pipe(take(1), filter(image => image !== null))
               .subscribe(image => this.toggleExifInfo(image.path));
