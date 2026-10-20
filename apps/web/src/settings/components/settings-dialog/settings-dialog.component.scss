@@ -225,10 +225,18 @@ section {
 }
 
 .cache-path {
-  display: grid;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   min-width: 0;
-  gap: var(--dim-small);
+  gap: var(--dim-large);
   grid-column: 1 / -1;
+
+  .cache-path-details {
+    display: grid;
+    min-width: 0;
+    gap: var(--dim-small);
+  }
 
   span {
     color: var(--color-content-default-medium);
