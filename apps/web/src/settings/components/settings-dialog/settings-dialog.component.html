@@ -58,28 +58,30 @@
         </div>
 
         <div class="cache-total">
-          <span>Total cache</span>
-          <strong>{{ currentCache.entries }} files · {{ currentCache.bytes | byteSize }}</strong>
+          <div>
+            <span>Total cache</span>
+            <strong>{{ currentCache.entries }} files · {{ currentCache.bytes | byteSize }}</strong>
+          </div>
+          <aside class="cache-total-actions">
+            <button class="cache-button warning"
+                    type="button"
+                    [disabled]="currentCache.bytes === 0 || isClearing()"
+                    (click)="deleteCache()">
+              Delete entire cache
+            </button>
+            <button class="cache-button"
+                    type="button"
+                    [disabled]="isClearing()"
+                    (click)="openCacheFolder()">
+              Open cache folder
+            </button>
+          </aside>
         </div>
       </div>
       <div class="cache-path">
         <span>Cache location</span>
         <code>{{ currentCache.path }}</code>
       </div>
-      <aside class="cache-actions">
-        <button class="cache-button warning"
-                type="button"
-                [disabled]="currentCache.bytes === 0 || isClearing()"
-                (click)="deleteCache()">
-          Delete entire cache
-        </button>
-        <button class="cache-button"
-                type="button"
-                [disabled]="isClearing()"
-                (click)="openCacheFolder()">
-          Open cache folder
-        </button>
-      </aside>
     </div>
 
     @if (openFolderError() !== null) {
