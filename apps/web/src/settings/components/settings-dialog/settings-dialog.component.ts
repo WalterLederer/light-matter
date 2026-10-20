@@ -48,6 +48,10 @@ export class SettingsDialogComponent {
 
   protected readonly devToolsError = signal<string | null>(null);
 
+  protected readonly configPath = signal('');
+
+  protected readonly configFileError = signal<string | null>(null);
+
   protected readonly lastClearResult = signal<CacheClearResult | null>(null);
 
   protected readonly clearError = signal<string | null>(null);
@@ -60,7 +64,28 @@ export class SettingsDialogComponent {
   constructor() {
     this.updateCacheInfo().then();
     this.loadDevToolsSetting().then();
+    this.loadConfigPath().then();
   }
+
+  private readonly loadConfigPath = async () => {
+    try {
+      this.configPath.set((await this.processManager.getSystemPaths()).appConfig);
+    } catch (error) {
+      this.configFileError.set(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  protected readonly openConfigFile = async () => {
+    this.configFileError.set(null);
+    try {
+      const error = await this.processManager.openConfigFile();
+      if (error) {
+        this.configFileError.set(error);
+      }
+    } catch (error) {
+      this.configFileError.set(error instanceof Error ? error.message : String(error));
+    }
+  };
 
   private readonly loadDevToolsSetting = async () => {
     try {

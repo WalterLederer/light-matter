@@ -1,4 +1,4 @@
-import { app, IpcMainInvokeEvent } from 'electron';
+import { app, IpcMainInvokeEvent, shell } from 'electron';
 import { SystemPathMapping } from 'internal-api';
 import { stat } from 'node:fs/promises';
 import yargs from 'yargs';
@@ -31,6 +31,9 @@ export class ProcessManager {
   readonly setDevToolsOpen = async (_: IpcMainInvokeEvent, open: boolean): Promise<void> => {
     await App.setDevToolsOpen(open === true);
   };
+
+  @IpcHandler({ name: 'ProcessManager.openConfigFile' })
+  readonly openConfigFile = async (): Promise<string> => shell.openPath(App.startupConfig.configPath());
 
   @IpcHandler({ name: 'ProcessManager.getPlatform' })
   readonly getPlatform = async (): Promise<string> => process.platform;

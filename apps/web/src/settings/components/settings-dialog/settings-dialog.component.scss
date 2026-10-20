@@ -42,6 +42,37 @@
   border-radius: var(--border-radius-medium);
 }
 
+.setting-section-title {
+  font: inherit;
+  font-weight: 700;
+}
+
+.cache-section-title {
+  grid-column: 1 / -1;
+}
+
+.setting-config-path {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dim-large);
+  padding: var(--dim-medium);
+  border: 1px solid var(--color-content-default-low);
+  border-radius: var(--border-radius-medium);
+
+  .cache-path-details {
+    display: grid;
+    min-width: 0;
+    gap: var(--dim-small);
+  }
+
+  code {
+    display: block;
+    overflow-wrap: anywhere;
+    color: var(--color-content-default-high);
+  }
+}
+
 .setting-description {
   display: grid;
   gap: var(--dim-small);

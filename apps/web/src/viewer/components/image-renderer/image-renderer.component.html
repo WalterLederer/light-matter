@@ -8,6 +8,7 @@
 
 <div #surface
      class="surface"
+     [class.dual-side-by-side-surface]="comparisonMode() === 'dual-side-by-side'"
      [style.zoom]="location.pixelRatio"
      (click)="onSurfaceClick($event)"
      (pointermove)="onSplitPointerMove($event)"
@@ -15,15 +16,31 @@
      (pointercancel)="onSplitPointerUp($event)">
 
   @if (imageUrl !== null) {
+    @if (comparisonMode() === 'dual-side-by-side') {
+      <div class="dual-side-by-side-labels" aria-hidden="true">
+        <div class="comparison-logo sdr-logo">
+          <div class="logo-main">SDR</div>
+          <div class="logo-accent"></div>
+          <div class="logo-caption">Standard Dynamic Range</div>
+        </div>
+        <div class="comparison-logo hdr-logo">
+          <div class="logo-main">HDR</div>
+          <div class="logo-accent"></div>
+          <div class="logo-caption">High Dynamic Range</div>
+        </div>
+      </div>
+    }
     <img alt=""
          class="comparison-image sdr-image"
-         [class.dual-side-by-side]="comparisonMode() === 'dual-side-by-side'"
-         [class.pannable]="location.zoom !== 'fit'"
+         [class.pannable]="location.zoom !== 'fit' && comparisonMode() !== 'dual-side-by-side'"
          [class.hidden-variant]="comparisonMode() === 'hdr'"
+         [class.dual-side-by-side]="comparisonMode() === 'dual-side-by-side'"
          [width]="location.width"
          [height]="location.height"
          [style.left]="comparisonMode() === 'dual-side-by-side' ? '0%' : (location.x | px)"
          [style.top]="comparisonMode() === 'dual-side-by-side' ? '0%' : (location.y | px)"
+         [style.transform]="comparisonMode() === 'dual-side-by-side' && location.zoom !== 'fit' ? 'scale(' + (location.zoom * 100 / location.fitZoom) + ')' : null"
+         [style.transform-origin]="comparisonMode() === 'dual-side-by-side' ? 'center center' : null"
          [style.clip-path]="sdrClip()"
          [src]="imageUrl"
          (mousedown)="onMouseDown($event)">
@@ -48,13 +65,15 @@
 
     <img alt=""
          class="comparison-image hdr-image"
-         [class.dual-side-by-side]="comparisonMode() === 'dual-side-by-side'"
          [class.hidden-variant]="comparisonMode() === 'sdr'"
-         [class.pannable]="location.zoom !== 'fit'"
+         [class.pannable]="location.zoom !== 'fit' && comparisonMode() !== 'dual-side-by-side'"
+         [class.dual-side-by-side]="comparisonMode() === 'dual-side-by-side'"
          [width]="location.width"
          [height]="location.height"
          [style.left]="comparisonMode() === 'dual-side-by-side' ? '50%' : (location.x | px)"
          [style.top]="comparisonMode() === 'dual-side-by-side' ? '0%' : (location.y | px)"
+         [style.transform]="comparisonMode() === 'dual-side-by-side' && location.zoom !== 'fit' ? 'scale(' + (location.zoom * 100 / location.fitZoom) + ')' : null"
+         [style.transform-origin]="comparisonMode() === 'dual-side-by-side' ? 'center center' : null"
          [style.clip-path]="hdrClip()"
          [src]="imageUrl"
          (mousedown)="onMouseDown($event)">
