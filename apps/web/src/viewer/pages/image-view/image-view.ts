@@ -131,14 +131,16 @@ export class ImageView {
       const maximumCount = Math.max(1, ...curves.white, ...curves.red, ...curves.green, ...curves.blue);
       const makePath = (bins: number[]) => bins.map((count, index) => {
         const x = (index + 0.5) / bins.length * 256;
-        const y = 148 - count / maximumCount * 140;
+        // Logarithmic Y scale reveals low-frequency bins without changing counts.
+        const y = 148 - Math.log1p(count) / Math.log1p(maximumCount) * 140;
         return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
       }).join(' ');
       return {
         white: makePath(curves.white),
         red: makePath(curves.red),
         green: makePath(curves.green),
-        blue: makePath(curves.blue)
+        blue: makePath(curves.blue),
+        maximumCount
       };
     };
 
@@ -148,13 +150,33 @@ export class ImageView {
       Math.log(data.maximumNits / data.minimumLogNits) * 256
     ));
 
+    const linearPaths = makePaths(data.linear);
+    const logarithmicPaths = makePaths(data.logarithmic);
+
     return {
-      linear: makePaths(data.linear),
-      logarithmic: makePaths(data.logarithmic),
+      linear: linearPaths,
+      logarithmic: logarithmicPaths,
       linearBoundary,
-      logarithmicBoundary
+      logarithmicBoundary,
+      linearYTicks: this.makeLogarithmicYTicks(linearPaths.maximumCount),
+      logarithmicYTicks: this.makeLogarithmicYTicks(logarithmicPaths.maximumCount)
     };
   });
+
+  private makeLogarithmicYTicks(maximumCount: number): Array<{ value: number; y: number }> {
+    const maximumExponent = Math.floor(Math.log10(Math.max(1, maximumCount)));
+    const ticks: Array<{ value: number; y: number }> = [];
+    for (let exponent = 0; exponent <= maximumExponent; exponent++) {
+      const value = Math.pow(10, exponent);
+      if (value <= maximumCount) {
+        ticks.push({
+          value,
+          y: 148 - Math.log1p(value) / Math.log1p(Math.max(1, maximumCount)) * 140
+        });
+      }
+    }
+    return ticks;
+  }
 
   protected readonly onHistogramMouseMove = (event: MouseEvent) => {
     const data = this.histogramData();
