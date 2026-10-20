@@ -1,10 +1,12 @@
 @let selected = selectedImage$ | async;
 @let hasPrevious = hasPrevious$ | async;
 @let hasNext = hasNext$ | async;
+@let imagePosition = imagePosition$ | async;
 @let fullScreen = isFullScreen();
 @let dimensions = imageDimensions();
 @let exif = exifState();
 @let location = imageLocation$ | async | default:defaultImageLocation;
+@let isHdrImage = imageDynamicRange(selected?.path ?? '', imageTags(), imageBitDepth()) === 'HDR';
 
 @if (selected !== null) {
   @if (!fullScreen) {
@@ -20,6 +22,10 @@
   }
 
   <app-image-renderer [url]="selected.url"
+                      [comparisonMode]="isHdrImage ? comparisonMode() : 'sdr'"
+                      [comparisonSplit]="comparisonSplit()"
+                      (comparisonSplitChange)="previewComparisonSplit($event)"
+                      (comparisonSplitCommit)="setComparisonSplit($event)"
                       [class]="animationState()"
                       (animationend)="onAnimationEnd($event)"
                       (dimensions)="imageDimensions.set($event)"
@@ -28,13 +34,11 @@
                       (loadError)="imageLoadFailed.set(true)"
                       (wheel)="onMouseWheel($event)" />
 
-  @if (histogramVisible() && !fullScreen) {
+  @if (histogramVisible()) {
     <section class="histogram-overlay" role="dialog" aria-label="SDR and HDR image histogram">
       <header>
         <strong>Histogram</strong>
-        <ui-action-button title="Close histogram" [compact]="true" (pressed)="closeHistogram()">
-          <ui-text [inherit]="true">Close</ui-text>
-        </ui-action-button>
+        <button class="panel-close-button" type="button" title="Close histogram" aria-label="Close histogram" (click)="closeHistogram()">×</button>
       </header>
 
       @if (histogramLoading()) {
@@ -43,32 +47,55 @@
         <p>{{ histogramErrorMessage() }}</p>
       } @else if (histogramData(); as histogram) {
         <div class="histogram-legend">
-          <span class="sdr-legend">SDR</span>
-          <span class="hdr-legend">HDR</span>
+          <span class="white-legend">White / luminance</span>
           <span class="red-legend">R</span>
           <span class="green-legend">G</span>
           <span class="blue-legend">B</span>
+          <span class="boundary-legend">100 cd/m²</span>
         </div>
-        <svg class="histogram-plot"
-             viewBox="0 0 512 160"
-             role="img"
-             aria-label="SDR histogram on the left and HDR histogram on the right"
-             (mousemove)="onHistogramMouseMove($event)"
-             (mouseleave)="onHistogramMouseLeave()">
-          <path class="histogram-grid" d="M0 8H512 M0 78H512 M0 148H512" />
-          <path class="histogram-divider" d="M256 4V152" />
-          <path class="histogram-sdr" [attr.d]="histogramPaths().sdr" />
-          <path class="histogram-hdr" [attr.d]="histogramPaths().hdr" />
-          <path class="histogram-red" [attr.d]="histogramPaths().sdrRed" />
-          <path class="histogram-green" [attr.d]="histogramPaths().sdrGreen" />
-          <path class="histogram-blue" [attr.d]="histogramPaths().sdrBlue" />
-          <path class="histogram-red" [attr.d]="histogramPaths().hdrRed" />
-          <path class="histogram-green" [attr.d]="histogramPaths().hdrGreen" />
-          <path class="histogram-blue" [attr.d]="histogramPaths().hdrBlue" />
-        </svg>
-        <div class="histogram-axis">
-          <div class="histogram-sdr-axis"><span>SDR · 0%</span><span>100%</span></div>
-          <div class="histogram-hdr-axis"><span>HDR · 0 nits</span><span>80 nits</span><span>10,000 nits</span></div>
+        <div class="histogram-plots">
+          <div class="histogram-chart">
+            <div class="histogram-chart-title">Linear</div>
+            <svg class="histogram-plot"
+                 viewBox="0 0 256 160"
+                 role="img"
+                 aria-label="Linear luminance histogram including SDR and HDR"
+                 data-scale="linear"
+                 (mousemove)="onHistogramMouseMove($event)"
+                 (mouseleave)="onHistogramMouseLeave()">
+              @for (tick of histogramPaths().linearYTicks; track tick.value) {
+                <path class="histogram-grid" [attr.d]="'M0 ' + tick.y + 'H256'" />
+                <text class="histogram-y-label" x="2" [attr.y]="tick.y - 2">{{ tick.value }}</text>
+              }
+              <path class="histogram-divider" [attr.d]="'M' + histogramPaths().linearBoundary + ' 4V152'" />
+              <path class="histogram-white" [attr.d]="histogramPaths().linear.white" />
+              <path class="histogram-red" [attr.d]="histogramPaths().linear.red" />
+              <path class="histogram-green" [attr.d]="histogramPaths().linear.green" />
+              <path class="histogram-blue" [attr.d]="histogramPaths().linear.blue" />
+            </svg>
+            <div class="histogram-axis"><span>0</span><span>{{ histogram.maximumNits | number:'1.0-0' }} cd/m²</span></div>
+          </div>
+          <div class="histogram-chart">
+            <div class="histogram-chart-title">Logarithmic</div>
+            <svg class="histogram-plot"
+                 viewBox="0 0 256 160"
+                 role="img"
+                 aria-label="Logarithmic luminance histogram including SDR and HDR"
+                 data-scale="logarithmic"
+                 (mousemove)="onHistogramMouseMove($event)"
+                 (mouseleave)="onHistogramMouseLeave()">
+              @for (tick of histogramPaths().logarithmicYTicks; track tick.value) {
+                <path class="histogram-grid" [attr.d]="'M0 ' + tick.y + 'H256'" />
+                <text class="histogram-y-label" x="2" [attr.y]="tick.y - 2">{{ tick.value }}</text>
+              }
+              <path class="histogram-divider" [attr.d]="'M' + histogramPaths().logarithmicBoundary + ' 4V152'" />
+              <path class="histogram-white" [attr.d]="histogramPaths().logarithmic.white" />
+              <path class="histogram-red" [attr.d]="histogramPaths().logarithmic.red" />
+              <path class="histogram-green" [attr.d]="histogramPaths().logarithmic.green" />
+              <path class="histogram-blue" [attr.d]="histogramPaths().logarithmic.blue" />
+            </svg>
+            <div class="histogram-axis"><span>{{ histogram.minimumLogNits | number:'1.1-1' }} cd/m²</span><span>{{ histogram.maximumNits | number:'1.0-0' }} cd/m²</span></div>
+          </div>
         </div>
         <div class="histogram-readout" aria-live="polite">
           {{ histogramHoverStatus() ?? 'Move over the histogram to inspect values' }}
@@ -80,26 +107,28 @@
   @if (!fullScreen) {
     <ui-tool-menu>
       <section>
-        <ui-action-button title="EXIF Information (E)"
-                          aria-keyshortcuts="E"
+        <ui-action-button class="raised-panel-button"
+                          [title]="exifVisible() ? 'Close image information (I)' : 'Open image information (I)'"
+                          aria-keyshortcuts="I"
+                          [attr.aria-pressed]="exifVisible()"
                           [compact]="true"
-                          [variant]="'default'"
+                          [variant]="exifVisible() ? 'primary' : 'default'"
                           (pressed)="toggleExifInfo(selected.path)">
           <ui-icon icon="info"
                    size="large"
                    [inherit]="true" />
-          <ui-text [inherit]="true"><u>E</u>XIF</ui-text>
+          <ui-text [inherit]="true"><u>I</u>nfo</ui-text>
         </ui-action-button>
 
-        <ui-action-button title="Open SDR / HDR histogram (H)"
+        <ui-action-button class="raised-panel-button"
+                          [title]="histogramVisible() ? 'Close SDR / HDR histogram (H)' : 'Open SDR / HDR histogram (H)'"
                           aria-keyshortcuts="H"
+                          [attr.aria-pressed]="histogramVisible()"
                           [compact]="true"
                           [variant]="histogramVisible() ? 'primary' : 'default'"
                           (pressed)="toggleHistogram()">
           <ui-text [inherit]="true"><u>H</u>istogram</ui-text>
         </ui-action-button>
-
-        <app-vertical-divider />
 
         <ui-text class="status-info">
           @if (isDecoding()) {
@@ -107,12 +136,31 @@
           } @else if (imageLoadFailed()) {
             Failed to load image
           } @else {
-            <strong class="dynamic-range"
-                    [class.hdr]="imageDynamicRange(selected.path, imageTags(), imageBitDepth()) === 'HDR'">
-              {{ imageDynamicRange(selected.path, imageTags(), imageBitDepth()) }}
-            </strong>
+            <select class="dynamic-range-select"
+                    aria-label="Display mode"
+                    [value]="isHdrImage ? comparisonMode() : 'sdr'"
+                    (change)="setComparisonMode($any($event.target).value)">
+              <option value="hdr" [disabled]="!isHdrImage">HDR̲</option>
+              <option value="sdr">SDR̲</option>
+              <option value="side-by-side" [disabled]="!isHdrImage">SDR̲ + HDR̲ side by side</option>
+              <option value="stacked" [disabled]="!isHdrImage">SDR̲ + HDR̲ stacked</option>
+            </select>
+            @if (isHdrImage && (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked')) {
+              <input class="comparison-split-slider"
+                     type="range"
+                     min="1"
+                     max="99"
+                     aria-label="SDR/HDR split position"
+                     [value]="comparisonSplit()"
+                     (input)="previewComparisonSplit($any($event.target).value)"
+                     (change)="setComparisonSplit($any($event.target).value)" />
+              <span class="comparison-split-value">{{ comparisonSplit() }}%</span>
+            }
             ·
             {{ dimensions.width }} x {{ dimensions.height }}
+            @if (imagePosition !== null) {
+              · {{ imagePosition.position }} / {{ imagePosition.total }}
+            }
             @if (decodeDuration() !== null) {
               · {{ decodeDuration() | number: '1.2-2' }} s
             }
@@ -130,7 +178,7 @@
                    [inherit]="true" />
         </ui-action-button>
 
-        <ui-action-button title="Back to Dashboard"
+        <ui-action-button title="Back to Gallery"
                           [compact]="true"
                           (pressed)="goBack()">
           <ui-icon icon="dismissCircle"
@@ -182,10 +230,12 @@
 
   @if (exifVisible()) {
     <ui-info-overlay>
+      <button class="panel-close-button exif-close-button" type="button" title="Close EXIF information" aria-label="Close EXIF information" (click)="toggleExifInfo(selected.path)">×</button>
       <app-exif-info [exif]="exif"
                      [dimensions]="dimensions"
                      [fileSize]="selected.size"
                      [bitDepth]="imageBitDepth()"
+                     [path]="selected.path"
                      [modifiedAt]="selected.modifiedAt" />
     </ui-info-overlay>
   }

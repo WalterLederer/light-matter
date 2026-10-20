@@ -1,6 +1,80 @@
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dim-large);
+}
+
+.settings-close-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--border-radius-medium);
+  color: var(--color-content-default-highest);
+  background: transparent;
+  font: inherit;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-surface-default-high);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-content-primary-highest);
+    outline-offset: 2px;
+  }
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dim-large);
+  padding: var(--dim-medium);
+  border: 1px solid var(--color-content-default-low);
+  border-radius: var(--border-radius-medium);
+}
+
+.setting-description {
+  display: grid;
+  gap: var(--dim-small);
+
+  span {
+    color: var(--color-content-default-medium);
+    font-size: 0.85rem;
+  }
+}
+
+.setting-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--dim-small);
+  flex-shrink: 0;
+  cursor: pointer;
+
+  input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--color-content-primary-highest);
+  }
+
+  input:disabled {
+    cursor: wait;
+  }
+}
+
 :host {
   display: block;
   width: min(94vw, 1100px);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 :host(.busy),
@@ -52,16 +126,30 @@ section {
 
 .cache-total {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: var(--dim-large);
   padding: var(--dim-small) var(--dim-medium);
 
+  > div {
+    display: grid;
+    gap: var(--dim-small);
+  }
+
   span { color: var(--color-content-default-medium); }
+}
+
+.cache-total-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--dim-small);
 }
 
 .cache-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--dim-medium);
   grid-column: 1 / -1;
 }
@@ -137,10 +225,18 @@ section {
 }
 
 .cache-path {
-  display: grid;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   min-width: 0;
-  gap: var(--dim-small);
+  gap: var(--dim-large);
   grid-column: 1 / -1;
+
+  .cache-path-details {
+    display: grid;
+    min-width: 0;
+    gap: var(--dim-small);
+  }
 
   span {
     color: var(--color-content-default-medium);
@@ -184,8 +280,9 @@ section {
 }
 
 .format-list {
-  max-height: 45vh;
-  overflow: auto;
+  // Let the dialog grow to fit the table; the dialog itself scrolls only
+  // when its total height reaches the viewport limit.
+  overflow: visible;
 
   table {
     width: 100%;

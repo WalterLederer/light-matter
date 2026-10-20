@@ -7,6 +7,7 @@ import {
 } from '@light-matter/ui';
 import { CacheClearResult, CacheInfo, supportedFileFormats } from 'internal-api';
 import { CacheManager } from '../../../ipc/cache-manager';
+import { ProcessManager } from '../../../ipc/process-manager';
 import { ByteSizePipe } from '../../../ui/pipes/byte-size/byte-size.pipe';
 
 @Component({
@@ -28,6 +29,8 @@ export class SettingsDialogComponent {
 
   readonly cacheManager = inject(CacheManager);
 
+  private readonly processManager = inject(ProcessManager);
+
   /* State */
   protected readonly cacheInfo = signal<CacheInfo>({
     path: '',
@@ -38,6 +41,12 @@ export class SettingsDialogComponent {
   });
 
   protected readonly isClearing = signal(false);
+
+  protected readonly devToolsOpen = signal(false);
+
+  protected readonly devToolsLoading = signal(true);
+
+  protected readonly devToolsError = signal<string | null>(null);
 
   protected readonly lastClearResult = signal<CacheClearResult | null>(null);
 
@@ -50,7 +59,35 @@ export class SettingsDialogComponent {
   /* Constructor */
   constructor() {
     this.updateCacheInfo().then();
+    this.loadDevToolsSetting().then();
   }
+
+  private readonly loadDevToolsSetting = async () => {
+    try {
+      this.devToolsOpen.set(await this.processManager.getDevToolsOpen());
+    } catch (error) {
+      this.devToolsError.set(error instanceof Error ? error.message : String(error));
+    } finally {
+      this.devToolsLoading.set(false);
+    }
+  };
+
+  protected readonly setDevToolsOpen = async (open: boolean) => {
+    if (this.devToolsLoading()) {
+      return;
+    }
+
+    const previousValue = this.devToolsOpen();
+    this.devToolsOpen.set(open);
+    this.devToolsError.set(null);
+
+    try {
+      await this.processManager.setDevToolsOpen(open);
+    } catch (error) {
+      this.devToolsOpen.set(previousValue);
+      this.devToolsError.set(error instanceof Error ? error.message : String(error));
+    }
+  };
 
   /* State modifiers */
   private readonly updateCacheInfo = async () => this.cacheInfo.set(await this.cacheManager.cacheInfo());

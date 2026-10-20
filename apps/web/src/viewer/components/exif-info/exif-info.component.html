@@ -9,6 +9,10 @@
   } @else {
     <dt>File name</dt>
     <dd>{{ exifData.FileName }}</dd>
+    @if (exifData.Directory !== undefined) {
+      <dt>Directory</dt>
+      <dd>{{ exifData.Directory }}</dd>
+    }
     <dt>File size</dt>
     <dd>{{ fileSize() | byteSize }}</dd>
     <dt>Bit depth</dt>
@@ -23,6 +27,25 @@
     <dd>{{ exifData.MIMEType }}</dd>
     <dt>Dimensions</dt>
     <dd>{{ dims.width }} x {{ dims.height }}</dd>
+
+    @let rangeInfo = dynamicRangeDiagnostics();
+    <dt>HDR classification</dt>
+    <dd class="hdr-classification">
+      <strong>{{ rangeInfo.result }}</strong>
+      <div>Rule: {{ rangeInfo.rule }}</div>
+      <div>Extension: .{{ rangeInfo.extension || 'unknown' }}</div>
+      <div>Bit depth used: {{ rangeInfo.bitDepth === null ? 'unavailable' : rangeInfo.bitDepth + '-bit' }}</div>
+      <div>HDR markers matched: {{ rangeInfo.matchedMarkers.length > 0 ? rangeInfo.matchedMarkers.join(', ') : 'none' }}</div>
+    </dd>
+
+    @if (hdrMetadata().length > 0) {
+      <dt>HDR / colour metadata</dt>
+      <dd class="hdr-metadata">
+        @for (item of hdrMetadata(); track item.key) {
+          <div><strong>{{ item.key }}:</strong> {{ item.value }}</div>
+        }
+      </dd>
+    }
 
     @if (exifData.Comment !== undefined) {
       <dt>Comment</dt>

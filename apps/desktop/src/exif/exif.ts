@@ -26,9 +26,28 @@ export class Exif {
     const file = await open(path, 'r');
 
     try {
-      const buffer = Buffer.alloc(1024 * 1024);
-      const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
-      return /hdrgm|gainmap|mincontentboost|maxcontentboost|ultrahdr/i.test(buffer.subarray(0, bytesRead).toString('latin1'));
+      // Gain-map metadata can occur after the first MiB, for example in the
+      // embedded secondary JPEG. Scan the complete file in chunks instead.
+      const buffer = Buffer.alloc(64 * 1024);
+      const markerPattern = /hdrgm|gainmap|mincontentboost|maxcontentboost|ultrahdr/i;
+      const overlapLength = 32;
+      let position = 0;
+      let overlap = '';
+
+      while (true) {
+        const { bytesRead } = await file.read(buffer, 0, buffer.length, position);
+        if (bytesRead === 0) {
+          return false;
+        }
+
+        const text = overlap + buffer.subarray(0, bytesRead).toString('latin1');
+        if (markerPattern.test(text)) {
+          return true;
+        }
+
+        overlap = text.slice(-overlapLength);
+        position += bytesRead;
+      }
     } finally {
       await file.close();
     }

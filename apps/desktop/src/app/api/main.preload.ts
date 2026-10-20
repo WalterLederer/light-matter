@@ -5,6 +5,8 @@ const api: Desktop = {
   ProcessManager: {
     getAppVersion: () => ipcRenderer.invoke('ProcessManager.getAppVersion'),
     isPackaged: () => ipcRenderer.invoke('ProcessManager.isPackaged'),
+    getDevToolsOpen: () => ipcRenderer.invoke('ProcessManager.getDevToolsOpen'),
+    setDevToolsOpen: (open: boolean) => ipcRenderer.invoke('ProcessManager.setDevToolsOpen', open),
     getPlatform: () => ipcRenderer.invoke('ProcessManager.getPlatform'),
     argv: () => ipcRenderer.invoke('ProcessManager.argv'),
     getSystemPaths: () => ipcRenderer.invoke('ProcessManager.getSystemPaths'),

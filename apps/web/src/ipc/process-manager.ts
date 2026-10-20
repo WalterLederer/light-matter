@@ -8,6 +8,10 @@ export class ProcessManager implements DesktopProcessManager {
 
   readonly isPackaged = (): Promise<boolean> => window.desktop.ProcessManager.isPackaged();
 
+  readonly getDevToolsOpen = (): Promise<boolean> => window.desktop.ProcessManager.getDevToolsOpen();
+
+  readonly setDevToolsOpen = (open: boolean): Promise<void> => window.desktop.ProcessManager.setDevToolsOpen(open);
+
   readonly getPlatform = (): Promise<string> => window.desktop.ProcessManager.getPlatform();
 
   readonly argv = (): Promise<Arguments> => window.desktop.ProcessManager.argv();

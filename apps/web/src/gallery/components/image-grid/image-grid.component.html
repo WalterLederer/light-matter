@@ -56,11 +56,13 @@
               (selected)="selected.emit($event)" />
 </div>
 
-<ui-toolbar class="image-status" [class.visible]="hoveredImage() !== null">
-  @if (hoveredImage(); as image) {
-    @let tags = hoveredTags();
-    @let bits = tags?.BitsPerSample ?? tags?.BitDepth ?? tags?.ImagePixelDepth ?? null;
-    <ui-text [title]="image.name">
+<ui-toolbar class="image-status" [class.visible]="(images()?.length ?? 0) > 0">
+  <ui-text>
+    <strong>{{ images()?.length ?? 0 }} images</strong>
+    @if (hoveredImage(); as image) {
+      @let tags = hoveredTags();
+      @let bits = tags?.BitsPerSample ?? tags?.BitDepth ?? tags?.ImagePixelDepth ?? null;
+      ·
       <strong class="dynamic-range" [class.hdr]="imageDynamicRange(image.path, tags, bits === null ? null : bits + '-bit') === 'HDR'">
         {{ imageDynamicRange(image.path, tags, bits === null ? null : bits + '-bit') }}
       </strong>
@@ -73,8 +75,8 @@
       @if (image.modifiedAt !== undefined) {
         · {{ image.modifiedAt | date: 'yyyy-MM-dd HH:mm:ss' }}
       }
-    </ui-text>
-  }
+    }
+  </ui-text>
 </ui-toolbar>
 
 <ng-template #sortMenu>

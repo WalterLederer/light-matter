@@ -1,3 +1,4 @@
+import { closeSync, openSync, readSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { extname } from 'node:path';
 import { parentPort } from 'node:worker_threads';
@@ -250,6 +251,68 @@ function getHeifColorProfile(data: Uint8Array): AvifColorProfile | null {
   return null;
 }
 
+function hasComfyUiPqVae(source: string): boolean {
+  // ComfyUI embeds its workflow in PNG text chunks. This targeted marker also
+  // covers files whose HDR colour-profile chunks (cICP/mDCV/cLLI) are absent.
+  // Search the raw PNG bytes so both tEXt and uncompressed iTXt metadata work.
+  try {
+    const data = require('node:fs').readFileSync(source) as Buffer;
+    return data.includes(Buffer.from('sdxlRec2100PQVAEFor_v10.safetensors', 'ascii'));
+  } catch {
+    return false;
+  }
+}
+
+function getPngColorProfile(source: string): AvifColorProfile | null {
+  let fd: number | undefined;
+
+  try {
+    fd = openSync(source, 'r');
+    const signature = Buffer.alloc(8);
+
+    if (readSync(fd, signature, 0, signature.length, 0) !== signature.length ||
+      !signature.equals(Buffer.from([ 137, 80, 78, 71, 13, 10, 26, 10 ]))) {
+      return null;
+    }
+
+    let offset = 8;
+
+    // PNG colour-profile chunks, including cICP, appear before the image data.
+    while (true) {
+      const header = Buffer.alloc(8);
+
+      if (readSync(fd, header, 0, header.length, offset) !== header.length) {
+        return null;
+      }
+
+      const length = header.readUInt32BE(0);
+      const type = header.toString('ascii', 4, 8);
+
+      if (type === 'cICP' && length >= 4) {
+        const profile = Buffer.alloc(4);
+
+        if (readSync(fd, profile, 0, profile.length, offset + 8) !== profile.length) {
+          return null;
+        }
+
+        return { primaries: profile[0], transfer: profile[1] };
+      }
+
+      if (type === 'IDAT' || type === 'IEND') {
+        return null;
+      }
+
+      offset += 12 + length;
+    }
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) {
+      closeSync(fd);
+    }
+  }
+}
+
 function getHdrTransferLut(transfer: number): Float32Array {
   const cached = transferLuts.get(transfer);
   if (cached) {
@@ -293,21 +356,13 @@ function hlgOotf(vips: typeof Vips, sceneLinear: Vips.Image): Vips.Image {
 }
 
 function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
-  using fullImage = vips.Image.newFromFile(source, { access: 'sequential' });
+  using fullImage = vips.Image.newFromFile(source, { access: 'random' });
   const scale = Math.min(1, 512 / fullImage.width, 512 / fullImage.height);
   using smallImage = scale < 1 ? fullImage.resize(scale, { kernel: vips.Kernel.linear }) : fullImage.copy();
   using rgb = smallImage.bands >= 3 ? smallImage.extractBand(0, { n: 3 }) : vips.Image.bandjoin([
     smallImage.extractBand(0), smallImage.extractBand(0), smallImage.extractBand(0)
   ]);
   const sdrPixels = rgb.writeToMemory();
-  const sdrBins = new Array<number>(128).fill(0);
-  const hdrBins = new Array<number>(128).fill(0);
-  const sdrRedBins = new Array<number>(128).fill(0);
-  const sdrGreenBins = new Array<number>(128).fill(0);
-  const sdrBlueBins = new Array<number>(128).fill(0);
-  const hdrRedBins = new Array<number>(128).fill(0);
-  const hdrGreenBins = new Array<number>(128).fill(0);
-  const hdrBlueBins = new Array<number>(128).fill(0);
   const sdrMax = sdrPixels instanceof Uint8Array ? 255 : sdrPixels instanceof Uint16Array ? 65535 : 1;
   const pixelCount = Math.floor(sdrPixels.length / 3);
   let hdrPixels: typeof sdrPixels | null = null;
@@ -319,6 +374,26 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
     hdrPixels = hdrRgb.writeToMemory();
   } catch {
     // Ordinary SDR images do not contain an Ultra HDR gain map.
+  }
+
+  if (!hdrPixels && fullImage.format === 'uchar' && fullImage.bands >= 3 &&
+    extname(source).toLowerCase() === '.png') {
+    const profile = getPngColorProfile(source);
+
+    if ((profile?.primaries === 9 && profile.transfer === 16) || hasComfyUiPqVae(source)) {
+      // Convert 8-bit Rec. 2020 PQ codes to the 16-bit LUT domain.
+      using encodedRgb = fullImage.extractBand(0, { n: 3 }).cast(vips.BandFormat.ushort).linear([ 257 ], [ 0 ]);
+      using lut = vips.Image.newFromMemory(getHdrTransferLut(16), 65536, 1, 1, vips.BandFormat.float);
+      using linearRec2020 = encodedRgb.maplut(lut);
+      using matrix = vips.Image.newMatrix(3, 3, [
+        1.660491, -0.587641, -0.072850,
+        -0.124550, 1.132900, -0.008349,
+        -0.018151, -0.100579, 1.118730
+      ]);
+      using linearScRgb = linearRec2020.recomb(matrix);
+      using smallHdr = scale < 1 ? linearScRgb.resize(scale, { kernel: vips.Kernel.linear }) : linearScRgb.copy();
+      hdrPixels = smallHdr.writeToMemory();
+    }
   }
 
   if (!hdrPixels && fullImage.format === 'ushort' && fullImage.bands >= 3 &&
@@ -337,54 +412,71 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
     hdrPixels = smallHdr.writeToMemory();
   }
 
-  const luminanceBin = (luminance: number): number => {
-    const nits = Math.max(0, luminance * 80);
-    const position = Math.log1p(nits) / Math.log1p(10000);
-    return Math.min(127, Math.floor(position * 128));
+  const isFloatHdr = hdrPixels !== null &&
+    (hdrPixels instanceof Float32Array || hdrPixels instanceof Float64Array);
+  const minimumLogNits = 0.1;
+  const linear = {
+    white: new Array<number>(128).fill(0),
+    red: new Array<number>(128).fill(0),
+    green: new Array<number>(128).fill(0),
+    blue: new Array<number>(128).fill(0)
   };
-  const sdrBin = (value: number): number => Math.min(127, Math.floor(Math.max(0, Math.min(1, value)) * 128));
+  const logarithmic = {
+    white: new Array<number>(128).fill(0),
+    red: new Array<number>(128).fill(0),
+    green: new Array<number>(128).fill(0),
+    blue: new Array<number>(128).fill(0)
+  };
+  const luminance = (r: number, g: number, b: number) =>
+    Math.max(0, 0.2126 * r + 0.7152 * g + 0.0722 * b);
+  const srgbToLinear = (value: number) => {
+    const encoded = Math.max(0, Math.min(1, value));
+    return encoded <= 0.04045 ? encoded / 12.92 : Math.pow((encoded + 0.055) / 1.055, 2.4);
+  };
+  let actualMaximumNits = 0;
+  const samples: Array<{ white: number; red: number; green: number; blue: number }> = [];
 
   for (let index = 0; index < pixelCount; index++) {
     const offset = index * 3;
-    const r = Number(sdrPixels[offset]) / sdrMax;
-    const g = Number(sdrPixels[offset + 1]) / sdrMax;
-    const b = Number(sdrPixels[offset + 2]) / sdrMax;
-    const sdrLuminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    sdrBins[sdrBin(sdrLuminance)]++;
-    sdrRedBins[sdrBin(r)]++;
-    sdrGreenBins[sdrBin(g)]++;
-    sdrBlueBins[sdrBin(b)]++;
+    let redNits: number;
+    let greenNits: number;
+    let blueNits: number;
 
-    if (hdrPixels && offset + 2 < hdrPixels.length) {
-      const hdrRed = Number(hdrPixels[offset]);
-      const hdrGreen = Number(hdrPixels[offset + 1]);
-      const hdrBlue = Number(hdrPixels[offset + 2]);
-      const hdrLuminance = 0.2126 * hdrRed + 0.7152 * hdrGreen + 0.0722 * hdrBlue;
-      hdrBins[luminanceBin(hdrLuminance)]++;
+    if (isFloatHdr && hdrPixels && offset + 2 < hdrPixels.length) {
+      // Ultra HDR, PQ and HLG decoders above provide linear scRGB values (1.0 = 80 cd/m²).
+      redNits = Math.max(0, Number(hdrPixels[offset]) * 80);
+      greenNits = Math.max(0, Number(hdrPixels[offset + 1]) * 80);
+      blueNits = Math.max(0, Number(hdrPixels[offset + 2]) * 80);
+    } else {
+      // Interpret ordinary SDR code values as sRGB with reference white at 100 cd/m².
+      redNits = srgbToLinear(Number(sdrPixels[offset]) / sdrMax) * 100;
+      greenNits = srgbToLinear(Number(sdrPixels[offset + 1]) / sdrMax) * 100;
+      blueNits = srgbToLinear(Number(sdrPixels[offset + 2]) / sdrMax) * 100;
+    }
 
-      if (hdrPixels instanceof Float32Array || hdrPixels instanceof Float64Array) {
-        hdrRedBins[luminanceBin(hdrRed)]++;
-        hdrGreenBins[luminanceBin(hdrGreen)]++;
-        hdrBlueBins[luminanceBin(hdrBlue)]++;
-      } else {
-        const max = hdrPixels instanceof Uint8Array ? 255 : hdrPixels instanceof Uint16Array ? 65535 : 1;
-        hdrRedBins[luminanceBin(hdrRed / max)]++;
-        hdrGreenBins[luminanceBin(hdrGreen / max)]++;
-        hdrBlueBins[luminanceBin(hdrBlue / max)]++;
-      }
+    const whiteNits = luminance(redNits, greenNits, blueNits);
+    actualMaximumNits = Math.max(actualMaximumNits, whiteNits, redNits, greenNits, blueNits);
+    samples.push({ white: whiteNits, red: redNits, green: greenNits, blue: blueNits });
+  }
+
+  // Derive the range from this image, not a fixed 10,000 cd/m² ceiling.
+  const maximumNits = Math.max(minimumLogNits * 1.01, actualMaximumNits * 1.02);
+  const linearBin = (nits: number) =>
+    Math.min(127, Math.max(0, Math.floor(nits / maximumNits * 128)));
+  const logarithmicBin = (nits: number) =>
+    Math.min(127, Math.max(0, Math.floor(
+      Math.log(Math.max(minimumLogNits, nits) / minimumLogNits) /
+      Math.log(maximumNits / minimumLogNits) * 128
+    )));
+
+  for (const sample of samples) {
+    for (const channel of [ 'white', 'red', 'green', 'blue' ] as const) {
+      linear[channel][linearBin(sample[channel])]++;
+      logarithmic[channel][logarithmicBin(sample[channel])]++;
     }
   }
 
-  return {
-    sdr: sdrBins,
-    hdr: hdrBins,
-    sdrRed: sdrRedBins,
-    sdrGreen: sdrGreenBins,
-    sdrBlue: sdrBlueBins,
-    hdrRed: hdrRedBins,
-    hdrGreen: hdrGreenBins,
-    hdrBlue: hdrBlueBins
-  };
+  return { linear, logarithmic, maximumNits, minimumLogNits };
 }
 
 // Pre-initialize Vips in worker

@@ -86,6 +86,8 @@ export class ImageView {
 
   protected readonly hasNext$ = this.viewNavigator.hasNext();
 
+  protected readonly imagePosition$ = this.viewNavigator.imagePosition();
+
   protected readonly imageLocation$ = this.imagePositioningService.imageLocation();
 
   protected readonly defaultImageLocation = defaultImagePositioningResult();
@@ -97,6 +99,10 @@ export class ImageView {
   protected readonly decodeDuration = signal<number | null>(null);
 
   protected readonly imageLoadFailed = signal(false);
+
+  protected readonly comparisonMode = signal<'hdr' | 'sdr' | 'side-by-side' | 'stacked'>('hdr');
+
+  protected readonly comparisonSplit = signal(50);
 
   protected readonly imageBitDepth = signal<string | null>(null);
 
@@ -119,37 +125,66 @@ export class ImageView {
   protected readonly histogramPaths = computed(() => {
     const data = this.histogramData();
     if (data === null) {
-      return { sdr: '', hdr: '', sdrRed: '', sdrGreen: '', sdrBlue: '', hdrRed: '', hdrGreen: '', hdrBlue: '' };
+      return {
+        linear: { white: '', red: '', green: '', blue: '', maximumCount: 1 },
+        logarithmic: { white: '', red: '', green: '', blue: '', maximumCount: 1 },
+        linearBoundary: 256,
+        logarithmicBoundary: 256,
+        linearYTicks: [],
+        logarithmicYTicks: []
+      };
     }
 
-    const maximum = Math.max(
-      1,
-      ...data.sdr,
-      ...data.hdr,
-      ...data.sdrRed,
-      ...data.sdrGreen,
-      ...data.sdrBlue,
-      ...data.hdrRed,
-      ...data.hdrGreen,
-      ...data.hdrBlue
-    );
-    const makePath = (bins: number[], startX: number, endX: number) => bins.map((count, index) => {
-      const x = startX + index / Math.max(1, bins.length - 1) * (endX - startX);
-      const y = 148 - count / maximum * 140;
-      return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    }).join(' ');
+    const makePaths = (curves: typeof data.linear) => {
+      const maximumCount = Math.max(1, ...curves.white, ...curves.red, ...curves.green, ...curves.blue);
+      const makePath = (bins: number[]) => bins.map((count, index) => {
+        const x = (index + 0.5) / bins.length * 256;
+        // Logarithmic Y scale reveals low-frequency bins without changing counts.
+        const y = 148 - Math.log1p(count) / Math.log1p(maximumCount) * 140;
+        return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
+      }).join(' ');
+      return {
+        white: makePath(curves.white),
+        red: makePath(curves.red),
+        green: makePath(curves.green),
+        blue: makePath(curves.blue),
+        maximumCount
+      };
+    };
+
+    const linearBoundary = Math.max(0, Math.min(256, 100 / data.maximumNits * 256));
+    const logarithmicBoundary = Math.max(0, Math.min(256,
+      Math.log(100 / data.minimumLogNits) /
+      Math.log(data.maximumNits / data.minimumLogNits) * 256
+    ));
+
+    const linearPaths = makePaths(data.linear);
+    const logarithmicPaths = makePaths(data.logarithmic);
 
     return {
-      sdr: makePath(data.sdr, 0, 248),
-      hdr: makePath(data.hdr, 264, 512),
-      sdrRed: makePath(data.sdrRed, 0, 248),
-      sdrGreen: makePath(data.sdrGreen, 0, 248),
-      sdrBlue: makePath(data.sdrBlue, 0, 248),
-      hdrRed: makePath(data.hdrRed, 264, 512),
-      hdrGreen: makePath(data.hdrGreen, 264, 512),
-      hdrBlue: makePath(data.hdrBlue, 264, 512)
+      linear: linearPaths,
+      logarithmic: logarithmicPaths,
+      linearBoundary,
+      logarithmicBoundary,
+      linearYTicks: this.makeLogarithmicYTicks(linearPaths.maximumCount),
+      logarithmicYTicks: this.makeLogarithmicYTicks(logarithmicPaths.maximumCount)
     };
   });
+
+  private makeLogarithmicYTicks(maximumCount: number): Array<{ value: number; y: number }> {
+    const maximumExponent = Math.floor(Math.log10(Math.max(1, maximumCount)));
+    const ticks: Array<{ value: number; y: number }> = [];
+    for (let exponent = 0; exponent <= maximumExponent; exponent++) {
+      const value = Math.pow(10, exponent);
+      if (value <= maximumCount) {
+        ticks.push({
+          value,
+          y: 148 - Math.log1p(value) / Math.log1p(Math.max(1, maximumCount)) * 140
+        });
+      }
+    }
+    return ticks;
+  }
 
   protected readonly onHistogramMouseMove = (event: MouseEvent) => {
     const data = this.histogramData();
@@ -160,25 +195,19 @@ export class ImageView {
       return;
     }
 
-    const x = Math.max(0, Math.min(512, (event.clientX - bounds.left) / bounds.width * 512));
-    const isSdr = x < 256;
-    const startX = isSdr ? 0 : 264;
-    const endX = isSdr ? 248 : 512;
-    const position = Math.max(0, Math.min(1, (x - startX) / (endX - startX)));
-    const bin = Math.min(127, Math.round(position * 127));
-    const white = (isSdr ? data.sdr : data.hdr)[bin] ?? 0;
-    const red = (isSdr ? data.sdrRed : data.hdrRed)[bin] ?? 0;
-    const green = (isSdr ? data.sdrGreen : data.hdrGreen)[bin] ?? 0;
-    const blue = (isSdr ? data.sdrBlue : data.hdrBlue)[bin] ?? 0;
+    const isLogarithmic = svg?.dataset['scale'] === 'logarithmic';
+    const position = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+    const bin = Math.min(127, Math.floor(position * 128));
+    const nits = isLogarithmic
+      ? data.minimumLogNits * Math.pow(data.maximumNits / data.minimumLogNits, (bin + 0.5) / 128)
+      : data.maximumNits * (bin + 0.5) / 128;
+    const curves = isLogarithmic ? data.logarithmic : data.linear;
     const formatCount = (value: number) => new Intl.NumberFormat().format(value);
-    const domain = isSdr
-      ? `SDR ${((bin + 0.5) / 128 * 100).toFixed(1)}%`
-      : `HDR ≈ ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(
-        Math.expm1((bin / 128) * Math.log1p(10000))
-      )} nits`;
+    const formatNits = (value: number) => new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(value);
+    const scaleName = isLogarithmic ? 'Log' : 'Linear';
 
     this.histogramHoverStatus.set(
-      `${domain} · White ${formatCount(white)} · R ${formatCount(red)} · G ${formatCount(green)} · B ${formatCount(blue)}`
+      `${scaleName} ≈ ${formatNits(nits)} cd/m² · White ${formatCount(curves.white[bin] ?? 0)} · R ${formatCount(curves.red[bin] ?? 0)} · G ${formatCount(curves.green[bin] ?? 0)} · B ${formatCount(curves.blue[bin] ?? 0)}`
     );
   };
 
@@ -207,6 +236,23 @@ export class ImageView {
 
   /* Constructor */
   constructor() {
+    this.configuration.config()
+      .pipe(take(1), takeUntilDestroyed())
+      .subscribe(config => {
+        this.histogramVisible.set(config.system.histogramVisible === true);
+        this.comparisonMode.set(config.system.comparisonMode ?? 'hdr');
+        this.comparisonSplit.set(config.system.comparisonSplit ?? 50);
+        this.exifVisible.set(config.system.exifVisible === true);
+        if (this.exifVisible()) {
+          this.exifState.set(this.imageTags() ?? false);
+        }
+        if (this.histogramVisible()) {
+          this.selectedImage$
+            .pipe(take(1), filter(image => image !== null))
+            .subscribe(image => this.loadHistogram(image.path));
+        }
+      });
+
     this.trackKeyboard();
 
     this.selectedImage$
@@ -232,6 +278,9 @@ export class ImageView {
       .subscribe(tags => {
         this.imageTags.set(tags);
         this.imageBitDepth.set(tags === null ? null : this.getBitDepth(tags));
+        if (this.exifVisible()) {
+          this.exifState.set(tags ?? false);
+        }
       });
 
     this.zoomSlider
@@ -249,15 +298,47 @@ export class ImageView {
     }
   };
 
+  protected readonly setComparisonMode = (mode: 'hdr' | 'sdr' | 'side-by-side' | 'stacked') => {
+    this.comparisonMode.set(mode);
+    this.configuration.updateSystemConfig({ comparisonMode: mode });
+  };
+
+  protected readonly cycleComparisonMode = () => {
+    this.selectedImage$
+      .pipe(take(1), filter(image => image !== null))
+      .subscribe(image => {
+        if (imageDynamicRange(image.path, this.imageTags(), this.imageBitDepth()) !== 'HDR') {
+          this.setComparisonMode('sdr');
+          return;
+        }
+
+        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked'] as const;
+        const currentIndex = modes.indexOf(this.comparisonMode());
+        this.setComparisonMode(modes[(currentIndex + 1) % modes.length]);
+      });
+  };
+
+  protected readonly previewComparisonSplit = (value: string | number) => {
+    this.comparisonSplit.set(Math.max(1, Math.min(99, Number(value) || 50)));
+  };
+
+  protected readonly setComparisonSplit = (value: string | number) => {
+    const split = Math.max(1, Math.min(99, Number(value) || 50));
+    this.comparisonSplit.set(split);
+    this.configuration.updateSystemConfig({ comparisonSplit: split });
+  };
+
   protected readonly toggleHistogram = () => {
     if (this.histogramVisible()) {
       this.histogramVisible.set(false);
+      this.configuration.updateSystemConfig({ histogramVisible: false });
       this.histogramRequestId++;
       this.histogramLoading.set(false);
       return;
     }
 
     this.histogramVisible.set(true);
+    this.configuration.updateSystemConfig({ histogramVisible: true });
     this.selectedImage$
       .pipe(take(1), filter(image => image !== null))
       .subscribe(image => this.loadHistogram(image.path));
@@ -265,6 +346,7 @@ export class ImageView {
 
   protected readonly closeHistogram = () => {
     this.histogramVisible.set(false);
+    this.configuration.updateSystemConfig({ histogramVisible: false });
     this.histogramRequestId++;
     this.histogramLoading.set(false);
   };
@@ -279,32 +361,16 @@ export class ImageView {
 
   protected readonly fitToWindow = () => this.imagePositioningService.setZoom('fit');
 
-  protected readonly toggleExifInfo = async (path: string) => {
-    this.exifState.set(false);
-
+  protected readonly toggleExifInfo = (path: string) => {
     const exifVisible = !this.exifVisible();
     this.exifVisible.set(exifVisible);
-
-    if (exifVisible) {
-      const response = await this.exif.read(path);
-
-      if (response.success) {
-        this.exifState.set(response.data);
-      }
-    }
+    this.configuration.updateSystemConfig({ exifVisible });
+    this.exifState.set(exifVisible ? this.imageTags() ?? false : false);
   };
 
-  protected readonly prevPhoto = () => {
-    this.exifVisible.set(false);
-    this.exifState.set(false);
-    this.viewNavigator.previous();
-  };
+  protected readonly prevPhoto = () => this.viewNavigator.previous();
 
-  protected readonly nextPhoto = () => {
-    this.exifVisible.set(false);
-    this.exifState.set(false);
-    this.viewNavigator.next();
-  };
+  protected readonly nextPhoto = () => this.viewNavigator.next();
 
   protected readonly deletePhoto = () => {
     this.selectedImage$
@@ -438,14 +504,28 @@ export class ImageView {
           return;
         }
 
+        if (event.key === 'Escape') {
+          this.goBack();
+          return;
+        }
+
         const target = event.target;
-        if (target instanceof HTMLElement && target.matches('input, textarea, select, [contenteditable="true"]')) {
+        if (target instanceof HTMLElement && target.matches('input, textarea, [contenteditable="true"]')) {
+          return;
+        }
+
+        if (event.key === 'r' || event.key === 'R') {
+          this.cycleComparisonMode();
+          return;
+        }
+
+        if (target instanceof HTMLSelectElement) {
           return;
         }
 
         switch (event.key) {
-          case 'e':
-          case 'E':
+          case 'i':
+          case 'I':
             this.selectedImage$
               .pipe(take(1), filter(image => image !== null))
               .subscribe(image => this.toggleExifInfo(image.path));
@@ -472,10 +552,6 @@ export class ImageView {
                 filter(flag => flag)
               )
               .subscribe(() => this.nextPhoto());
-            break;
-
-          case 'Escape':
-            this.goBack();
             break;
 
           case 'Delete':

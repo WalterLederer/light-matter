@@ -5,6 +5,8 @@ import { FileInfo } from './fs';
 export interface DesktopProcessManager {
   readonly getAppVersion: () => Promise<string>;
   readonly isPackaged: () => Promise<boolean>;
+  readonly getDevToolsOpen: () => Promise<boolean>;
+  readonly setDevToolsOpen: (open: boolean) => Promise<void>;
   readonly getPlatform: () => Promise<string>;
   readonly argv: () => Promise<Arguments>;
   readonly getSystemPaths: () => Promise<SystemPathMapping>;
@@ -93,14 +95,22 @@ export type FileListing = Success<FileListingData> | Failure;
 export type ApiResponse<T> = Success<T> | Failure;
 
 export interface ImageHistogram {
-  sdr: number[];
-  hdr: number[];
-  sdrRed: number[];
-  sdrGreen: number[];
-  sdrBlue: number[];
-  hdrRed: number[];
-  hdrGreen: number[];
-  hdrBlue: number[];
+  linear: {
+    white: number[];
+    red: number[];
+    green: number[];
+    blue: number[];
+  };
+  logarithmic: {
+    white: number[];
+    red: number[];
+    green: number[];
+    blue: number[];
+  };
+  /** Upper bound of the displayed luminance range, based on this image's actual peak. */
+  maximumNits: number;
+  /** Lower bound of the logarithmic luminance range. */
+  minimumLogNits: number;
 }
 
 export const appProtocol = 'atom';
@@ -135,6 +145,7 @@ export const supportedFileFormats = [
     name: 'AVIF',
     extensions: [ 'avif' ],
     hdr: true,
+    fullSizeCache: true,
     bitDepth: '8, 10 or 12 bit/channel',
     details: 'HDR preview for Rec. 2020 PQ and HLG profiles.'
   },
@@ -142,6 +153,7 @@ export const supportedFileFormats = [
     name: 'BMP',
     extensions: [ 'bmp' ],
     hdr: false,
+    fullSizeCache: false,
     bitDepth: '1, 4, 8, 16, 24 or 32 bit/pixel',
     details: 'Raster bitmap format.'
   },
@@ -149,6 +161,7 @@ export const supportedFileFormats = [
     name: 'GIF',
     extensions: [ 'gif' ],
     hdr: false,
+    fullSizeCache: false,
     bitDepth: 'Up to 8 bit indexed color',
     details: 'Palette-based raster format; animation is supported by the image viewer.'
   },
@@ -156,6 +169,7 @@ export const supportedFileFormats = [
     name: 'HEIF / HEIC',
     extensions: [ 'heif', 'heic' ],
     hdr: true,
+    fullSizeCache: true,
     bitDepth: '8 bit SDR; HDR 10 bit and above',
     details: 'HDR preview for Rec. 2020 PQ and HLG profiles.'
   },
@@ -163,6 +177,7 @@ export const supportedFileFormats = [
     name: 'JPEG',
     extensions: [ 'jpg', 'jpeg' ],
     hdr: false,
+    fullSizeCache: false,
     bitDepth: '8 bit/channel',
     details: 'Raster image, usually SDR.'
   },
@@ -170,6 +185,7 @@ export const supportedFileFormats = [
     name: 'JPEG XL',
     extensions: [ 'jxl' ],
     hdr: true,
+    fullSizeCache: false,
     bitDepth: '8–16 bit integer; 16/32 bit float',
     details: 'Supports high bit depth and HDR where the file and decoder expose it.'
   },
@@ -177,6 +193,7 @@ export const supportedFileFormats = [
     name: 'JPEG XR',
     extensions: [ 'jxr' ],
     hdr: true,
+    fullSizeCache: true,
     bitDepth: '8/16 bit integer; 16/32 bit float',
     details: 'High bit depth and floating-point images are converted through the HDR display path.'
   },
@@ -184,6 +201,7 @@ export const supportedFileFormats = [
     name: 'OpenEXR',
     extensions: [ 'exr' ],
     hdr: true,
+    fullSizeCache: true,
     bitDepth: '16 bit half or 32 bit float',
     details: 'HDR; the viewer currently uses the standard RGB channels.'
   },
@@ -191,6 +209,7 @@ export const supportedFileFormats = [
     name: 'PNG',
     extensions: [ 'png' ],
     hdr: true,
+    fullSizeCache: false,
     bitDepth: '1/2/4/8/16 bit/channel',
     details: 'Lossless raster format with transparency and HDR support for high bit-depth images.'
   },
@@ -198,6 +217,7 @@ export const supportedFileFormats = [
     name: 'Radiance HDR',
     extensions: [ 'hdr' ],
     hdr: true,
+    fullSizeCache: true,
     bitDepth: '32 bit RGBE per pixel',
     details: 'HDR RGBE data is expanded to floating-point RGB for display.'
   },
@@ -205,6 +225,7 @@ export const supportedFileFormats = [
     name: 'SVG',
     extensions: [ 'svg' ],
     hdr: false,
+    fullSizeCache: false,
     bitDepth: 'Not applicable',
     details: 'Vector graphics; rasterized for display at the required size.'
   },
@@ -212,6 +233,7 @@ export const supportedFileFormats = [
     name: 'TIFF',
     extensions: [ 'tif', 'tiff' ],
     hdr: true,
+    fullSizeCache: true,
     bitDepth: 'Depends on file; common 8/16 bit integer and float variants',
     details: '16-bit HDR TIFF images use the HDR display path; other TIFFs are converted for display.'
   },
@@ -219,6 +241,7 @@ export const supportedFileFormats = [
     name: 'Ultra HDR JPEG',
     extensions: [ 'jpg', 'jpeg' ],
     hdr: true,
+    fullSizeCache: false,
     bitDepth: '8 bit base image + HDR gain map',
     details: 'JPEG with an embedded gain map; HDR is displayed when the image contains a supported gain map.'
   },
@@ -226,6 +249,7 @@ export const supportedFileFormats = [
     name: 'WebP',
     extensions: [ 'webp' ],
     hdr: false,
+    fullSizeCache: false,
     bitDepth: '8 bit/channel',
     details: 'Lossy or lossless raster format with transparency and animation.'
   }
