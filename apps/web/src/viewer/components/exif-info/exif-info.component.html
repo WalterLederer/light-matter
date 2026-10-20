@@ -9,6 +9,10 @@
   } @else {
     <dt>File name</dt>
     <dd>{{ exifData.FileName }}</dd>
+    @if (exifData.Directory !== undefined) {
+      <dt>Directory</dt>
+      <dd>{{ exifData.Directory }}</dd>
+    }
     <dt>File size</dt>
     <dd>{{ fileSize() | byteSize }}</dd>
     <dt>Bit depth</dt>
