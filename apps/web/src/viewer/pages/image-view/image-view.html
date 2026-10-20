@@ -1,6 +1,7 @@
 @let selected = selectedImage$ | async;
 @let hasPrevious = hasPrevious$ | async;
 @let hasNext = hasNext$ | async;
+@let imagePosition = imagePosition$ | async;
 @let fullScreen = isFullScreen();
 @let dimensions = imageDimensions();
 @let exif = exifState();
@@ -134,6 +135,9 @@
             </strong>
             ·
             {{ dimensions.width }} x {{ dimensions.height }}
+            @if (imagePosition !== null) {
+              · {{ imagePosition.position }} / {{ imagePosition.total }}
+            }
             @if (decodeDuration() !== null) {
               · {{ decodeDuration() | number: '1.2-2' }} s
             }
