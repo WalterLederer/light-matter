@@ -130,8 +130,6 @@
           <ui-text [inherit]="true"><u>H</u>istogram</ui-text>
         </ui-action-button>
 
-        <app-vertical-divider />
-
         <ui-text class="status-info">
           @if (isDecoding()) {
             Decoding…
@@ -142,8 +140,8 @@
                     aria-label="Display mode"
                     [value]="isHdrImage ? comparisonMode() : 'sdr'"
                     (change)="setComparisonMode($any($event.target).value)">
-              <option value="hdr" [disabled]="!isHdrImage">H̲D̲R̲</option>
-              <option value="sdr">S̲D̲R̲</option>
+              <option value="hdr" [disabled]="!isHdrImage">HDR̲</option>
+              <option value="sdr">SDR̲</option>
               <option value="side-by-side" [disabled]="!isHdrImage">S̲D̲R̲ + H̲D̲R̲ side by side</option>
               <option value="stacked" [disabled]="!isHdrImage">S̲D̲R̲ + H̲D̲R̲ stacked</option>
             </select>
@@ -152,7 +150,7 @@
                      type="range"
                      min="1"
                      max="99"
-                     aria-label="S̲D̲R̲/H̲D̲R̲ split position"
+                     aria-label="SDR/HDR split position"
                      [value]="comparisonSplit()"
                      (input)="previewComparisonSplit($any($event.target).value)"
                      (change)="setComparisonSplit($any($event.target).value)" />
