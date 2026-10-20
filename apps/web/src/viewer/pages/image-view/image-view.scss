@@ -16,7 +16,7 @@
     position: absolute;
     z-index: 11;
     right: var(--dim-x-large);
-    bottom: var(--dim-x-large);
+    bottom: calc(var(--dim-xx-large) * 2);
     width: min(760px, calc(100vw - 2 * var(--dim-x-large)));
     padding: var(--dim-large);
     border: 1px solid rgb(255 255 255 / 20%);
