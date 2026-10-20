@@ -108,7 +108,7 @@ export class ImageRendererComponent implements OnDestroy {
       return;
     }
 
-    if ((event.target as HTMLElement | null)?.closest('.comparison-split-handle') !== null) {
+    if ((event.target as HTMLElement | null)?.closest('.comparison-split-handle')) {
       return;
     }
 
