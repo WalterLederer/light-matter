@@ -24,6 +24,14 @@ export class ProcessManager {
   @IpcHandler({ name: 'ProcessManager.isPackaged' })
   readonly isPackaged = async (): Promise<boolean> => App.application.isPackaged;
 
+  @IpcHandler({ name: 'ProcessManager.getDevToolsOpen' })
+  readonly getDevToolsOpen = async (): Promise<boolean> => App.startupConfig.devToolsOpen();
+
+  @IpcHandler({ name: 'ProcessManager.setDevToolsOpen' })
+  readonly setDevToolsOpen = async (_: IpcMainInvokeEvent, open: boolean): Promise<void> => {
+    await App.setDevToolsOpen(open === true);
+  };
+
   @IpcHandler({ name: 'ProcessManager.getPlatform' })
   readonly getPlatform = async (): Promise<string> => process.platform;
 
