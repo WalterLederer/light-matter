@@ -5,6 +5,8 @@ import { FileInfo } from './fs';
 export interface DesktopProcessManager {
   readonly getAppVersion: () => Promise<string>;
   readonly isPackaged: () => Promise<boolean>;
+  readonly getDevToolsOpen: () => Promise<boolean>;
+  readonly setDevToolsOpen: (open: boolean) => Promise<void>;
   readonly getPlatform: () => Promise<string>;
   readonly argv: () => Promise<Arguments>;
   readonly getSystemPaths: () => Promise<SystemPathMapping>;
