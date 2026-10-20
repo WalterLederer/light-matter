@@ -100,7 +100,9 @@ export default class App {
           App.mainWindow.minimize();
         }
 
-        App.mainWindow.webContents.openDevTools();
+        if (App.startupConfig.devToolsOpen()) {
+          App.mainWindow.webContents.openDevTools();
+        }
       }
     });
 
@@ -121,6 +123,18 @@ export default class App {
       // when you should delete the corresponding element.
       App.mainWindow = null;
     });
+  }
+
+  static setDevToolsOpen(open: boolean) {
+    if (App.mainWindow !== null && App.mainWindow !== undefined) {
+      if (open) {
+        App.mainWindow.webContents.openDevTools();
+      } else {
+        App.mainWindow.webContents.closeDevTools();
+      }
+    }
+
+    return App.startupConfig.saveDevToolsOpen(open);
   }
 
   private static loadMainWindow() {
