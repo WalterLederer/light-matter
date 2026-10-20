@@ -100,7 +100,7 @@ export class ImageView {
 
   protected readonly imageLoadFailed = signal(false);
 
-  protected readonly comparisonMode = signal<'hdr' | 'sdr' | 'side-by-side' | 'stacked'>('hdr');
+  protected readonly comparisonMode = signal<'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side'>('hdr');
 
   protected readonly comparisonSplit = signal(50);
 
@@ -298,7 +298,7 @@ export class ImageView {
     }
   };
 
-  protected readonly setComparisonMode = (mode: 'hdr' | 'sdr' | 'side-by-side' | 'stacked') => {
+  protected readonly setComparisonMode = (mode: 'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side') => {
     this.comparisonMode.set(mode);
     this.configuration.updateSystemConfig({ comparisonMode: mode });
   };
@@ -312,7 +312,7 @@ export class ImageView {
           return;
         }
 
-        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked'] as const;
+        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked', 'dual-side-by-side'] as const;
         const currentIndex = modes.indexOf(this.comparisonMode());
         this.setComparisonMode(modes[(currentIndex + 1) % modes.length]);
       });
