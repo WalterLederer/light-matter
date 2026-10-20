@@ -120,10 +120,12 @@ export class ImageView {
     const data = this.histogramData();
     if (data === null) {
       return {
-        linear: { white: '', red: '', green: '', blue: '' },
-        logarithmic: { white: '', red: '', green: '', blue: '' },
+        linear: { white: '', red: '', green: '', blue: '', maximumCount: 1 },
+        logarithmic: { white: '', red: '', green: '', blue: '', maximumCount: 1 },
         linearBoundary: 256,
-        logarithmicBoundary: 256
+        logarithmicBoundary: 256,
+        linearYTicks: [],
+        logarithmicYTicks: []
       };
     }
 
