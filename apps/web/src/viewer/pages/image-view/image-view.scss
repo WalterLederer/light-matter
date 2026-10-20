@@ -270,6 +270,19 @@
         cursor: pointer;
       }
 
+      .comparison-split-slider {
+        width: 72px;
+        min-width: 48px;
+        margin: 0 2px;
+        accent-color: var(--color-content-primary-high);
+        cursor: ew-resize;
+      }
+
+      .comparison-split-value {
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+      }
+
       &.zoom-info {
         min-width: 40px;
         text-align: right;
