@@ -451,11 +451,22 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
         sdrGreenBins[sdrBin(g)]++;
         sdrBlueBins[sdrBin(b)]++;
       } else {
-        // HDR bins contain only pixels whose luminance is above 100 cd/m².
+        // The white/luminance curve contains only pixels above 100 cd/m².
         hdrBins[hdrBin(hdrLuminanceNits)]++;
-        hdrRedBins[hdrBin(Math.max(0, hdrRed * 80))]++;
-        hdrGreenBins[hdrBin(Math.max(0, hdrGreen * 80))]++;
-        hdrBlueBins[hdrBin(Math.max(0, hdrBlue * 80))]++;
+
+        // Do not clamp sub-reference-white channel values into the first HDR bin.
+        const redNits = Math.max(0, hdrRed * 80);
+        const greenNits = Math.max(0, hdrGreen * 80);
+        const blueNits = Math.max(0, hdrBlue * 80);
+        if (redNits > 100) {
+          hdrRedBins[hdrBin(redNits)]++;
+        }
+        if (greenNits > 100) {
+          hdrGreenBins[hdrBin(greenNits)]++;
+        }
+        if (blueNits > 100) {
+          hdrBlueBins[hdrBin(blueNits)]++;
+        }
       }
 
       continue;
