@@ -12,11 +12,25 @@
 
   @if (imageUrl !== null) {
     <img alt=""
+         class="comparison-image sdr-image"
+         [class.pannable]="location.zoom !== 'fit'"
+         [class.hidden-variant]="comparisonMode() === 'hdr'"
+         [width]="location.width"
+         [height]="location.height"
+         [style.left]="location.x | px"
+         [style.top]="location.y | px"
+         [style.clip-path]="sdrClip()"
+         [src]="imageUrl"
+         (mousedown)="onMouseDown($event)">
+    <img alt=""
+         class="comparison-image hdr-image"
+         [class.hidden-variant]="comparisonMode() === 'sdr'"
          [class.pannable]="location.zoom !== 'fit'"
          [width]="location.width"
          [height]="location.height"
          [style.left]="location.x | px"
          [style.top]="location.y | px"
+         [style.clip-path]="hdrClip()"
          [src]="imageUrl"
          (mousedown)="onMouseDown($event)">
   }
