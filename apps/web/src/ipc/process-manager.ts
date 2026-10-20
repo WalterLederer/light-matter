@@ -18,5 +18,7 @@ export class ProcessManager implements DesktopProcessManager {
 
   readonly getSystemPaths = (): Promise<SystemPathMapping> => window.desktop.ProcessManager.getSystemPaths();
 
+  readonly openConfigFile = (): Promise<string> => window.desktop.ProcessManager.openConfigFile();
+
   readonly quit = (code: number): Promise<void> => window.desktop.ProcessManager.quit(code);
 }
