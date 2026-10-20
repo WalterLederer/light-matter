@@ -41,6 +41,7 @@
                   (click)="deleteFullSizeCache()">
             Delete full-size cache
           </button>
+          <span class="cache-hint">See the “Full-size cache” column in Supported image formats below.</span>
         </div>
 
         <div class="cache-category">
@@ -104,6 +105,7 @@
             <tr>
               <th scope="col">Format</th>
               <th scope="col">HDR</th>
+              <th scope="col">Full-size cache</th>
               <th scope="col">Bit depth</th>
               <th scope="col">Details</th>
             </tr>
@@ -120,6 +122,13 @@
                     <span class="dynamic-range hdr">HDR</span>
                   } @else {
                     <span class="sdr-marker">SDR</span>
+                  }
+                </td>
+                <td>
+                  @if (format.fullSizeCache) {
+                    <span class="cache-marker">Yes</span>
+                  } @else {
+                    <span class="sdr-marker">No</span>
                   }
                 </td>
                 <td>{{ format.bitDepth }}</td>
