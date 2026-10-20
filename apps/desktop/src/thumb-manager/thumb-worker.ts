@@ -422,78 +422,71 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
     hdrPixels = smallHdr.writeToMemory();
   }
 
-  const hdrBin = (nits: number): number => {
-    // The HDR chart starts at the 100 cd/m² reference-white boundary.
-    const position = Math.log(Math.max(100, nits) / 100) / Math.log(10000 / 100);
-    return Math.min(127, Math.max(0, Math.floor(position * 128)));
+  const isFloatHdr = hdrPixels !== null &&
+    (hdrPixels instanceof Float32Array || hdrPixels instanceof Float64Array);
+  const minimumLogNits = 0.1;
+  const linear = {
+    white: new Array<number>(128).fill(0),
+    red: new Array<number>(128).fill(0),
+    green: new Array<number>(128).fill(0),
+    blue: new Array<number>(128).fill(0)
   };
-  const sdrBin = (value: number): number => Math.min(127, Math.floor(Math.max(0, Math.min(1, value)) * 128));
+  const logarithmic = {
+    white: new Array<number>(128).fill(0),
+    red: new Array<number>(128).fill(0),
+    green: new Array<number>(128).fill(0),
+    blue: new Array<number>(128).fill(0)
+  };
+  const luminance = (r: number, g: number, b: number) =>
+    Math.max(0, 0.2126 * r + 0.7152 * g + 0.0722 * b);
+  const srgbToLinear = (value: number) => {
+    const encoded = Math.max(0, Math.min(1, value));
+    return encoded <= 0.04045 ? encoded / 12.92 : Math.pow((encoded + 0.055) / 1.055, 2.4);
+  };
+  let actualMaximumNits = 0;
+  const samples: Array<{ white: number; red: number; green: number; blue: number }> = [];
 
   for (let index = 0; index < pixelCount; index++) {
     const offset = index * 3;
+    let redNits: number;
+    let greenNits: number;
+    let blueNits: number;
 
-    if (hdrPixels && offset + 2 < hdrPixels.length &&
-      (hdrPixels instanceof Float32Array || hdrPixels instanceof Float64Array)) {
-      const hdrRed = Number(hdrPixels[offset]);
-      const hdrGreen = Number(hdrPixels[offset + 1]);
-      const hdrBlue = Number(hdrPixels[offset + 2]);
-      // Float HDR pixels are scRGB: one unit represents 80 cd/m².
-      const hdrLuminanceNits = Math.max(0, 0.2126 * hdrRed + 0.7152 * hdrGreen + 0.0722 * hdrBlue) * 80;
-
-      if (hdrLuminanceNits <= 100) {
-        // Use the original SDR-decoded pixels for SDR bins. scRGB channels can
-        // be negative or exceed reference white even when pixel luminance is SDR.
-        const r = Number(sdrPixels[offset]) / sdrMax;
-        const g = Number(sdrPixels[offset + 1]) / sdrMax;
-        const b = Number(sdrPixels[offset + 2]) / sdrMax;
-        const sdrLuminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        sdrBins[sdrBin(sdrLuminance)]++;
-        sdrRedBins[sdrBin(r)]++;
-        sdrGreenBins[sdrBin(g)]++;
-        sdrBlueBins[sdrBin(b)]++;
-      } else {
-        // The white/luminance curve contains only pixels above 100 cd/m².
-        hdrBins[hdrBin(hdrLuminanceNits)]++;
-
-        // Do not clamp sub-reference-white channel values into the first HDR bin.
-        const redNits = Math.max(0, hdrRed * 80);
-        const greenNits = Math.max(0, hdrGreen * 80);
-        const blueNits = Math.max(0, hdrBlue * 80);
-        if (redNits > 100) {
-          hdrRedBins[hdrBin(redNits)]++;
-        }
-        if (greenNits > 100) {
-          hdrGreenBins[hdrBin(greenNits)]++;
-        }
-        if (blueNits > 100) {
-          hdrBlueBins[hdrBin(blueNits)]++;
-        }
-      }
-
-      continue;
+    if (isFloatHdr && hdrPixels && offset + 2 < hdrPixels.length) {
+      // Ultra HDR, PQ and HLG decoders above provide linear scRGB values (1.0 = 80 cd/m²).
+      redNits = Math.max(0, Number(hdrPixels[offset]) * 80);
+      greenNits = Math.max(0, Number(hdrPixels[offset + 1]) * 80);
+      blueNits = Math.max(0, Number(hdrPixels[offset + 2]) * 80);
+    } else {
+      // Interpret ordinary SDR code values as sRGB with reference white at 100 cd/m².
+      redNits = srgbToLinear(Number(sdrPixels[offset]) / sdrMax) * 100;
+      greenNits = srgbToLinear(Number(sdrPixels[offset + 1]) / sdrMax) * 100;
+      blueNits = srgbToLinear(Number(sdrPixels[offset + 2]) / sdrMax) * 100;
     }
 
-    // Without decoded HDR data, show the ordinary SDR histogram only.
-    const r = Number(sdrPixels[offset]) / sdrMax;
-    const g = Number(sdrPixels[offset + 1]) / sdrMax;
-    const b = Number(sdrPixels[offset + 2]) / sdrMax;
-    const sdrLuminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    sdrBins[sdrBin(sdrLuminance)]++;
-    sdrRedBins[sdrBin(r)]++;
-    sdrGreenBins[sdrBin(g)]++;
-    sdrBlueBins[sdrBin(b)]++;
+    const whiteNits = luminance(redNits, greenNits, blueNits);
+    actualMaximumNits = Math.max(actualMaximumNits, whiteNits, redNits, greenNits, blueNits);
+    samples.push({ white: whiteNits, red: redNits, green: greenNits, blue: blueNits });
   }
 
-  return {
-    sdr: sdrBins,
-    hdr: hdrBins,
-    sdrRed: sdrRedBins,
-    sdrGreen: sdrGreenBins,
-    sdrBlue: sdrBlueBins,
-    hdrRed: hdrRedBins,
-    hdrGreen: hdrGreenBins,
-    hdrBlue: hdrBlueBins
-  };
+  // Derive the range from this image, not a fixed 10,000 cd/m² ceiling.
+  const maximumNits = Math.max(minimumLogNits * 1.01, actualMaximumNits * 1.02);
+  const linearBin = (nits: number) =>
+    Math.min(127, Math.max(0, Math.floor(nits / maximumNits * 128)));
+  const logarithmicBin = (nits: number) =>
+    Math.min(127, Math.max(0, Math.floor(
+      Math.log(Math.max(minimumLogNits, nits) / minimumLogNits) /
+      Math.log(maximumNits / minimumLogNits) * 128
+    )));
+
+  for (const sample of samples) {
+    for (const channel of [ 'white', 'red', 'green', 'blue' ] as const) {
+      linear[channel][linearBin(sample[channel])]++;
+      logarithmic[channel][logarithmicBin(sample[channel])]++;
+    }
+  }
+
+  return { linear, logarithmic, maximumNits, minimumLogNits };
 }
 
 // Pre-initialize Vips in worker
