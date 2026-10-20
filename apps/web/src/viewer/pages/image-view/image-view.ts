@@ -303,6 +303,21 @@ export class ImageView {
     this.configuration.updateSystemConfig({ comparisonMode: mode });
   };
 
+  protected readonly cycleComparisonMode = () => {
+    this.selectedImage$
+      .pipe(take(1), filter(image => image !== null))
+      .subscribe(image => {
+        if (imageDynamicRange(image.path, this.imageTags(), this.imageBitDepth()) !== 'HDR') {
+          this.setComparisonMode('sdr');
+          return;
+        }
+
+        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked'] as const;
+        const currentIndex = modes.indexOf(this.comparisonMode());
+        this.setComparisonMode(modes[(currentIndex + 1) % modes.length]);
+      });
+  };
+
   protected readonly previewComparisonSplit = (value: string | number) => {
     this.comparisonSplit.set(Math.max(1, Math.min(99, Number(value) || 50)));
   };
@@ -489,6 +504,11 @@ export class ImageView {
           return;
         }
 
+        if (event.key === 'Escape') {
+          this.goBack();
+          return;
+        }
+
         const target = event.target;
         if (target instanceof HTMLElement && target.matches('input, textarea, select, [contenteditable="true"]')) {
           return;
@@ -507,6 +527,11 @@ export class ImageView {
             this.toggleHistogram();
             break;
 
+          case 'm':
+          case 'M':
+            this.cycleComparisonMode();
+            break;
+
           case 'ArrowLeft':
             this.hasPrevious$
               .pipe(
@@ -523,10 +548,6 @@ export class ImageView {
                 filter(flag => flag)
               )
               .subscribe(() => this.nextPhoto());
-            break;
-
-          case 'Escape':
-            this.goBack();
             break;
 
           case 'Delete':
