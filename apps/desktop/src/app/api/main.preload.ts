@@ -10,6 +10,7 @@ const api: Desktop = {
     getPlatform: () => ipcRenderer.invoke('ProcessManager.getPlatform'),
     argv: () => ipcRenderer.invoke('ProcessManager.argv'),
     getSystemPaths: () => ipcRenderer.invoke('ProcessManager.getSystemPaths'),
+    openConfigFile: () => ipcRenderer.invoke('ProcessManager.openConfigFile'),
     quit: (code: number) => ipcRenderer.invoke('ProcessManager.quit', code)
   },
 
