@@ -94,15 +94,14 @@ export default class App {
     App.mainWindow.once('ready-to-show', () => {
       App.mainWindow.show();
 
-      // In dev mode - show DevTools and minimise the window to avoid interruptions on app reloads after file saves.
-      if (!App.application.isPackaged) {
-        if (App.startupConfig.minimiseOnStart()) {
-          App.mainWindow.minimize();
-        }
+      // In dev mode, optionally minimise the window to avoid interruptions on app reloads after file saves.
+      if (!App.application.isPackaged && App.startupConfig.minimiseOnStart()) {
+        App.mainWindow.minimize();
+      }
 
-        if (App.startupConfig.devToolsOpen()) {
-          App.mainWindow.webContents.openDevTools();
-        }
+      // Restore the persisted DevTools visibility setting in both development and packaged builds.
+      if (App.startupConfig.devToolsOpen()) {
+        App.mainWindow.webContents.openDevTools();
       }
     });
 
