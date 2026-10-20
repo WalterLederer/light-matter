@@ -144,9 +144,12 @@ export class ImageRendererComponent implements OnDestroy {
       return;
     }
 
-    this.updateSplitFromPointer(event);
+    const split = this.getSplitFromPointer(event.clientX, event.clientY);
     this.splitPointerActive = false;
-    this.comparisonSplitCommit.emit(this.comparisonSplit());
+    if (split !== null) {
+      this.comparisonSplitChange.emit(split);
+      this.comparisonSplitCommit.emit(split);
+    }
   };
 
   private readonly updateSplitFromPointer = (event: PointerEvent) => {
