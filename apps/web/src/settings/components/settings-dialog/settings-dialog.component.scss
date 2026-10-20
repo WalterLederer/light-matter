@@ -125,9 +125,8 @@ section {
 }
 
 .cache-total {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--dim-large);
+  display: grid;
+  gap: var(--dim-small);
   padding: var(--dim-small) var(--dim-medium);
 
   span { color: var(--color-content-default-medium); }
