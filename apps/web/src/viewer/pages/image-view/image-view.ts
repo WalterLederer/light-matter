@@ -514,7 +514,7 @@ export class ImageView {
           return;
         }
 
-        if (event.key === 'm' || event.key === 'M') {
+        if (event.key === 'r' || event.key === 'R') {
           this.cycleComparisonMode();
           return;
         }
