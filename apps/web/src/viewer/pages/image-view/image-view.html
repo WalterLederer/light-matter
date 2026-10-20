@@ -31,7 +31,7 @@
       </select>
       @if (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked') {
         <label for="comparison-split">Trennlinie {{ comparisonSplit() }}%</label>
-        <input id="comparison-split" type="range" min="1" max="99" [value]="comparisonSplit()" (input)="setComparisonSplit($any($event.target).value)" />
+        <input id="comparison-split" type="range" min="1" max="99" [value]="comparisonSplit()" (input)="previewComparisonSplit($any($event.target).value)" (change)="setComparisonSplit($any($event.target).value)" />
       }
     </div>
   }
