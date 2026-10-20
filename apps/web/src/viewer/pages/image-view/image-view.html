@@ -43,32 +43,49 @@
         <p>{{ histogramErrorMessage() }}</p>
       } @else if (histogramData(); as histogram) {
         <div class="histogram-legend">
-          <span class="sdr-legend">SDR</span>
-          <span class="hdr-legend">HDR</span>
+          <span class="white-legend">White / luminance</span>
           <span class="red-legend">R</span>
           <span class="green-legend">G</span>
           <span class="blue-legend">B</span>
+          <span class="boundary-legend">100 cd/m²</span>
         </div>
-        <svg class="histogram-plot"
-             viewBox="0 0 512 160"
-             role="img"
-             aria-label="SDR histogram on the left and HDR histogram on the right"
-             (mousemove)="onHistogramMouseMove($event)"
-             (mouseleave)="onHistogramMouseLeave()">
-          <path class="histogram-grid" d="M0 8H512 M0 78H512 M0 148H512" />
-          <path class="histogram-divider" d="M256 4V152" />
-          <path class="histogram-sdr" [attr.d]="histogramPaths().sdr" />
-          <path class="histogram-hdr" [attr.d]="histogramPaths().hdr" />
-          <path class="histogram-red" [attr.d]="histogramPaths().sdrRed" />
-          <path class="histogram-green" [attr.d]="histogramPaths().sdrGreen" />
-          <path class="histogram-blue" [attr.d]="histogramPaths().sdrBlue" />
-          <path class="histogram-red" [attr.d]="histogramPaths().hdrRed" />
-          <path class="histogram-green" [attr.d]="histogramPaths().hdrGreen" />
-          <path class="histogram-blue" [attr.d]="histogramPaths().hdrBlue" />
-        </svg>
-        <div class="histogram-axis">
-          <div class="histogram-sdr-axis"><span>SDR · 0%</span><span>100%</span></div>
-          <div class="histogram-hdr-axis"><span>HDR · 100 cd/m²</span><span>1,000 cd/m²</span><span>10,000 cd/m²</span></div>
+        <div class="histogram-plots">
+          <div class="histogram-chart">
+            <div class="histogram-chart-title">Linear</div>
+            <svg class="histogram-plot"
+                 viewBox="0 0 256 160"
+                 role="img"
+                 aria-label="Linear luminance histogram including SDR and HDR"
+                 data-scale="linear"
+                 (mousemove)="onHistogramMouseMove($event)"
+                 (mouseleave)="onHistogramMouseLeave()">
+              <path class="histogram-grid" d="M0 8H256 M0 78H256 M0 148H256" />
+              <path class="histogram-divider" [attr.d]="'M' + histogramPaths().linearBoundary + ' 4V152'" />
+              <path class="histogram-white" [attr.d]="histogramPaths().linear.white" />
+              <path class="histogram-red" [attr.d]="histogramPaths().linear.red" />
+              <path class="histogram-green" [attr.d]="histogramPaths().linear.green" />
+              <path class="histogram-blue" [attr.d]="histogramPaths().linear.blue" />
+            </svg>
+            <div class="histogram-axis"><span>0</span><span>{{ histogram.maximumNits | number:'1.0-0' }} cd/m²</span></div>
+          </div>
+          <div class="histogram-chart">
+            <div class="histogram-chart-title">Logarithmic</div>
+            <svg class="histogram-plot"
+                 viewBox="0 0 256 160"
+                 role="img"
+                 aria-label="Logarithmic luminance histogram including SDR and HDR"
+                 data-scale="logarithmic"
+                 (mousemove)="onHistogramMouseMove($event)"
+                 (mouseleave)="onHistogramMouseLeave()">
+              <path class="histogram-grid" d="M0 8H256 M0 78H256 M0 148H256" />
+              <path class="histogram-divider" [attr.d]="'M' + histogramPaths().logarithmicBoundary + ' 4V152'" />
+              <path class="histogram-white" [attr.d]="histogramPaths().logarithmic.white" />
+              <path class="histogram-red" [attr.d]="histogramPaths().logarithmic.red" />
+              <path class="histogram-green" [attr.d]="histogramPaths().logarithmic.green" />
+              <path class="histogram-blue" [attr.d]="histogramPaths().logarithmic.blue" />
+            </svg>
+            <div class="histogram-axis"><span>{{ histogram.minimumLogNits | number:'1.1-1' }} cd/m²</span><span>{{ histogram.maximumNits | number:'1.0-0' }} cd/m²</span></div>
+          </div>
         </div>
         <div class="histogram-readout" aria-live="polite">
           {{ histogramHoverStatus() ?? 'Move over the histogram to inspect values' }}
