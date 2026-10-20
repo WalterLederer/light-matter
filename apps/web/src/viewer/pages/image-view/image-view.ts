@@ -174,8 +174,8 @@ export class ImageView {
     const domain = isSdr
       ? `SDR ${((bin + 0.5) / 128 * 100).toFixed(1)}%`
       : `HDR ≈ ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(
-        Math.expm1((bin / 128) * Math.log1p(10000))
-      )} nits`;
+        100 * Math.pow(100, (bin + 0.5) / 128)
+      )} cd/m²`;
 
     this.histogramHoverStatus.set(
       `${domain} · White ${formatCount(white)} · R ${formatCount(red)} · G ${formatCount(green)} · B ${formatCount(blue)}`
