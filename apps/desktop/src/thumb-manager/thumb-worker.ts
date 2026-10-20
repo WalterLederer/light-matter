@@ -363,18 +363,9 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
     smallImage.extractBand(0), smallImage.extractBand(0), smallImage.extractBand(0)
   ]);
   const sdrPixels = rgb.writeToMemory();
-  const sdrBins = new Array<number>(128).fill(0);
-  const hdrBins = new Array<number>(128).fill(0);
-  const sdrRedBins = new Array<number>(128).fill(0);
-  const sdrGreenBins = new Array<number>(128).fill(0);
-  const sdrBlueBins = new Array<number>(128).fill(0);
-  const hdrRedBins = new Array<number>(128).fill(0);
-  const hdrGreenBins = new Array<number>(128).fill(0);
-  const hdrBlueBins = new Array<number>(128).fill(0);
   const sdrMax = sdrPixels instanceof Uint8Array ? 255 : sdrPixels instanceof Uint16Array ? 65535 : 1;
   const pixelCount = Math.floor(sdrPixels.length / 3);
   let hdrPixels: typeof sdrPixels | null = null;
-  let pq8BitPng = false;
 
   try {
     using hdrImage = fullImage.uhdr2scRGB();
@@ -402,7 +393,6 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
       using linearScRgb = linearRec2020.recomb(matrix);
       using smallHdr = scale < 1 ? linearScRgb.resize(scale, { kernel: vips.Kernel.linear }) : linearScRgb.copy();
       hdrPixels = smallHdr.writeToMemory();
-      pq8BitPng = true;
     }
   }
 
