@@ -24,6 +24,15 @@
     <dt>Dimensions</dt>
     <dd>{{ dims.width }} x {{ dims.height }}</dd>
 
+    @if (hdrMetadata().length > 0) {
+      <dt>HDR / colour metadata</dt>
+      <dd class="hdr-metadata">
+        @for (item of hdrMetadata(); track item.key) {
+          <div><strong>{{ item.key }}:</strong> {{ item.value }}</div>
+        }
+      </dd>
+    }
+
     @if (exifData.Comment !== undefined) {
       <dt>Comment</dt>
       <dd>{{ exifData.Comment }}</dd>
