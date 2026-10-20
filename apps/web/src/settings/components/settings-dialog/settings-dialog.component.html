@@ -2,8 +2,9 @@
 @let clearResult = lastClearResult();
 
 <ui-dialog>
-  <header>
+  <header class="settings-header">
     <ui-title>Light Matter Settings</ui-title>
+    <button class="settings-close-button" type="button" title="Close settings" aria-label="Close settings" (click)="dialogRef.close(false)">×</button>
   </header>
   <section>
     <div class="setting-row">
@@ -130,9 +131,4 @@
       </div>
     </details>
   </section>
-  <footer>
-    <ui-action-button (pressed)="dialogRef.close(false)">
-      Close
-    </ui-action-button>
-  </footer>
 </ui-dialog>
