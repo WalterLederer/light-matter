@@ -20,7 +20,25 @@
     </ui-tool-menu>
   }
 
+  @if (!fullScreen) {
+    <div class="comparison-controls" role="group" aria-label="SDR and HDR display mode">
+      <label for="comparison-mode">Anzeige</label>
+      <select id="comparison-mode" [value]="comparisonMode()" (change)="setComparisonMode($any($event.target).value)">
+        <option value="hdr">HDR</option>
+        <option value="sdr">SDR</option>
+        <option value="side-by-side">SDR + HDR nebeneinander</option>
+        <option value="stacked">SDR + HDR untereinander</option>
+      </select>
+      @if (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked') {
+        <label for="comparison-split">Trennlinie {{ comparisonSplit() }}%</label>
+        <input id="comparison-split" type="range" min="1" max="99" [value]="comparisonSplit()" (input)="setComparisonSplit($any($event.target).value)" />
+      }
+    </div>
+  }
+
   <app-image-renderer [url]="selected.url"
+                      [comparisonMode]="comparisonMode()"
+                      [comparisonSplit]="comparisonSplit()"
                       [class]="animationState()"
                       (animationend)="onAnimationEnd($event)"
                       (dimensions)="imageDimensions.set($event)"
