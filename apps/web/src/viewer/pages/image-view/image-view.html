@@ -34,7 +34,7 @@
                       (loadError)="imageLoadFailed.set(true)"
                       (wheel)="onMouseWheel($event)" />
 
-  @if (histogramVisible() && !fullScreen) {
+  @if (histogramVisible()) {
     <section class="histogram-overlay" role="dialog" aria-label="SDR and HDR image histogram">
       <header>
         <strong>Histogram</strong>
@@ -142,17 +142,17 @@
                     aria-label="Display mode"
                     [value]="isHdrImage ? comparisonMode() : 'sdr'"
                     (change)="setComparisonMode($any($event.target).value)">
-              <option value="hdr" [disabled]="!isHdrImage">HDR</option>
-              <option value="sdr">SDR</option>
-              <option value="side-by-side" [disabled]="!isHdrImage">SDR + HDR side by side</option>
-              <option value="stacked" [disabled]="!isHdrImage">SDR + HDR stacked</option>
+              <option value="hdr" [disabled]="!isHdrImage">H̲D̲R̲</option>
+              <option value="sdr">S̲D̲R̲</option>
+              <option value="side-by-side" [disabled]="!isHdrImage">S̲D̲R̲ + H̲D̲R̲ side by side</option>
+              <option value="stacked" [disabled]="!isHdrImage">S̲D̲R̲ + H̲D̲R̲ stacked</option>
             </select>
             @if (isHdrImage && (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked')) {
               <input class="comparison-split-slider"
                      type="range"
                      min="1"
                      max="99"
-                     aria-label="SDR/HDR split position"
+                     aria-label="S̲D̲R̲/H̲D̲R̲ split position"
                      [value]="comparisonSplit()"
                      (input)="previewComparisonSplit($any($event.target).value)"
                      (change)="setComparisonSplit($any($event.target).value)" />
