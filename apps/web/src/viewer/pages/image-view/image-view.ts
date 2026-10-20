@@ -133,18 +133,26 @@ export class ImageView {
       ...data.hdrGreen,
       ...data.hdrBlue
     );
-    const makePath = (bins: number[], startX: number, endX: number) => bins.map((count, index) => {
-      const x = startX + index / Math.max(1, bins.length - 1) * (endX - startX);
-      const y = 148 - count / maximum * 140;
-      return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    }).join(' ');
+    const sdrLastOccupiedBin = Math.max(
+      1,
+      ...data.sdr.map((count, index) => count > 0 ? index : 0),
+      ...data.sdrRed.map((count, index) => count > 0 ? index : 0),
+      ...data.sdrGreen.map((count, index) => count > 0 ? index : 0),
+      ...data.sdrBlue.map((count, index) => count > 0 ? index : 0)
+    );
+    const makePath = (bins: number[], startX: number, endX: number, lastBin = bins.length - 1) =>
+      bins.slice(0, lastBin + 1).map((count, index) => {
+        const x = startX + index / Math.max(1, lastBin) * (endX - startX);
+        const y = 148 - count / maximum * 140;
+        return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+      }).join(' ');
 
     return {
-      sdr: makePath(data.sdr, 0, 248),
+      sdr: makePath(data.sdr, 0, 248, sdrLastOccupiedBin),
       hdr: makePath(data.hdr, 264, 512),
-      sdrRed: makePath(data.sdrRed, 0, 248),
-      sdrGreen: makePath(data.sdrGreen, 0, 248),
-      sdrBlue: makePath(data.sdrBlue, 0, 248),
+      sdrRed: makePath(data.sdrRed, 0, 248, sdrLastOccupiedBin),
+      sdrGreen: makePath(data.sdrGreen, 0, 248, sdrLastOccupiedBin),
+      sdrBlue: makePath(data.sdrBlue, 0, 248, sdrLastOccupiedBin),
       hdrRed: makePath(data.hdrRed, 264, 512),
       hdrGreen: makePath(data.hdrGreen, 264, 512),
       hdrBlue: makePath(data.hdrBlue, 264, 512)
@@ -165,7 +173,14 @@ export class ImageView {
     const startX = isSdr ? 0 : 264;
     const endX = isSdr ? 248 : 512;
     const position = Math.max(0, Math.min(1, (x - startX) / (endX - startX)));
-    const bin = Math.min(127, Math.round(position * 127));
+    const sdrLastOccupiedBin = Math.max(
+      1,
+      ...data.sdr.map((count, index) => count > 0 ? index : 0),
+      ...data.sdrRed.map((count, index) => count > 0 ? index : 0),
+      ...data.sdrGreen.map((count, index) => count > 0 ? index : 0),
+      ...data.sdrBlue.map((count, index) => count > 0 ? index : 0)
+    );
+    const bin = Math.min(127, Math.round(position * (isSdr ? sdrLastOccupiedBin : 127)));
     const white = (isSdr ? data.sdr : data.hdr)[bin] ?? 0;
     const red = (isSdr ? data.sdrRed : data.hdrRed)[bin] ?? 0;
     const green = (isSdr ? data.sdrGreen : data.hdrGreen)[bin] ?? 0;
