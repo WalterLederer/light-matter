@@ -28,6 +28,24 @@
   </section>
 
   <section>
+    <div class="cache-path setting-config-path">
+      <div class="cache-path-details">
+        <span>Settings file</span>
+        <code>{{ configPath() || 'Loading path…' }}</code>
+      </div>
+      <button class="cache-button"
+              type="button"
+              [disabled]="!configPath()"
+              (click)="openConfigFile()">
+        Open settings file
+      </button>
+    </div>
+    @if (configFileError() !== null) {
+      <p class="cache-status error" role="alert">Could not open settings file: {{ configFileError() }}</p>
+    }
+  </section>
+
+  <section>
     <div class="cache-overview">
       <div class="cache-categories">
         <div class="cache-category">
