@@ -45,27 +45,75 @@
     z-index: 4;
     left: 12px;
     right: 12px;
-    top: 12px;
-    height: 32px;
+    top: 8px;
+    height: 42px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: 12px;
     align-items: center;
-    color: #f4f6f8;
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-align: center;
+    justify-items: center;
     pointer-events: none;
+  }
 
-    span {
+  .comparison-logo {
+    width: min(100%, 220px);
+    height: 42px;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 25px 3px 14px;
+    border: 1px solid #d5dbe4;
+    border-radius: 4px;
+    box-sizing: border-box;
+    background: #d9d9d9;
+    color: #111;
+    text-align: center;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+
+    .logo-main {
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100%;
-      background: #343c48;
-      border: 1px solid #454f5e;
-      box-sizing: border-box;
+      background: #050505;
+      color: #fff;
+      font-size: 22px;
+      font-weight: 750;
+      line-height: 1;
+      letter-spacing: 0.025em;
+    }
+
+    .logo-accent {
+      background: #111;
+    }
+
+    .logo-caption {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 3px;
+      overflow: hidden;
+      white-space: nowrap;
+      font-size: 7px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1;
+    }
+
+    &.sdr-logo .logo-accent {
+      background: #777;
+    }
+
+    &.sdr-logo .logo-caption {
+      background: linear-gradient(#f1f1f1, #d5d5d5);
+      color: #222;
+    }
+
+    &.hdr-logo .logo-accent {
+      background: linear-gradient(90deg, #d9008d 0%, #8b36b5 22%, #1679db 45%, #16a56b 64%, #e5d51b 80%, #ff7a00 100%);
+    }
+
+    &.hdr-logo .logo-caption {
+      background: linear-gradient(#f1f1f1, #d5d5d5);
+      color: #222;
     }
   }
 
