@@ -26,7 +26,10 @@ export class ExifInfoComponent {
 
   readonly path = input('');
 
-  readonly dynamicRangeDiagnostics = () => imageDynamicRangeDiagnostics(this.path(), this.exif() === false ? null : this.exif(), this.bitDepth());
+  readonly dynamicRangeDiagnostics = () => {
+    const data = this.exif();
+    return imageDynamicRangeDiagnostics(this.path(), data === false ? null : data, this.bitDepth());
+  };
   /** Raw HDR-related tags exposed by ExifTool, for verifying dynamic-range detection. */
   readonly hdrMetadata = () => {
     const data = this.exif();
