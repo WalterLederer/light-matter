@@ -356,7 +356,7 @@ function hlgOotf(vips: typeof Vips, sceneLinear: Vips.Image): Vips.Image {
 }
 
 function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
-  using fullImage = vips.Image.newFromFile(source, { access: 'sequential' });
+  using fullImage = vips.Image.newFromFile(source, { access: 'random' });
   const scale = Math.min(1, 512 / fullImage.width, 512 / fullImage.height);
   using smallImage = scale < 1 ? fullImage.resize(scale, { kernel: vips.Kernel.linear }) : fullImage.copy();
   using rgb = smallImage.bands >= 3 ? smallImage.extractBand(0, { n: 3 }) : vips.Image.bandjoin([
@@ -422,25 +422,26 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
     hdrPixels = smallHdr.writeToMemory();
   }
 
-  const luminanceBin = (luminance: number): number => {
-    const nits = Math.max(0, luminance * 80);
-    const position = Math.log1p(nits) / Math.log1p(10000);
-    return Math.min(127, Math.floor(position * 128));
+  const hdrBin = (nits: number): number => {
+    // The HDR chart starts at the 100 cd/m² reference-white boundary.
+    const position = Math.log(Math.max(100, nits) / 100) / Math.log(10000 / 100);
+    return Math.min(127, Math.max(0, Math.floor(position * 128)));
   };
   const sdrBin = (value: number): number => Math.min(127, Math.floor(Math.max(0, Math.min(1, value)) * 128));
 
   for (let index = 0; index < pixelCount; index++) {
     const offset = index * 3;
 
-    if (pq8BitPng && hdrPixels && offset + 2 < hdrPixels.length) {
+    if (hdrPixels && offset + 2 < hdrPixels.length &&
+      (hdrPixels instanceof Float32Array || hdrPixels instanceof Float64Array)) {
       const hdrRed = Number(hdrPixels[offset]);
       const hdrGreen = Number(hdrPixels[offset + 1]);
       const hdrBlue = Number(hdrPixels[offset + 2]);
-      const hdrLuminance = 0.2126 * hdrRed + 0.7152 * hdrGreen + 0.0722 * hdrBlue;
+      // Float HDR pixels are scRGB: one unit represents 80 cd/m².
+      const hdrLuminanceNits = Math.max(0, 0.2126 * hdrRed + 0.7152 * hdrGreen + 0.0722 * hdrBlue) * 80;
 
-      // scRGB is scaled to 80 cd/m² per unit: 100 cd/m² is 1.25 scRGB.
-      // Keep each pixel on exactly one side of the SDR/HDR reference-white boundary.
-      if (hdrLuminance <= 1.25) {
+      if (hdrLuminanceNits <= 100) {
+        // Put this pixel only in the SDR half, normalized so 100 cd/m² maps to 100%.
         const r = Math.max(0, hdrRed / 1.25);
         const g = Math.max(0, hdrGreen / 1.25);
         const b = Math.max(0, hdrBlue / 1.25);
@@ -450,15 +451,17 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
         sdrGreenBins[sdrBin(g)]++;
         sdrBlueBins[sdrBin(b)]++;
       } else {
-        hdrBins[luminanceBin(hdrLuminance)]++;
-        hdrRedBins[luminanceBin(hdrRed)]++;
-        hdrGreenBins[luminanceBin(hdrGreen)]++;
-        hdrBlueBins[luminanceBin(hdrBlue)]++;
+        // HDR bins contain only pixels whose luminance is above 100 cd/m².
+        hdrBins[hdrBin(hdrLuminanceNits)]++;
+        hdrRedBins[hdrBin(Math.max(0, hdrRed * 80))]++;
+        hdrGreenBins[hdrBin(Math.max(0, hdrGreen * 80))]++;
+        hdrBlueBins[hdrBin(Math.max(0, hdrBlue * 80))]++;
       }
 
       continue;
     }
 
+    // Without decoded HDR data, show the ordinary SDR histogram only.
     const r = Number(sdrPixels[offset]) / sdrMax;
     const g = Number(sdrPixels[offset + 1]) / sdrMax;
     const b = Number(sdrPixels[offset + 2]) / sdrMax;
@@ -467,25 +470,6 @@ function histogramForImage(vips: typeof Vips, source: string): ImageHistogram {
     sdrRedBins[sdrBin(r)]++;
     sdrGreenBins[sdrBin(g)]++;
     sdrBlueBins[sdrBin(b)]++;
-
-    if (hdrPixels && offset + 2 < hdrPixels.length) {
-      const hdrRed = Number(hdrPixels[offset]);
-      const hdrGreen = Number(hdrPixels[offset + 1]);
-      const hdrBlue = Number(hdrPixels[offset + 2]);
-      const hdrLuminance = 0.2126 * hdrRed + 0.7152 * hdrGreen + 0.0722 * hdrBlue;
-      hdrBins[luminanceBin(hdrLuminance)]++;
-
-      if (hdrPixels instanceof Float32Array || hdrPixels instanceof Float64Array) {
-        hdrRedBins[luminanceBin(hdrRed)]++;
-        hdrGreenBins[luminanceBin(hdrGreen)]++;
-        hdrBlueBins[luminanceBin(hdrBlue)]++;
-      } else {
-        const max = hdrPixels instanceof Uint8Array ? 255 : hdrPixels instanceof Uint16Array ? 65535 : 1;
-        hdrRedBins[luminanceBin(hdrRed / max)]++;
-        hdrGreenBins[luminanceBin(hdrGreen / max)]++;
-        hdrBlueBins[luminanceBin(hdrBlue / max)]++;
-      }
-    }
   }
 
   return {
