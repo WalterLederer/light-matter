@@ -8,7 +8,11 @@
 
 <div #surface
      class="surface"
-     [style.zoom]="location.pixelRatio">
+     [style.zoom]="location.pixelRatio"
+     (click)="onSurfaceClick($event)"
+     (pointermove)="onSplitPointerMove($event)"
+     (pointerup)="onSplitPointerUp($event)"
+     (pointercancel)="onSplitPointerUp($event)">
 
   @if (imageUrl !== null) {
     <img alt=""
@@ -22,6 +26,25 @@
          [style.clip-path]="sdrClip()"
          [src]="imageUrl"
          (mousedown)="onMouseDown($event)">
+    @if (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked') {
+      <div class="comparison-split-handle"
+           [class.vertical]="comparisonMode() === 'side-by-side'"
+           [class.horizontal]="comparisonMode() === 'stacked'"
+           [style.left]="comparisonMode() === 'side-by-side' ? (location.x + location.width * comparisonSplit() / 100 | px) : (location.x | px)"
+           [style.top]="comparisonMode() === 'stacked' ? (location.y + location.height * comparisonSplit() / 100 | px) : (location.y | px)"
+           [style.width]="comparisonMode() === 'side-by-side' ? '16px' : (location.width | px)"
+           [style.height]="comparisonMode() === 'stacked' ? '16px' : (location.height | px)"
+           (pointerdown)="onSplitPointerDown($event)"
+           role="slider"
+           tabindex="0"
+           aria-label="SDR/HDR-Trennlinie"
+           [attr.aria-valuenow]="comparisonSplit()"
+           aria-valuemin="1"
+           aria-valuemax="99">
+        <span></span>
+      </div>
+    }
+
     <img alt=""
          class="comparison-image hdr-image"
          [class.hidden-variant]="comparisonMode() === 'sdr'"
