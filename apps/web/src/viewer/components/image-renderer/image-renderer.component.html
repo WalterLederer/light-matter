@@ -18,8 +18,16 @@
   @if (imageUrl !== null) {
     @if (comparisonMode() === 'dual-side-by-side') {
       <div class="dual-side-by-side-labels" aria-hidden="true">
-        <span>SDR</span>
-        <span>HDR</span>
+        <div class="comparison-logo sdr-logo">
+          <div class="logo-main">SDR</div>
+          <div class="logo-accent"></div>
+          <div class="logo-caption">Standard Dynamic Range</div>
+        </div>
+        <div class="comparison-logo hdr-logo">
+          <div class="logo-main">HDR</div>
+          <div class="logo-accent"></div>
+          <div class="logo-caption">High Dynamic Range</div>
+        </div>
       </div>
     }
     <img alt=""
