@@ -94,6 +94,12 @@
       stroke-width: 1;
     }
 
+    .histogram-y-label {
+      fill: rgb(255 255 255 / 78%);
+      font-size: 7px;
+      font-variant-numeric: tabular-nums;
+    }
+
     .histogram-divider {
       fill: none;
       stroke: rgb(255 255 255 / 78%);
