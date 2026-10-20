@@ -86,6 +86,8 @@ export class ImageView {
 
   protected readonly hasNext$ = this.viewNavigator.hasNext();
 
+  protected readonly imagePosition$ = this.viewNavigator.imagePosition();
+
   protected readonly imageLocation$ = this.imagePositioningService.imageLocation();
 
   protected readonly defaultImageLocation = defaultImagePositioningResult();
