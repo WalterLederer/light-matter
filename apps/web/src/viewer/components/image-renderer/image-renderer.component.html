@@ -17,12 +17,13 @@
   @if (imageUrl !== null) {
     <img alt=""
          class="comparison-image sdr-image"
+         [class.dual-side-by-side]="comparisonMode() === 'dual-side-by-side'"
          [class.pannable]="location.zoom !== 'fit'"
          [class.hidden-variant]="comparisonMode() === 'hdr'"
          [width]="location.width"
          [height]="location.height"
-         [style.left]="location.x | px"
-         [style.top]="location.y | px"
+         [style.left]="comparisonMode() === 'dual-side-by-side' ? '0%' : (location.x | px)"
+         [style.top]="comparisonMode() === 'dual-side-by-side' ? '0%' : (location.y | px)"
          [style.clip-path]="sdrClip()"
          [src]="imageUrl"
          (mousedown)="onMouseDown($event)">
@@ -47,12 +48,13 @@
 
     <img alt=""
          class="comparison-image hdr-image"
+         [class.dual-side-by-side]="comparisonMode() === 'dual-side-by-side'"
          [class.hidden-variant]="comparisonMode() === 'sdr'"
          [class.pannable]="location.zoom !== 'fit'"
          [width]="location.width"
          [height]="location.height"
-         [style.left]="location.x | px"
-         [style.top]="location.y | px"
+         [style.left]="comparisonMode() === 'dual-side-by-side' ? '50%' : (location.x | px)"
+         [style.top]="comparisonMode() === 'dual-side-by-side' ? '0%' : (location.y | px)"
          [style.clip-path]="hdrClip()"
          [src]="imageUrl"
          (mousedown)="onMouseDown($event)">
