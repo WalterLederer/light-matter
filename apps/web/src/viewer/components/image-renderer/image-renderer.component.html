@@ -8,6 +8,7 @@
 
 <div #surface
      class="surface"
+     [class.dual-side-by-side-surface]="comparisonMode() === 'dual-side-by-side'"
      [style.zoom]="location.pixelRatio"
      (click)="onSurfaceClick($event)"
      (pointermove)="onSplitPointerMove($event)"
@@ -15,6 +16,12 @@
      (pointercancel)="onSplitPointerUp($event)">
 
   @if (imageUrl !== null) {
+    @if (comparisonMode() === 'dual-side-by-side') {
+      <div class="dual-side-by-side-labels" aria-hidden="true">
+        <span>SDR</span>
+        <span>HDR</span>
+      </div>
+    }
     <img alt=""
          class="comparison-image sdr-image"
          [class.pannable]="location.zoom !== 'fit' && comparisonMode() !== 'dual-side-by-side'"
