@@ -1,7 +1,15 @@
 #include <windows.h>
 #include <d3d11.h>
-#include <dxgi1_5.h>
+#include <dxgi1_2.h>
+#include <windows.graphics.capture.interop.h>
+#include <windows.graphics.directx.direct3d11.interop.h>
 #include <wrl/client.h>
+#include <winrt/base.h>
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Graphics.h>
+#include <winrt/Windows.Graphics.Capture.h>
+#include <winrt/Windows.Graphics.DirectX.h>
+#include <winrt/Windows.Graphics.DirectX.Direct3D11.h>
 
 #include <OpenEXR/ImfRgbaFile.h>
 #include <OpenEXR/ImfHeader.h>
@@ -11,15 +19,23 @@
 
 #include <algorithm>
 #include <chrono>
+#include <condition_variable>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <limits>
-#include <string>
+#include <mutex>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 using Microsoft::WRL::ComPtr;
+using namespace std::chrono_literals;
+using winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame;
+using winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool;
+using winrt::Windows::Graphics::Capture::GraphicsCaptureItem;
+using winrt::Windows::Graphics::DirectX::DirectXPixelFormat;
+using winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice;
 
 static void CheckHr(HRESULT hr, const char* what)
 {
@@ -31,24 +47,66 @@ static void CheckHr(HRESULT hr, const char* what)
     }
 }
 
-static bool IsHdrFloatFormat(DXGI_FORMAT format)
+static ComPtr<ID3D11Device> CreateDeviceForAdapter(
+    IDXGIAdapter* adapter, ComPtr<ID3D11DeviceContext>& context)
 {
-    return format == DXGI_FORMAT_R16G16B16A16_FLOAT;
+    ComPtr<ID3D11Device> device;
+    D3D_FEATURE_LEVEL featureLevel{};
+    const D3D_FEATURE_LEVEL levels[] = {
+        D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0
+    };
+
+    HRESULT hr = D3D11CreateDevice(
+        adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
+        D3D11_CREATE_DEVICE_BGRA_SUPPORT, levels, ARRAYSIZE(levels),
+        D3D11_SDK_VERSION, &device, &featureLevel, &context);
+
+    if (hr == E_INVALIDARG)
+    {
+        CheckHr(D3D11CreateDevice(
+            adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
+            D3D11_CREATE_DEVICE_BGRA_SUPPORT, levels + 1, 1,
+            D3D11_SDK_VERSION, &device, &featureLevel, &context),
+            "D3D11CreateDevice");
+    }
+    else
+    {
+        CheckHr(hr, "D3D11CreateDevice");
+    }
+    return device;
+}
+
+static GraphicsCaptureItem CreateCaptureItemForMonitor(HMONITOR monitor)
+{
+    auto interop = winrt::get_activation_factory<
+        GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
+    GraphicsCaptureItem item{ nullptr };
+    CheckHr(interop->CreateForMonitor(
+        monitor, winrt::guid_of<GraphicsCaptureItem>(), winrt::put_abi(item)),
+        "IGraphicsCaptureItemInterop::CreateForMonitor");
+    return item;
 }
 
 int wmain(int argc, wchar_t** argv)
 {
     try
     {
+        winrt::init_apartment(winrt::apartment_type::multi_threaded);
+
         const std::filesystem::path outputPath =
             argc > 1 ? std::filesystem::path(argv[1])
                      : std::filesystem::current_path() / L"hdr-capture.exr";
 
+        if (!winrt::Windows::Graphics::Capture::GraphicsCaptureSession::IsSupported())
+            throw std::runtime_error("Windows.Graphics.Capture is not supported on this system.");
+
+        // Match the earlier prototype: choose the display whose desktop origin is (0, 0).
         ComPtr<IDXGIFactory1> factory;
         CheckHr(CreateDXGIFactory1(IID_PPV_ARGS(&factory)), "CreateDXGIFactory1");
 
         ComPtr<IDXGIAdapter1> selectedAdapter;
         ComPtr<IDXGIOutput> selectedOutput;
+        DXGI_OUTPUT_DESC outputDesc{};
 
         for (UINT adapterIndex = 0; ; ++adapterIndex)
         {
@@ -64,13 +122,13 @@ int wmain(int argc, wchar_t** argv)
 
                 DXGI_OUTPUT_DESC desc{};
                 CheckHr(output->GetDesc(&desc), "IDXGIOutput::GetDesc");
-
                 if (desc.AttachedToDesktop &&
                     desc.DesktopCoordinates.left == 0 &&
                     desc.DesktopCoordinates.top == 0)
                 {
                     selectedAdapter = adapter;
                     selectedOutput = output;
+                    outputDesc = desc;
                     break;
                 }
             }
@@ -79,105 +137,97 @@ int wmain(int argc, wchar_t** argv)
         }
 
         if (!selectedAdapter || !selectedOutput)
-            throw std::runtime_error("Could not find an attached display whose desktop origin is (0,0).");
+            throw std::runtime_error("Could not find an attached display whose desktop origin is (0, 0).");
 
-        DXGI_ADAPTER_DESC1 adapterDesc{};
-        CheckHr(selectedAdapter->GetDesc1(&adapterDesc), "IDXGIAdapter1::GetDesc1");
-        DXGI_OUTPUT_DESC outputDesc{};
-        CheckHr(selectedOutput->GetDesc(&outputDesc), "IDXGIOutput::GetDesc");
-
-        ComPtr<ID3D11Device> device;
         ComPtr<ID3D11DeviceContext> context;
-        D3D_FEATURE_LEVEL featureLevel{};
-        const D3D_FEATURE_LEVEL levels[] = {
-            D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0
-        };
-        HRESULT createHr = D3D11CreateDevice(
-            selectedAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr,
-            D3D11_CREATE_DEVICE_BGRA_SUPPORT, levels, ARRAYSIZE(levels),
-            D3D11_SDK_VERSION, &device, &featureLevel, &context);
+        auto device = CreateDeviceForAdapter(selectedAdapter.Get(), context);
 
-        if (createHr == E_INVALIDARG)
-        {
-            CheckHr(D3D11CreateDevice(
-                selectedAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr,
-                D3D11_CREATE_DEVICE_BGRA_SUPPORT, levels + 1, 1,
-                D3D11_SDK_VERSION, &device, &featureLevel, &context),
-                "D3D11CreateDevice");
-        }
-        else
-        {
-            CheckHr(createHr, "D3D11CreateDevice");
-        }
+        ComPtr<IDXGIDevice> dxgiDevice;
+        CheckHr(device.As(&dxgiDevice), "Query IDXGIDevice");
 
-        ComPtr<IDXGIOutput5> output5;
-        CheckHr(selectedOutput.As(&output5), "Query IDXGIOutput5");
+        winrt::com_ptr<::IInspectable> inspectableDevice;
+        CheckHr(CreateDirect3D11DeviceFromDXGIDevice(
+            dxgiDevice.Get(), inspectableDevice.put()),
+            "CreateDirect3D11DeviceFromDXGIDevice");
+        auto winrtDevice = inspectableDevice.as<IDirect3DDevice>();
 
-        // Try each format separately. Some drivers reject a list containing
-        // formats that the current output path cannot duplicate.
-        const DXGI_FORMAT candidates[] = {
-            DXGI_FORMAT_R16G16B16A16_FLOAT,
-            DXGI_FORMAT_R10G10B10A2_UNORM,
-            DXGI_FORMAT_B8G8R8A8_UNORM
-        };
-        const char* candidateNames[] = {
-            "R16G16B16A16_FLOAT (FP16/scRGB)",
-            "R10G10B10A2_UNORM (10-bit)",
-            "B8G8R8A8_UNORM (8-bit SDR)"
-        };
+        const HMONITOR monitor = outputDesc.Monitor;
+        const GraphicsCaptureItem item = CreateCaptureItemForMonitor(monitor);
+        const auto size = item.Size();
 
-        ComPtr<IDXGIOutputDuplication> duplication;
-        HRESULT duplicateHr = E_FAIL;
-        for (size_t i = 0; i < ARRAYSIZE(candidates); ++i)
-        {
-            duplication.Reset();
-            duplicateHr = output5->DuplicateOutput1(
-                device.Get(), 0, 1, &candidates[i], &duplication);
-            std::cout << "DuplicateOutput1 " << candidateNames[i]
-                      << ": 0x" << std::hex
-                      << static_cast<unsigned long>(duplicateHr) << std::dec << "\\n";
-            if (SUCCEEDED(duplicateHr))
+        std::cout << "Capture API: Windows.Graphics.Capture\n";
+        std::wcout << L"Display: " << outputDesc.DeviceName << L"\n";
+        std::cout << "Requested frame format: R16G16B16A16_FLOAT (FP16/scRGB)\n";
+        std::cout << "Capture dimensions: " << size.Width << " x " << size.Height << "\n";
+
+        // Minimize this console so it does not appear in the desktop frame.
+        if (HWND console = GetConsoleWindow())
+            ShowWindow(console, SW_MINIMIZE);
+
+        std::mutex mutex;
+        std::condition_variable condition;
+        Direct3D11CaptureFrame capturedFrame{ nullptr };
+        bool frameReady = false;
+        std::string callbackError;
+
+        auto framePool = Direct3D11CaptureFramePool::CreateFreeThreaded(
+            winrtDevice, DirectXPixelFormat::R16G16B16A16Float, 2, size);
+        auto session = framePool.CreateCaptureSession(item);
+
+        // This prototype intentionally captures one frame only. The same frame-pool
+        // path can later feed a continuously refreshed loupe.
+        auto revoker = framePool.FrameArrived(
+            [&](const Direct3D11CaptureFramePool& sender, const winrt::Windows::Foundation::IInspectable&)
             {
-                std::cout << "Selected requested format: " << candidateNames[i] << "\\n";
-                break;
-            }
-        }
-        CheckHr(duplicateHr, "IDXGIOutput5::DuplicateOutput1 (all format attempts failed)");
+                try
+                {
+                    auto frame = sender.TryGetNextFrame();
+                    if (!frame)
+                        return;
 
-        DXGI_OUTDUPL_DESC duplicationDesc{};
-        duplication->GetDesc(&duplicationDesc);
-        std::wcout << L"Adapter: " << adapterDesc.Description << L"\\n";
-        std::wcout << L"Display: " << outputDesc.DeviceName << L"\\n";
-        std::cout << "Desktop size: " << duplicationDesc.ModeDesc.Width << " x "
-                  << duplicationDesc.ModeDesc.Height << "\n";
-        std::cout << "Captured DXGI format enum: "
-                  << static_cast<unsigned>(duplicationDesc.ModeDesc.Format) << "\n";
-        std::cout << "Waiting for a desktop frame...\n";
+                    std::lock_guard lock(mutex);
+                    if (!frameReady)
+                    {
+                        capturedFrame = std::move(frame);
+                        frameReady = true;
+                        condition.notify_one();
+                    }
+                }
+                catch (const winrt::hresult_error& error)
+                {
+                    std::lock_guard lock(mutex);
+                    callbackError = winrt::to_string(error.message());
+                    condition.notify_one();
+                }
+            });
 
-        ComPtr<IDXGIResource> desktopResource;
-        DXGI_OUTDUPL_FRAME_INFO frameInfo{};
-        HRESULT acquireHr = DXGI_ERROR_WAIT_TIMEOUT;
-        for (int attempt = 0; attempt < 5; ++attempt)
+        session.StartCapture();
+
         {
-            acquireHr = duplication->AcquireNextFrame(1000, &frameInfo, &desktopResource);
-            if (acquireHr != DXGI_ERROR_WAIT_TIMEOUT)
-                break;
+            std::unique_lock lock(mutex);
+            if (!condition.wait_for(lock, 10s, [&] { return frameReady || !callbackError.empty(); }))
+                throw std::runtime_error("Timed out waiting for a Windows.Graphics.Capture frame.");
+            if (!callbackError.empty())
+                throw std::runtime_error("FrameArrived failed: " + callbackError);
         }
-        CheckHr(acquireHr, "AcquireNextFrame");
 
-        ComPtr<ID3D11Texture2D> desktopTexture;
-        CheckHr(desktopResource.As(&desktopTexture), "Query captured texture");
+        const auto contentSize = capturedFrame.ContentSize();
+        auto surfaceAccess = capturedFrame.Surface().as<::Windows::Graphics::DirectX::Direct3D11::IDirect3DDxgiInterfaceAccess>();
+        ComPtr<ID3D11Texture2D> sourceTexture;
+        CheckHr(surfaceAccess->GetInterface(IID_PPV_ARGS(&sourceTexture)),
+                "IDirect3DDxgiInterfaceAccess::GetInterface(ID3D11Texture2D)");
 
         D3D11_TEXTURE2D_DESC sourceDesc{};
-        desktopTexture->GetDesc(&sourceDesc);
-        if (!IsHdrFloatFormat(sourceDesc.Format))
+        sourceTexture->GetDesc(&sourceDesc);
+        std::cout << "Actual frame texture format enum: "
+                  << static_cast<unsigned>(sourceDesc.Format) << "\n";
+
+        if (sourceDesc.Format != DXGI_FORMAT_R16G16B16A16_FLOAT)
         {
-            duplication->ReleaseFrame();
-            std::cerr << "Capture is not FP16 scRGB. Actual DXGI format enum: "
-                      << static_cast<unsigned>(sourceDesc.Format) << "\n"
-                      << "Enable Windows HDR for this display, then run again. "
-                      << "No EXR was written, because converting SDR pixels to EXR "
-                      << "would not preserve HDR information.\n";
+            session.Close();
+            framePool.Close();
+            std::cerr << "The returned frame is not FP16 scRGB. No EXR was written; "
+                         "an SDR frame must not be labelled as HDR.\n";
             return 2;
         }
 
@@ -190,16 +240,15 @@ int wmain(int argc, wchar_t** argv)
         ComPtr<ID3D11Texture2D> stagingTexture;
         CheckHr(device->CreateTexture2D(&stagingDesc, nullptr, &stagingTexture),
                 "Create staging texture");
-        context->CopyResource(stagingTexture.Get(), desktopTexture.Get());
+        context->CopyResource(stagingTexture.Get(), sourceTexture.Get());
 
         D3D11_MAPPED_SUBRESOURCE mapped{};
         CheckHr(context->Map(stagingTexture.Get(), 0, D3D11_MAP_READ, 0, &mapped),
                 "Map staging texture");
 
-        const int width = static_cast<int>(sourceDesc.Width);
-        const int height = static_cast<int>(sourceDesc.Height);
+        const int width = static_cast<int>(contentSize.Width);
+        const int height = static_cast<int>(contentSize.Height);
         std::vector<Imf::Rgba> pixels(static_cast<size_t>(width) * height);
-
         float minRgb = std::numeric_limits<float>::max();
         float maxRgb = std::numeric_limits<float>::lowest();
         const auto* sourceBytes = static_cast<const std::uint8_t*>(mapped.pData);
@@ -224,13 +273,15 @@ int wmain(int argc, wchar_t** argv)
         }
 
         context->Unmap(stagingTexture.Get(), 0);
-        CheckHr(duplication->ReleaseFrame(), "ReleaseFrame");
+        capturedFrame.Close();
+        session.Close();
+        framePool.Close();
 
         Imf::Header header(width, height);
         header.insert("chromaticities",
             Imf::ChromaticitiesAttribute(Imf::Chromaticities()));
         header.insert("comments", Imf::StringAttribute(
-            "Windows desktop capture, DXGI_FORMAT_R16G16B16A16_FLOAT; "
+            "Windows.Graphics.Capture; DXGI_FORMAT_R16G16B16A16_FLOAT; "
             "scRGB/Rec.709 primaries, linear-light FP16 values."));
 
         Imf::RgbaOutputFile file(outputPath.string().c_str(), header, Imf::WRITE_RGBA);
@@ -245,9 +296,15 @@ int wmain(int argc, wchar_t** argv)
                   << static_cast<float>(center.r) << ", "
                   << static_cast<float>(center.g) << ", "
                   << static_cast<float>(center.b) << "\n";
-        std::cout << "Use Light Matter to inspect the EXR. Values above 1.0 are "
-                     "expected for HDR highlights.\n";
+        std::cout << "Values above 1.0 are possible for HDR highlights. Inspect the EXR in Light Matter.\n";
         return 0;
+    }
+    catch (const winrt::hresult_error& error)
+    {
+        std::cerr << "WinRT ERROR: 0x" << std::hex
+                  << static_cast<unsigned long>(error.code().value) << std::dec
+                  << " " << winrt::to_string(error.message()) << "\n";
+        return 1;
     }
     catch (const std::exception& ex)
     {
