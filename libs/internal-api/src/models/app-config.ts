@@ -54,7 +54,7 @@ export interface AppConfigV1System {
   devToolsOpen?: boolean;
   histogramVisible?: boolean;
   exifVisible?: boolean;
-  comparisonMode?: 'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side';
+  comparisonMode?: 'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side' | 'dual-stacked';
   comparisonSplit?: number;
   bounds?: {
     x: number;
@@ -82,7 +82,7 @@ export const isAppConfig: (input: unknown) => input is AppConfigV1 = (() => {
     && (undefined === input.devToolsOpen || 'boolean' === typeof input.devToolsOpen)
     && (undefined === input.histogramVisible || 'boolean' === typeof input.histogramVisible)
     && (undefined === input.exifVisible || 'boolean' === typeof input.exifVisible)
-    && (undefined === input.comparisonMode || 'hdr' === input.comparisonMode || 'sdr' === input.comparisonMode || 'side-by-side' === input.comparisonMode || 'stacked' === input.comparisonMode || 'dual-side-by-side' === input.comparisonMode)
+    && (undefined === input.comparisonMode || 'hdr' === input.comparisonMode || 'sdr' === input.comparisonMode || 'side-by-side' === input.comparisonMode || 'stacked' === input.comparisonMode || 'dual-side-by-side' === input.comparisonMode || 'dual-stacked' === input.comparisonMode)
     && (undefined === input.comparisonSplit || 'number' === typeof input.comparisonSplit && input.comparisonSplit >= 1 && input.comparisonSplit <= 99)
     && (undefined === input.bounds || 'object' === typeof input.bounds && null !== input.bounds && _io3(input.bounds));
   const _io3 = (input: any): boolean =>
