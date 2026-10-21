@@ -142,6 +142,7 @@
               <option value="side-by-side" [disabled]="!isHdrImage">SDR̲ + HDR̲ side by side</option>
               <option value="stacked" [disabled]="!isHdrImage">SDR̲ + HDR̲ stacked</option>
               <option value="dual-side-by-side" [disabled]="!isHdrImage">SDR̲ | HDR̲ full side by side</option>
+              <option value="dual-stacked" [disabled]="!isHdrImage">SDR̲ + HDR̲ full stacked</option>
             </select>
             @if (isHdrImage && (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked')) {
               <input class="comparison-split-slider"
