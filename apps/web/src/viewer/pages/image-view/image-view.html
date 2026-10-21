@@ -30,6 +30,7 @@
                       (animationend)="onAnimationEnd($event)"
                       (dimensions)="imageDimensions.set($event)"
                       (pixelColorChange)="pixelColor.set($event)"
+                      (dblclick)="toggleFullScreen()"
                       (loadingChange)="isDecoding.set($event); decodeDuration.set(null); imageLoadFailed.set(false)"
                       (loadDuration)="decodeDuration.set($event)"
                       (loadError)="imageLoadFailed.set(true)"

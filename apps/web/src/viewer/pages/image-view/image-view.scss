@@ -318,6 +318,10 @@
         height: 4px;
       }
 
+      .rgb-channel:nth-child(1) .rgb-fill { background: #ff4242; }
+      .rgb-channel:nth-child(2) .rgb-fill { background: #36cf70; }
+      .rgb-channel:nth-child(3) .rgb-fill { background: #438cff; }
+
       .rgb-channel-label {
         width: 7px;
         font-size: 9px;

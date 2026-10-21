@@ -223,7 +223,11 @@ export class ImageRendererComponent implements OnDestroy {
     }
 
     try {
-      const pixel = this.pixelContext.getImageData(x, y, 1, 1).data;
+      // Sample the visible image directly. This avoids stale or unavailable pixels
+      // in the separately preloaded canvas when the displayed image changes.
+      this.pixelContext.clearRect(0, 0, 1, 1);
+      this.pixelContext.drawImage(imageElement, x, y, 1, 1, 0, 0, 1, 1);
+      const pixel = this.pixelContext.getImageData(0, 0, 1, 1).data;
       this.pixelColorChange.emit({ r: pixel[0], g: pixel[1], b: pixel[2] });
     } catch {
       // Some custom-protocol or protected images may disallow canvas readback.
@@ -264,10 +268,9 @@ export class ImageRendererComponent implements OnDestroy {
     this.loadingChange.emit(false);
 
     const dimensions = { width: image.naturalWidth, height: image.naturalHeight };
-    this.pixelCanvas.width = dimensions.width;
-    this.pixelCanvas.height = dimensions.height;
+    this.pixelCanvas.width = 1;
+    this.pixelCanvas.height = 1;
     this.pixelContext = this.pixelCanvas.getContext('2d', { willReadFrequently: true });
-    this.pixelContext?.drawImage(image, 0, 0);
     this.pixelColorChange.emit(null);
     this.displayUrl.set(image.src);
     this.imagePositioningService.setImageDimensions(dimensions);
