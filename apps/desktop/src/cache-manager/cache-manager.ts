@@ -1,6 +1,6 @@
 import { app, shell } from 'electron';
 import { nanoid } from 'nanoid/non-secure';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises';
 import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { DatabaseSync, SQLOutputValue } from 'node:sqlite';
@@ -150,8 +150,28 @@ export class CacheManager {
 
     const existing = this.exists(sourceName, sourceTag);
 
-    if (existing && existing['source_size'] === sourceSize && existing['updated_at'] === updatedAt) {
+    if (
+      existing &&
+      existing['source_size'] === sourceSize &&
+      existing['updated_at'] === updatedAt &&
+      existsSync(existing['target_path'] as string)
+    ) {
       return existing['target_path'] as string;
+    }
+
+    // A changed source (or a missing cache file) invalidates the old cache entry.
+    // Remove both the stale file and its DB row before generating a replacement;
+    // otherwise INSERT can violate the unique (source_name, source_tag) index.
+    if (existing) {
+      const stalePath = resolve(existing['target_path'] as string);
+      const relativePath = relative(this.cacheDir, stalePath);
+
+      if (relativePath === '' || relativePath.startsWith('..') || isAbsolute(relativePath)) {
+        throw new Error(`Refusing to remove cache file outside the image cache: ${existing['target_path']}`);
+      }
+
+      await rm(stalePath, { force: true });
+      this.db.prepare(deleteCacheFile).run({ sourceName, sourceTag });
     }
 
     const hash = this.generateCacheName(targetExtension);
