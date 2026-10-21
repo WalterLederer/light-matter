@@ -185,11 +185,17 @@ int wmain(int argc, wchar_t** argv)
         auto winrtDevice = inspectableDevice.as<IDirect3DDevice>();
 
         const HMONITOR monitor = outputDesc.Monitor;
-        const GraphicsCaptureItem item = CreateCaptureItemForMonitor(monitor);
+        const GraphicsCaptureItem item = targetWindow != nullptr
+            ? CreateCaptureItemForWindow(targetWindow)
+            : CreateCaptureItemForMonitor(monitor);
         const auto size = item.Size();
 
-        std::cout << "Capture API: Windows.Graphics.Capture\n";
-        std::wcout << L"Display: " << outputDesc.DeviceName << L"\n";
+        std::cout << "Capture API: Windows.Graphics.Capture\\n";
+        if (targetWindow != nullptr)
+            std::cout << "Capture target: window HWND 0x" << std::hex
+                      << reinterpret_cast<std::uintptr_t>(targetWindow) << std::dec << "\\n";
+        else
+            std::wcout << L"Display: " << outputDesc.DeviceName << L"\\n";
         std::cout << "Requested frame format: R16G16B16A16_FLOAT (FP16/scRGB)\n";
         std::cout << "Capture dimensions: " << size.Width << " x " << size.Height << "\n";
 
