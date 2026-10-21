@@ -274,6 +274,8 @@ export class ImageRendererComponent implements OnDestroy {
     this.loadingChange.emit(true);
 
     const image = new Image();
+    // Allow pixel reads from the app's custom protocol; the protocol handler sends ACAO.
+    image.crossOrigin = 'anonymous';
 
     fromEvent(image, 'load')
       .pipe(take(1))

@@ -45,6 +45,7 @@
          [style.transform-origin]="comparisonMode() === 'dual-side-by-side' ? 'center center' : null"
          [style.clip-path]="sdrClip()"
          [src]="imageUrl"
+         crossorigin="anonymous"
          (mousedown)="onMouseDown($event)">
     @if (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked') {
       <div class="comparison-split-handle"
@@ -78,6 +79,7 @@
          [style.transform-origin]="comparisonMode() === 'dual-side-by-side' ? 'center center' : null"
          [style.clip-path]="hdrClip()"
          [src]="imageUrl"
+         crossorigin="anonymous"
          (mousedown)="onMouseDown($event)">
   }
 
