@@ -89,6 +89,12 @@ export class ImageGridComponent {
 
   private readonly thumbnailSizes: ThumbnailSize[] = [ 'small', 'smallMedium', 'medium', 'mediumLarge', 'large' ];
 
+  private readonly thumbnailSliderMax = 8;
+
+  private readonly thumbnailSliderSizes: ThumbnailSize[] = [
+    'small', 'small', 'smallMedium', 'smallMedium', 'medium', 'medium', 'mediumLarge', 'mediumLarge', 'large'
+  ];
+
   private hoverClearTimer: ReturnType<typeof setTimeout> | null = null;
 
   /* State */
@@ -132,7 +138,7 @@ export class ImageGridComponent {
   constructor() {
     this.thumbSizeSlider.valueChanges
       .pipe(
-        map(value => Math.max(0, Math.min(4, Math.round(value)))),
+        map(value => Math.max(0, Math.min(this.thumbnailSliderMax, Math.round(value)))),
         distinctUntilChanged(),
         takeUntilDestroyed()
       )
@@ -141,11 +147,11 @@ export class ImageGridComponent {
           this.thumbSizeSlider.setValue(index, { emitEvent: false });
         }
 
-        this.thumbSizeChanged.emit(this.thumbnailSizes[index]);
+        this.thumbSizeChanged.emit(this.thumbnailSliderSizes[index]);
       });
 
     effect(() => {
-      const index = this.thumbnailSizes.indexOf(this.thumbSize());
+      const index = this.thumbnailSliderSizes.indexOf(this.thumbSize());
       if (index >= 0 && this.thumbSizeSlider.value !== index) {
         this.thumbSizeSlider.setValue(index, { emitEvent: false });
       }
