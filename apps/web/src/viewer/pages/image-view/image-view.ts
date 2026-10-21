@@ -71,6 +71,8 @@ export class ImageView {
 
   private readonly processManager = inject(ProcessManager);
 
+  private appTitleSuffix = '';
+
   private readonly imagePositioningService = inject(ImagePositioningService);
 
   private readonly overlayService = inject(OverlayService);
@@ -240,6 +242,13 @@ export class ImageView {
 
   /* Constructor */
   constructor() {
+    this.processManager.getAppVersion()
+      .then(version => {
+        this.appTitleSuffix = version;
+        this.processManager.setWindowTitle(this.makeWindowTitle()).catch(() => undefined);
+      })
+      .catch(() => undefined);
+
     this.configuration.config()
       .pipe(take(1), takeUntilDestroyed())
       .subscribe(config => {
@@ -260,7 +269,7 @@ export class ImageView {
     this.selectedImage$
       .pipe(takeUntilDestroyed())
       .subscribe(image => {
-        this.processManager.setWindowTitle(image ? `Light Matter - ${image.path}` : 'Light Matter').catch(() => undefined);
+        this.processManager.setWindowTitle(this.makeWindowTitle(image?.path)).catch(() => undefined);
       });
 
     this.trackKeyboard();
@@ -363,6 +372,7 @@ export class ImageView {
   };
 
   protected readonly goBack = () => {
+    this.processManager.setWindowTitle(this.makeWindowTitle()).catch(() => undefined);
     if (this.viewNavigator.standalone()) {
       this.processManager.quit(0).then();
     } else {
@@ -470,6 +480,12 @@ export class ImageView {
   };
 
   /* Misc */
+  private readonly makeWindowTitle = (imagePath?: string): string => {
+    const version = this.appTitleSuffix ? ` - ${this.appTitleSuffix}` : '';
+    const path = imagePath ? ` - ${imagePath}` : '';
+    return `Light Matter${version}${path}`;
+  };
+
   private readonly calculateWheelZoom = (deltaY: number, currentZoom: number, zoomStep: number): number => {
     if (deltaY < 0) {
       return Math.min(currentZoom + zoomStep, this.zoomConfig.max);
