@@ -80,6 +80,12 @@
       pointer-events: none;
     }
 
+    .loupe-key-hint {
+      color: rgb(255 255 255 / 72%);
+      font: 11px/1.2 sans-serif;
+      text-align: center;
+    }
+
     .loupe-readout {
       display: flex;
       flex-direction: column;
