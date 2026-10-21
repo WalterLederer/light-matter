@@ -576,6 +576,11 @@ export class ImageView {
   protected readonly onMouseWheel = (event: WheelEvent) => {
     event.preventDefault();
 
+    if (this.loupeEnabled()) {
+      if (event.deltaY !== 0) this.loupeSlider.setValue(Math.max(8, Math.min(36, this.loupeSlider.value + (event.deltaY < 0 ? 2 : -2))));
+      return;
+    }
+
     this.imageLocation$
       .pipe(take(1))
       .subscribe(location => {
