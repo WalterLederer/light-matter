@@ -60,6 +60,32 @@ export class SettingsDialogComponent {
 
   protected readonly supportedFormats = supportedFileFormats;
 
+  protected readonly decoderFor = (extensions: readonly string[]): string => {
+    // supportedFileFormats stores extensions without a leading dot.
+    const normalized = extensions.map(extension => extension.toLowerCase().replace(/^\\./, ''));
+
+    if (normalized.some(extension => extension === 'jxr')) {
+      return 'jpegxr + wasm-vips (HDR → scRGB/JPEG)';
+    }
+    if (normalized.some(extension => extension === 'avif')) {
+      return 'wasm-vips/libvips (AVIF); custom PQ/HLG → scRGB for HDR';
+    }
+    if (normalized.some(extension => ['heif', 'heic'].includes(extension))) {
+      return 'libheif-js + wasm-vips (custom PQ/HLG HDR path)';
+    }
+    if (normalized.some(extension => extension === 'exr')) {
+      return 'exrs (EXR → scRGB/JPEG)';
+    }
+    if (normalized.some(extension => extension === 'hdr')) {
+      return 'wasm-vips/libvips (Radiance HDR → scRGB/JPEG)';
+    }
+    if (normalized.some(extension => ['tif', 'tiff'].includes(extension))) {
+      return 'wasm-vips/libvips (TIFF; custom HDR → scRGB/JPEG)';
+    }
+
+    return 'Chromium / Electron (native image decoder)';
+  };
+
   /* Constructor */
   constructor() {
     this.updateCacheInfo().then();
