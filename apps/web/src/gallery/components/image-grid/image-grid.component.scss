@@ -27,6 +27,16 @@ ui-toolbar {
   ui-slider {
     width: 144px;
   }
+
+  .zoom-step-button {
+    border: 0;
+    padding: 0 3px;
+    color: var(--color-content-primary-high);
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    text-decoration: underline;
+  }
 }
 
 .wrapper {
