@@ -737,6 +737,12 @@ export class ImageView {
           return;
         }
 
+        if (event.key === 'm' || event.key === 'M') {
+          event.preventDefault();
+          void this.toggleLoupe(!this.loupeEnabled());
+          return;
+        }
+
         switch (event.key) {
           case 'i':
           case 'I':

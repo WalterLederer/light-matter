@@ -41,7 +41,7 @@
              aria-hidden="true"
              draggable="false" />
       </div>
-      <div class="loupe-key-hint">Tastatur: + / − = Zoom</div>
+      <div class="loupe-key-hint"><u>M</u>: Toggle Magnifier · + / −: Zoom · Scroll wheel: Zoom</div>
       @if (loupeSample(); as sample) {
         <div class="loupe-readout">
           <span>X {{ sample.x }} · Y {{ sample.y }}</span>
@@ -259,7 +259,7 @@
 
         <label class="loupe-toggle" title="Toggle HDR cursor loupe (FP16 window capture)" [class.active]="loupeEnabled()">
           <input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)" />
-          <span>Lupe</span>
+          <span><u>M</u>agnifier</span>
         </label>
 
         <ui-text class="no-shrink zoom-info">
