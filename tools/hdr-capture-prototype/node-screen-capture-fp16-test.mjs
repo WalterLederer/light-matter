@@ -44,22 +44,27 @@ function parseArgs(args) {
 }
 
 const options = parseArgs(process.argv.slice(2));
-const capture = new ScreenCapture({
-  monitorIndex: options.monitor,
-  colorFormat: 'rgba16F',
-  cursorCapture: false,
-  drawBorder: false,
-  minimumUpdateIntervalMs: 0,
-});
-
+let control;
 let report;
+
 try {
   const start = performance.now();
-  await capture.start();
-  const frame = await capture.nextFrame();
-  const elapsedMs = performance.now() - start;
-  if (!frame) throw new Error('Capture ended without delivering a frame');
+  const framePromise = new Promise((resolveFrame, rejectFrame) => {
+    const capture = new ScreenCapture({
+      monitorIndex: options.monitor,
+      colorFormat: 'rgba16F',
+      cursorCapture: false,
+      drawBorder: false,
+      minimumUpdateIntervalMs: 0,
+    }, frame => resolveFrame(frame), error => {
+      if (error) rejectFrame(new Error('Capture closed: ' + error));
+      else rejectFrame(new Error('Capture closed before delivering a frame'));
+    });
+    control = capture.start();
+  });
 
+  const frame = await framePromise;
+  const elapsedMs = performance.now() - start;
   const buffer = frame.buffer;
   const expectedBytes = frame.width * frame.height * 8;
   const format = frame.colorFormat;
@@ -150,5 +155,5 @@ try {
   console.log(JSON.stringify(report, null, 2));
   console.log('\nJSON report: ' + jsonPath);
 } finally {
-  await capture.stop().catch(error => console.error('Capture stop failed:', error));
+  if (control) await control.stop().catch(error => console.error('Capture stop failed:', error));
 }
