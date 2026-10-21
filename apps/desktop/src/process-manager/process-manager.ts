@@ -21,6 +21,11 @@ export class ProcessManager {
   @IpcHandler({ name: 'ProcessManager.quit' })
   readonly quit = async (_: IpcMainInvokeEvent, code: number): Promise<void> => app.exit(code);
 
+  @IpcHandler({ name: 'ProcessManager.setWindowTitle' })
+  readonly setWindowTitle = async (_: IpcMainInvokeEvent, title: string): Promise<void> => {
+    App.mainWindow?.setTitle(title || 'Light Matter');
+  };
+
   @IpcHandler({ name: 'ProcessManager.isPackaged' })
   readonly isPackaged = async (): Promise<boolean> => App.application.isPackaged;
 

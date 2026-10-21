@@ -257,6 +257,12 @@ export class ImageView {
         }
       });
 
+    this.selectedImage$
+      .pipe(takeUntilDestroyed())
+      .subscribe(image => {
+        this.processManager.setWindowTitle(image?.path ?? 'Light Matter').catch(() => undefined);
+      });
+
     this.trackKeyboard();
 
     this.selectedImage$

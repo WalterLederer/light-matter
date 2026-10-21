@@ -15,6 +15,8 @@
     }
     <dt>File size</dt>
     <dd>{{ fileSize() | byteSize }}</dd>
+    <dt>Load / decode time</dt>
+    <dd>{{ loadDuration() === null ? '—' : (loadDuration() | number: '1.2-2') + ' s' }}</dd>
     <dt>Bit depth</dt>
     <dd>{{ bitDepth() ?? '—' }}</dd>
     @if (timestamp !== undefined) {
