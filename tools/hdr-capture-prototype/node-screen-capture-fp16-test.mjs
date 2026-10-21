@@ -2,6 +2,16 @@ import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { ScreenCapture } from '@screen-capture/node';
 
+function withTimeout(promise, ms, label) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(label + ' timed out after ' + ms + ' ms')), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 function halfToFloat(h) {
   const sign = (h & 0x8000) ? -1 : 1;
   const exponent = (h >> 10) & 0x1f;
@@ -44,27 +54,29 @@ function parseArgs(args) {
 }
 
 const options = parseArgs(process.argv.slice(2));
-let control;
-let report;
+const capture = new ScreenCapture({
+  monitorIndex: options.monitor,
+  colorFormat: 'rgba16F',
+  cursorCapture: false,
+  drawBorder: false,
+  minimumUpdateIntervalMs: 0,
+});
 
+let started = false;
 try {
+  console.log('Creating WGC capture: monitor ' + options.monitor + ', requested format rgba16F');
+  console.log('Starting native capture (15-second timeout)...');
   const start = performance.now();
-  const framePromise = new Promise((resolveFrame, rejectFrame) => {
-    const capture = new ScreenCapture({
-      monitorIndex: options.monitor,
-      colorFormat: 'rgba16F',
-      cursorCapture: false,
-      drawBorder: false,
-      minimumUpdateIntervalMs: 0,
-    }, frame => resolveFrame(frame), error => {
-      if (error) rejectFrame(new Error('Capture closed: ' + error));
-      else rejectFrame(new Error('Capture closed before delivering a frame'));
-    });
-    control = capture.start();
-  });
+  await withTimeout(capture.start(), 15000, 'capture.start()');
+  started = true;
+  console.log('Capture started in ' + (performance.now() - start).toFixed(1) + ' ms.');
+  console.log('Waiting for first frame (10-second timeout)...');
 
-  const frame = await framePromise;
-  const elapsedMs = performance.now() - start;
+  const frameStart = performance.now();
+  const frame = await withTimeout(capture.nextFrame(), 10000, 'first frame');
+  const elapsedMs = performance.now() - frameStart;
+  if (!frame) throw new Error('Capture ended without delivering a frame');
+
   const buffer = frame.buffer;
   const expectedBytes = frame.width * frame.height * 8;
   const format = frame.colorFormat;
@@ -80,7 +92,7 @@ try {
     expectedPackedRgba16fBytes: expectedBytes,
     byteLengthMatchesExpected: buffer.byteLength === expectedBytes,
     rowPitchMatchesExpected: frame.rowPitch === frame.width * 8,
-    frameWaitAndStartupMs: Number(elapsedMs.toFixed(2)),
+    firstFrameWaitMs: Number(elapsedMs.toFixed(2)),
     timestamp: frame.timestamp,
     sample: pixelAt(buffer, frame.width, frame.height,
       options.sample?.x ?? Math.floor(frame.width / 2),
@@ -95,6 +107,7 @@ try {
   const pixelCount = frame.width * frame.height;
   const channelNames = ['r', 'g', 'b'];
 
+  console.log('Scanning ' + pixelCount + ' pixels for FP16 value range...');
   for (let pixel = 0; pixel < pixelCount; pixel++) {
     const offset = pixel * 8;
     for (let c = 0; c < 3; c++) {
@@ -124,7 +137,7 @@ try {
     }
   }
 
-  report = {
+  const report = {
     ...reportBase,
     scan: {
       rgbMin: min, rgbMax: max,
@@ -141,7 +154,7 @@ try {
       packedRgba16fBufferSize: buffer.byteLength === expectedBytes,
       hasRgbValuesAboveOne: aboveOneRgbCount > 0,
       hasNegativeRgbValues: negativeRgbCount > 0,
-      note: 'Format and buffer size establish the expected layout, not by themselves that HDR values survived the Windows compositor. Compare sample and extrema with the existing WGC EXR capture.',
+      note: 'Format and buffer size establish the expected layout, not by themselves that the compositor preserved HDR values. Compare sample and extrema with the existing WGC EXR capture.',
     },
   };
 
@@ -154,6 +167,10 @@ try {
   await writeFile(jsonPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
   console.log(JSON.stringify(report, null, 2));
   console.log('\nJSON report: ' + jsonPath);
+} catch (error) {
+  console.error('\nFP16 capture test FAILED:', error?.stack ?? error);
+  process.exitCode = 1;
 } finally {
-  if (control) await control.stop().catch(error => console.error('Capture stop failed:', error));
+  console.log('Stopping capture...');
+  await capture.stop().catch(error => console.error('Capture stop failed:', error));
 }
