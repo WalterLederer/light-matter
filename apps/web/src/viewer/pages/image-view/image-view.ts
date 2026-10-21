@@ -118,6 +118,8 @@ export class ImageView {
 
   protected readonly loupePixelSize = signal(16);
 
+  protected readonly loupePosition = signal({ x: 24, y: 80 });
+
   private loupeCaptureRequest = 0;
 
   private loupeSampleRequest = 0;
@@ -422,7 +424,15 @@ export class ImageView {
   protected readonly onLoupeMouseMove = (event: MouseEvent) => {
     if (!this.loupeEnabled() || this.loupeCapturePending()) return;
     const request = ++this.loupeSampleRequest;
-    const scale = this.document.defaultView?.devicePixelRatio ?? 1;
+    const view = this.document.defaultView;
+    const viewWidth = view?.innerWidth ?? 1280;
+    const viewHeight = view?.innerHeight ?? 720;
+    const loupeWidth = 300;
+    const loupeHeight = 290;
+    const left = event.clientX > viewWidth - loupeWidth - 24 ? event.clientX - loupeWidth - 20 : event.clientX + 20;
+    const top = event.clientY > viewHeight - loupeHeight - 24 ? event.clientY - loupeHeight - 20 : event.clientY + 20;
+    this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
+    const scale = view?.devicePixelRatio ?? 1;
     const radius = 5;
     this.desktop?.Loupe.sample(event.clientX * scale, event.clientY * scale, radius)
       .then(sample => {
