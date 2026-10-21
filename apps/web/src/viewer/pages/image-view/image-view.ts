@@ -436,7 +436,7 @@ export class ImageView {
       await this.desktop?.Loupe.release().catch(() => undefined);
       return;
     }
-    await this.captureLoupeAfterRender();
+    if (!this.isDecoding() && this.animationState() === 'none') await this.captureLoupeAfterRender();
   };
 
   protected readonly onLoupeMouseMove = (event: MouseEvent) => {
