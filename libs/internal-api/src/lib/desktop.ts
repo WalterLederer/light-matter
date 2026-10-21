@@ -12,6 +12,7 @@ export interface DesktopProcessManager {
   readonly getSystemPaths: () => Promise<SystemPathMapping>;
   readonly openConfigFile: () => Promise<string>;
   readonly quit: (code: number) => Promise<void>;
+  readonly setWindowTitle: (title: string) => Promise<void>;
 }
 
 export interface DesktopFileSystem {

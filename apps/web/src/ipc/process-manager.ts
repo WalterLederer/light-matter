@@ -21,4 +21,6 @@ export class ProcessManager implements DesktopProcessManager {
   readonly openConfigFile = (): Promise<string> => window.desktop.ProcessManager.openConfigFile();
 
   readonly quit = (code: number): Promise<void> => window.desktop.ProcessManager.quit(code);
+
+  readonly setWindowTitle = (title: string): Promise<void> => window.desktop.ProcessManager.setWindowTitle(title);
 }

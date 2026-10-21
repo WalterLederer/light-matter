@@ -20,6 +20,7 @@ import { HistogramService } from '../../../ipc/histogram';
 import { ProcessManager } from '../../../ipc/process-manager';
 import { VerticalDivider } from '../../../system/components/vertical-divider/vertical-divider';
 import { DefaultPipe } from '../../../system/pipes/default/default.pipe';
+import { FileNamePipe } from '../../pipes/file-name/file-name-pipe';
 import { Configuration } from '../../../system/services/configuration/configuration';
 import { Keyboard } from '../../../system/services/keyboard/keyboard';
 import { ExifInfoComponent } from '../../components/exif-info/exif-info.component';
@@ -44,6 +45,7 @@ import { AnimationState } from './image-view.types';
     VerticalDivider,
     TextComponent,
     DefaultPipe,
+    FileNamePipe,
     SliderComponent,
     ReactiveFormsModule,
     DecimalPipe,
