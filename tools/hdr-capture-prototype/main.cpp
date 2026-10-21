@@ -113,23 +113,41 @@ int wmain(int argc, wchar_t** argv)
         ComPtr<IDXGIOutput5> output5;
         CheckHr(selectedOutput.As(&output5), "Query IDXGIOutput5");
 
-        // Request the HDR compositor format first. BGRA8 remains in the list so
-        // the API can still operate in SDR; SDR capture is rejected below.
-        const DXGI_FORMAT formats[] = {
+        // Try each format separately. Some drivers reject a list containing
+        // formats that the current output path cannot duplicate.
+        const DXGI_FORMAT candidates[] = {
             DXGI_FORMAT_R16G16B16A16_FLOAT,
             DXGI_FORMAT_R10G10B10A2_UNORM,
             DXGI_FORMAT_B8G8R8A8_UNORM
         };
+        const char* candidateNames[] = {
+            "R16G16B16A16_FLOAT (FP16/scRGB)",
+            "R10G10B10A2_UNORM (10-bit)",
+            "B8G8R8A8_UNORM (8-bit SDR)"
+        };
+
         ComPtr<IDXGIOutputDuplication> duplication;
-        CheckHr(output5->DuplicateOutput1(
-            device.Get(), 0, ARRAYSIZE(formats), formats, &duplication),
-            "IDXGIOutput5::DuplicateOutput1");
+        HRESULT duplicateHr = E_FAIL;
+        for (size_t i = 0; i < ARRAYSIZE(candidates); ++i)
+        {
+            duplication.Reset();
+            duplicateHr = output5->DuplicateOutput1(
+                device.Get(), 0, 1, &candidates[i], &duplication);
+            std::cout << "DuplicateOutput1 " << candidateNames[i]
+                      << ": 0x" << std::hex
+                      << static_cast<unsigned long>(duplicateHr) << std::dec << "\\n";
+            if (SUCCEEDED(duplicateHr))
+            {
+                std::cout << "Selected requested format: " << candidateNames[i] << "\\n";
+                break;
+            }
+        }
+        CheckHr(duplicateHr, "IDXGIOutput5::DuplicateOutput1 (all format attempts failed)");
 
         DXGI_OUTDUPL_DESC duplicationDesc{};
         duplication->GetDesc(&duplicationDesc);
-        std::cout << "Adapter: " << std::wstring(adapterDesc.Description).size()
-                  << " characters in name\n";
-        std::wcout << L"Display: " << outputDesc.DeviceName << L"\n";
+        std::wcout << L"Adapter: " << adapterDesc.Description << L"\\n";
+        std::wcout << L"Display: " << outputDesc.DeviceName << L"\\n";
         std::cout << "Desktop size: " << duplicationDesc.ModeDesc.Width << " x "
                   << duplicationDesc.ModeDesc.Height << "\n";
         std::cout << "Captured DXGI format enum: "
