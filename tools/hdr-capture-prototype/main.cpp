@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <chrono>
 #include <condition_variable>
+#include <cwchar>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
@@ -116,7 +117,7 @@ int wmain(int argc, wchar_t** argv)
         {
             wchar_t* end = nullptr;
             const unsigned long long value = std::wcstoull(argv[2], &end, 0);
-            if (end == argv[2] || *end != L'\\0' || value == 0)
+            if (end == argv[2] || *end != L'\0' || value == 0)
                 throw std::runtime_error("Invalid HWND. Use --hwnd 0x123456.");
 
             targetWindow = reinterpret_cast<HWND>(static_cast<std::uintptr_t>(value));
