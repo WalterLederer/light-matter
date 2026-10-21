@@ -36,6 +36,58 @@
     }
   }
 
+  .hdr-loupe-overlay {
+    position: fixed;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid rgb(255 255 255 / 38%);
+    border-radius: 6px;
+    color: #fff;
+    background: rgb(12 14 18 / 96%);
+    box-shadow: 0 6px 24px rgb(0 0 0 / 48%);
+    pointer-events: none;
+    user-select: none;
+
+    &.capture-pending {
+      visibility: hidden;
+    }
+
+    .loupe-pixel-grid {
+      display: grid;
+      grid-template-columns: repeat(11, var(--loupe-pixel-size));
+      grid-template-rows: repeat(11, var(--loupe-pixel-size));
+      width: max-content;
+      height: max-content;
+      border: 1px solid rgb(255 255 255 / 42%);
+      image-rendering: pixelated;
+    }
+
+    .loupe-pixel {
+      display: block;
+      width: var(--loupe-pixel-size);
+      height: var(--loupe-pixel-size);
+      box-sizing: border-box;
+    }
+
+    .center-pixel {
+      outline: 2px solid #fff;
+      outline-offset: -2px;
+      box-shadow: inset 0 0 0 1px #000;
+    }
+
+    .loupe-readout {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font: 11px/1.35 Consolas, "Courier New", monospace;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
   .histogram-overlay {
     position: absolute;
     z-index: 11;
@@ -380,6 +432,27 @@
         min-width: 40px;
         text-align: right;
         margin-left: 0;
+      }
+    }
+
+    .loupe-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 0 5px;
+      color: var(--color-content-default-highest);
+      font-size: 0.8rem;
+      white-space: nowrap;
+      cursor: pointer;
+
+      input {
+        margin: 0;
+        accent-color: var(--color-content-primary-high);
+        cursor: pointer;
+      }
+
+      &.active {
+        color: var(--color-content-primary-high);
       }
     }
 
