@@ -481,7 +481,7 @@ export class ImageView {
 
   /* Misc */
   private readonly makeWindowTitle = (imagePath?: string): string => {
-    const version = this.appTitleSuffix ? ` - ${this.appTitleSuffix}` : '';
+    const version = this.appTitleSuffix ? ` ${this.appTitleSuffix}` : '';
     const path = imagePath ? ` - ${imagePath}` : '';
     return `Light Matter${version}${path}`;
   };
