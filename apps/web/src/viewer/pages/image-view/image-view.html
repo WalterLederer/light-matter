@@ -29,6 +29,7 @@
                       [class]="animationState()"
                       (animationend)="onAnimationEnd($event)"
                       (dimensions)="imageDimensions.set($event)"
+                      (pixelColorChange)="pixelColor.set($event)"
                       (loadingChange)="isDecoding.set($event); decodeDuration.set(null); imageLoadFailed.set(false)"
                       (loadDuration)="decodeDuration.set($event)"
                       (loadError)="imageLoadFailed.set(true)"
@@ -159,6 +160,17 @@
             }
             ·
             {{ dimensions.width }} x {{ dimensions.height }}
+            @if (pixelColor(); as rgb) {
+              <span class="rgb-readout" title="RGB pixel color">
+                <span class="rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
+                <span class="rgb-values">RGB {{ rgb.r }}, {{ rgb.g }}, {{ rgb.b }}</span>
+                <span class="rgb-channels" aria-label="RGB channel levels">
+                  <span class="rgb-channel"><span class="rgb-channel-label">R</span><span class="rgb-track"><span class="rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
+                  <span class="rgb-channel"><span class="rgb-channel-label">G</span><span class="rgb-track"><span class="rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
+                  <span class="rgb-channel"><span class="rgb-channel-label">B</span><span class="rgb-track"><span class="rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
+                </span>
+              </span>
+            }
             @if (imagePosition !== null) {
               · {{ imagePosition.position }} / {{ imagePosition.total }}
             }

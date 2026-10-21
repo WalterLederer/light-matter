@@ -63,6 +63,8 @@ export class ImageRendererComponent implements OnDestroy {
   /* Outputs */
   readonly dimensions = output<ImageDimensions>();
 
+  readonly pixelColorChange = output<{ r: number; g: number; b: number } | null>();
+
   readonly loadingChange = output<boolean>();
 
   readonly loadDuration = output<number>();
@@ -77,6 +79,10 @@ export class ImageRendererComponent implements OnDestroy {
   protected readonly displayUrl = signal<string | null>(null);
 
   protected readonly isLoading = signal(false);
+
+  private readonly pixelCanvas = document.createElement('canvas');
+
+  private pixelContext: CanvasRenderingContext2D | null = null;
 
   protected readonly viewportRef = viewChild<unknown, ElementRef<HTMLDivElement>>('surface', { read: ElementRef });
 
@@ -182,6 +188,46 @@ export class ImageRendererComponent implements OnDestroy {
 
   protected readonly onMouseDown = (event: MouseEvent) => this.imagePositioningService.startPanning(event);
 
+  protected readonly onSurfaceMouseMove = (event: MouseEvent) => {
+    const target = event.target;
+    const imageElement = target instanceof HTMLImageElement && target.classList.contains('comparison-image')
+      ? target
+      : null;
+    const sourceWidth = imageElement?.naturalWidth ?? 0;
+    const sourceHeight = imageElement?.naturalHeight ?? 0;
+    const bounds = imageElement?.getBoundingClientRect();
+
+    if (imageElement === null || this.pixelContext === null || bounds === undefined ||
+        sourceWidth <= 0 || sourceHeight <= 0 || bounds.width <= 0 || bounds.height <= 0) {
+      this.pixelColorChange.emit(null);
+      return;
+    }
+
+    // Account for object-fit: contain in the dual SDR/HDR layout, as well as zoom and pan.
+    const scale = Math.min(bounds.width / sourceWidth, bounds.height / sourceHeight);
+    const renderedWidth = sourceWidth * scale;
+    const renderedHeight = sourceHeight * scale;
+    const left = bounds.left + (bounds.width - renderedWidth) / 2;
+    const top = bounds.top + (bounds.height - renderedHeight) / 2;
+    const x = Math.floor((event.clientX - left) / scale);
+    const y = Math.floor((event.clientY - top) / scale);
+
+    if (x < 0 || y < 0 || x >= sourceWidth || y >= sourceHeight) {
+      this.pixelColorChange.emit(null);
+      return;
+    }
+
+    try {
+      const pixel = this.pixelContext.getImageData(x, y, 1, 1).data;
+      this.pixelColorChange.emit({ r: pixel[0], g: pixel[1], b: pixel[2] });
+    } catch {
+      // Some custom-protocol or protected images may disallow canvas readback.
+      this.pixelColorChange.emit(null);
+    }
+  };
+
+  protected readonly onSurfaceMouseLeave = () => this.pixelColorChange.emit(null);
+
   /* Misc */
   private readonly preloadImage = (url: string) => {
     const loadId = ++this.loadId;
@@ -213,6 +259,11 @@ export class ImageRendererComponent implements OnDestroy {
     this.loadingChange.emit(false);
 
     const dimensions = { width: image.naturalWidth, height: image.naturalHeight };
+    this.pixelCanvas.width = dimensions.width;
+    this.pixelCanvas.height = dimensions.height;
+    this.pixelContext = this.pixelCanvas.getContext('2d', { willReadFrequently: true });
+    this.pixelContext?.drawImage(image, 0, 0);
+    this.pixelColorChange.emit(null);
     this.displayUrl.set(image.src);
     this.imagePositioningService.setImageDimensions(dimensions);
     this.dimensions.emit(dimensions);

@@ -94,6 +94,8 @@ export class ImageView {
 
   protected readonly imageDimensions = signal<ImageDimensions>({ width: 0, height: 0 });
 
+  protected readonly pixelColor = signal<{ r: number; g: number; b: number } | null>(null);
+
   protected readonly isDecoding = signal(false);
 
   protected readonly decodeDuration = signal<number | null>(null);
@@ -263,6 +265,7 @@ export class ImageView {
         tap(() => {
           this.imageBitDepth.set(null);
           this.imageTags.set(null);
+          this.pixelColor.set(null);
         }),
         tap(path => {
           if (this.histogramVisible()) {

@@ -11,6 +11,8 @@
      [class.dual-side-by-side-surface]="comparisonMode() === 'dual-side-by-side'"
      [style.zoom]="location.pixelRatio"
      (click)="onSurfaceClick($event)"
+     (mousemove)="onSurfaceMouseMove($event)"
+     (mouseleave)="onSurfaceMouseLeave()"
      (pointermove)="onSplitPointerMove($event)"
      (pointerup)="onSplitPointerUp($event)"
      (pointercancel)="onSplitPointerUp($event)">
