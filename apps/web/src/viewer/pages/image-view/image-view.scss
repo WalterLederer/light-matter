@@ -71,6 +71,9 @@
       max-height: none;
       transform-origin: top left;
       dynamic-range-limit: no-limit;
+      // Keep source pixels discrete instead of smoothing them during loupe scaling.
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
       clip-path: inset(0 0 0 0);
       user-select: none;
       -webkit-user-drag: none;
