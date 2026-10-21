@@ -245,7 +245,9 @@ export class ImageView {
     this.processManager.getAppVersion()
       .then(version => {
         this.appTitleSuffix = version;
-        this.processManager.setWindowTitle(this.makeWindowTitle()).catch(() => undefined);
+        this.selectedImage$.pipe(take(1)).subscribe(image => {
+          this.processManager.setWindowTitle(this.makeWindowTitle(image?.path)).catch(() => undefined);
+        });
       })
       .catch(() => undefined);
 
