@@ -465,7 +465,7 @@ export class ImageView {
   };
 
   protected readonly onImageRendered = () => {
-    if (this.loupeEnabled()) void this.captureLoupeAfterRender();
+    if (this.loupeEnabled() && this.animationState() === 'none') void this.captureLoupeAfterRender();
   };
 
   private readonly captureLoupeAfterRender = async () => {
@@ -559,6 +559,7 @@ export class ImageView {
         break;
       case 'enter-left':
         this.animationState.set('none');
+        this.onImageRendered();
         break;
       case 'leave-right':
         this.viewNavigator.next();
@@ -566,6 +567,7 @@ export class ImageView {
         break;
       case 'enter-right':
         this.animationState.set('none');
+        this.onImageRendered();
         break;
       default:
         this.animationState.set('none');
