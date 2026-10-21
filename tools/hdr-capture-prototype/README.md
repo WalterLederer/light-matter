@@ -6,7 +6,8 @@ This standalone proof of concept tests Windows Graphics Capture (WGC) after the 
 
 - Selects the attached display whose desktop origin is (0, 0), matching the first prototype.
 - Uses `Windows.Graphics.Capture` with an FP16 `R16G16B16A16_FLOAT` frame pool.
-- Captures one composed desktop frame, copies the texture to CPU-readable memory and writes a linear scRGB OpenEXR file.
+- Receives frames continuously for a short 3-second burst, retains the newest frame and reports the observed frame delivery rate.
+- Copies the newest texture to CPU-readable memory and writes one linear scRGB OpenEXR file.
 - Prints the actual texture format and RGB minimum/maximum. It refuses to write an EXR if Windows does not deliver FP16.
 - Minimizes its console before capture so the console is less likely to appear in the screenshot.
 
@@ -33,8 +34,8 @@ With Windows HDR enabled:
 
 ```
 
-Open the EXR in Light Matter. Send the complete console output if the build or capture fails. The important checks are whether WGC returns format enum `10` (`DXGI_FORMAT_R16G16B16A16_FLOAT`), and whether the resulting EXR preserves the expected HDR highlights.
+Open the EXR in Light Matter. Send the complete console output if the build or capture fails. The important checks are whether WGC returns format enum `10` (`DXGI_FORMAT_R16G16B16A16_FLOAT`), whether the capture burst delivers frames continuously, and whether the EXR preserves expected HDR highlights.
 
 ## Current limitation
 
-This captures a single frame to validate HDR pixel fidelity. It is not yet a performance test for continuous loupe updates. Windows Graphics Capture is designed around a frame pool and frame-arrived events, which can be reused for the live magnifier after this validation.
+This test captures a single saved frame after a 3-second capture burst. It validates ongoing frame delivery but does not yet benchmark low-latency cursor-loupe rendering or exclude an eventual loupe overlay from desktop capture.
