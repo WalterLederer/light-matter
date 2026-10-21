@@ -350,6 +350,9 @@ export class ImageView {
 
   /* Event handlers */
   protected readonly toggleFullScreen = async () => {
+    if (this.document.fullscreenElement === null && this.loupeEnabled()) {
+      await this.toggleLoupe(false);
+    }
     if (this.document.fullscreenElement !== null) {
       await this.document.exitFullscreen();
     } else {
@@ -482,6 +485,7 @@ export class ImageView {
     } catch (error) {
       console.error('HDR loupe capture failed:', error);
       this.loupeEnabled.set(false);
+      await desktop.Loupe.release().catch(() => undefined);
     } finally {
       if (request === this.loupeCaptureRequest) this.loupeCapturePending.set(false);
     }
