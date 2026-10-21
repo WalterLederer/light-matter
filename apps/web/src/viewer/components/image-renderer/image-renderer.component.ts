@@ -190,14 +190,19 @@ export class ImageRendererComponent implements OnDestroy {
 
   protected readonly onSurfaceMouseMove = (event: MouseEvent) => {
     const surface = this.viewportRef()?.nativeElement;
+    const target = event.target;
+    const targetImage = target instanceof HTMLImageElement &&
+      target.matches('.comparison-image:not(.hidden-variant)')
+      ? target
+      : null;
     const images = surface?.querySelectorAll<HTMLImageElement>('.comparison-image:not(.hidden-variant)');
-    const imageElement = images === undefined
+    const imageElement = targetImage ?? (images === undefined
       ? null
       : Array.from(images).find(image => {
           const bounds = image.getBoundingClientRect();
           return event.clientX >= bounds.left && event.clientX < bounds.right &&
             event.clientY >= bounds.top && event.clientY < bounds.bottom;
-        }) ?? null;
+        }) ?? null);
     const sourceWidth = imageElement?.naturalWidth ?? 0;
     const sourceHeight = imageElement?.naturalHeight ?? 0;
     const bounds = imageElement?.getBoundingClientRect();
@@ -226,7 +231,9 @@ export class ImageRendererComponent implements OnDestroy {
       // Sample the visible image directly. This avoids stale or unavailable pixels
       // in the separately preloaded canvas when the displayed image changes.
       this.pixelContext.clearRect(0, 0, 1, 1);
-      this.pixelContext.drawImage(imageElement, x, y, 1, 1, 0, 0, 1, 1);
+      // Draw the source image at a negative offset so the requested source pixel
+      // lands at canvas coordinate (0, 0). This avoids source-rectangle edge cases.
+      this.pixelContext.drawImage(imageElement, -x, -y);
       const pixel = this.pixelContext.getImageData(0, 0, 1, 1).data;
       this.pixelColorChange.emit({ r: pixel[0], g: pixel[1], b: pixel[2] });
     } catch {
