@@ -189,10 +189,15 @@ export class ImageRendererComponent implements OnDestroy {
   protected readonly onMouseDown = (event: MouseEvent) => this.imagePositioningService.startPanning(event);
 
   protected readonly onSurfaceMouseMove = (event: MouseEvent) => {
-    const target = event.target;
-    const imageElement = target instanceof HTMLImageElement && target.classList.contains('comparison-image')
-      ? target
-      : null;
+    const surface = this.viewportRef()?.nativeElement;
+    const images = surface?.querySelectorAll<HTMLImageElement>('.comparison-image:not(.hidden-variant)');
+    const imageElement = images === undefined
+      ? null
+      : Array.from(images).find(image => {
+          const bounds = image.getBoundingClientRect();
+          return event.clientX >= bounds.left && event.clientX < bounds.right &&
+            event.clientY >= bounds.top && event.clientY < bounds.bottom;
+        }) ?? null;
     const sourceWidth = imageElement?.naturalWidth ?? 0;
     const sourceHeight = imageElement?.naturalHeight ?? 0;
     const bounds = imageElement?.getBoundingClientRect();
