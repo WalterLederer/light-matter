@@ -1,0 +1,154 @@
+import { writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { ScreenCapture } from '@screen-capture/node';
+
+function halfToFloat(h) {
+  const sign = (h & 0x8000) ? -1 : 1;
+  const exponent = (h >> 10) & 0x1f;
+  const fraction = h & 0x03ff;
+  if (exponent === 0) return fraction === 0 ? sign * 0 : sign * 2 ** -14 * (fraction / 1024);
+  if (exponent === 0x1f) return fraction === 0 ? sign * Infinity : NaN;
+  return sign * 2 ** (exponent - 15) * (1 + fraction / 1024);
+}
+
+function pixelAt(buffer, width, height, x, y) {
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= width || y >= height) {
+    throw new RangeError('Pixel (' + x + ', ' + y + ') is outside ' + width + 'x' + height);
+  }
+  const offset = (y * width + x) * 8;
+  const values = [];
+  for (let channel = 0; channel < 4; channel++) values.push(halfToFloat(buffer.readUInt16LE(offset + channel * 2)));
+  return { x, y, r: values[0], g: values[1], b: values[2], a: values[3] };
+}
+
+function parseArgs(args) {
+  const result = { monitor: 1, sample: null, rawPath: null, jsonPath: 'node-wgc-fp16-test.json' };
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--monitor') result.monitor = Number(args[++i]);
+    else if (arg === '--sample') {
+      const parts = (args[++i] ?? '').split(',').map(Number);
+      if (parts.length !== 2 || parts.some(n => !Number.isInteger(n))) {
+        throw new Error('--sample expects X,Y, for example --sample 1920,1080');
+      }
+      result.sample = { x: parts[0], y: parts[1] };
+    } else if (arg === '--raw') result.rawPath = args[++i] ?? 'node-wgc-fp16.rgba16f';
+    else if (arg === '--json') result.jsonPath = args[++i] ?? result.jsonPath;
+    else if (arg === '--help' || arg === '-h') {
+      console.log('Usage: node node-screen-capture-fp16-test.mjs [--monitor 1] [--sample X,Y] [--raw [file]] [--json file]');
+      process.exit(0);
+    } else throw new Error('Unknown argument: ' + arg);
+  }
+  if (!Number.isInteger(result.monitor) || result.monitor < 1) throw new Error('--monitor must be a positive one-based monitor index');
+  return result;
+}
+
+const options = parseArgs(process.argv.slice(2));
+const capture = new ScreenCapture({
+  monitorIndex: options.monitor,
+  colorFormat: 'rgba16F',
+  cursorCapture: false,
+  drawBorder: false,
+  minimumUpdateIntervalMs: 0,
+});
+
+let report;
+try {
+  const start = performance.now();
+  await capture.start();
+  const frame = await capture.nextFrame();
+  const elapsedMs = performance.now() - start;
+  if (!frame) throw new Error('Capture ended without delivering a frame');
+
+  const buffer = frame.buffer;
+  const expectedBytes = frame.width * frame.height * 8;
+  const format = frame.colorFormat;
+  const reportBase = {
+    package: '@screen-capture/node',
+    requestedColorFormat: 'rgba16F',
+    actualColorFormat: format,
+    width: frame.width,
+    height: frame.height,
+    rowPitch: frame.rowPitch,
+    depthPitch: frame.depthPitch,
+    bufferBytes: buffer.byteLength,
+    expectedPackedRgba16fBytes: expectedBytes,
+    byteLengthMatchesExpected: buffer.byteLength === expectedBytes,
+    rowPitchMatchesExpected: frame.rowPitch === frame.width * 8,
+    frameWaitAndStartupMs: Number(elapsedMs.toFixed(2)),
+    timestamp: frame.timestamp,
+    sample: pixelAt(buffer, frame.width, frame.height,
+      options.sample?.x ?? Math.floor(frame.width / 2),
+      options.sample?.y ?? Math.floor(frame.height / 2)),
+  };
+
+  let min = Infinity, max = -Infinity;
+  const minRgb = [Infinity, Infinity, Infinity], maxRgb = [-Infinity, -Infinity, -Infinity];
+  let negativeRgbCount = 0, aboveOneRgbCount = 0, nonFiniteRgbCount = 0;
+  let alphaMin = Infinity, alphaMax = -Infinity;
+  let firstAboveOne = null, firstNegative = null, firstNonFinite = null;
+  const pixelCount = frame.width * frame.height;
+  const channelNames = ['r', 'g', 'b'];
+
+  for (let pixel = 0; pixel < pixelCount; pixel++) {
+    const offset = pixel * 8;
+    for (let c = 0; c < 3; c++) {
+      const value = halfToFloat(buffer.readUInt16LE(offset + c * 2));
+      if (!Number.isFinite(value)) {
+        nonFiniteRgbCount++;
+        if (!firstNonFinite) firstNonFinite = { x: pixel % frame.width, y: Math.floor(pixel / frame.width), channel: channelNames[c], value: String(value) };
+        continue;
+      }
+      min = Math.min(min, value);
+      max = Math.max(max, value);
+      minRgb[c] = Math.min(minRgb[c], value);
+      maxRgb[c] = Math.max(maxRgb[c], value);
+      if (value < 0) {
+        negativeRgbCount++;
+        if (!firstNegative) firstNegative = { x: pixel % frame.width, y: Math.floor(pixel / frame.width), channel: channelNames[c], value };
+      }
+      if (value > 1) {
+        aboveOneRgbCount++;
+        if (!firstAboveOne) firstAboveOne = { x: pixel % frame.width, y: Math.floor(pixel / frame.width), channel: channelNames[c], value };
+      }
+    }
+    const alpha = halfToFloat(buffer.readUInt16LE(offset + 6));
+    if (Number.isFinite(alpha)) {
+      alphaMin = Math.min(alphaMin, alpha);
+      alphaMax = Math.max(alphaMax, alpha);
+    }
+  }
+
+  report = {
+    ...reportBase,
+    scan: {
+      rgbMin: min, rgbMax: max,
+      rgbMinByChannel: { r: minRgb[0], g: minRgb[1], b: minRgb[2] },
+      rgbMaxByChannel: { r: maxRgb[0], g: maxRgb[1], b: maxRgb[2] },
+      negativeRgbChannelValues: negativeRgbCount,
+      rgbChannelValuesAboveOne: aboveOneRgbCount,
+      nonFiniteRgbChannelValues: nonFiniteRgbCount,
+      alphaMin, alphaMax, firstAboveOne, firstNegative, firstNonFinite,
+      pixelsScanned: pixelCount,
+    },
+    verdict: {
+      formatReportedAsRgba16F: format === 'rgba16F' || String(format).toLowerCase().includes('rgba16f'),
+      packedRgba16fBufferSize: buffer.byteLength === expectedBytes,
+      hasRgbValuesAboveOne: aboveOneRgbCount > 0,
+      hasNegativeRgbValues: negativeRgbCount > 0,
+      note: 'Format and buffer size establish the expected layout, not by themselves that HDR values survived the Windows compositor. Compare sample and extrema with the existing WGC EXR capture.',
+    },
+  };
+
+  if (options.rawPath) {
+    const rawPath = resolve(options.rawPath);
+    await writeFile(rawPath, buffer);
+    report.rawFile = rawPath;
+  }
+  const jsonPath = resolve(options.jsonPath);
+  await writeFile(jsonPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
+  console.log(JSON.stringify(report, null, 2));
+  console.log('\nJSON report: ' + jsonPath);
+} finally {
+  await capture.stop().catch(error => console.error('Capture stop failed:', error));
+}
