@@ -253,6 +253,8 @@ export class ImageView {
 
   protected readonly zoomSlider = new FormControl(100, { nonNullable: true });
 
+  protected readonly loupeSlider = new FormControl(16, { nonNullable: true });
+
   protected readonly isFullScreen = toSignal(
     fromEvent(this.document, 'fullscreenchange')
       .pipe(
@@ -334,6 +336,11 @@ export class ImageView {
           this.exifState.set(tags ?? false);
         }
       });
+
+    this.loupeSlider
+      .valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(value => this.loupePixelSize.set(value));
 
     this.zoomSlider
       .valueChanges
@@ -482,7 +489,7 @@ export class ImageView {
 
   protected readonly adjustZoom = (direction: 1 | -1) => {
     if (this.loupeEnabled()) {
-      this.loupePixelSize.update(size => Math.max(8, Math.min(36, size + direction * 4)));
+      this.loupeSlider.setValue(Math.max(8, Math.min(36, this.loupeSlider.value + direction * 4)));
       return;
     }
 
