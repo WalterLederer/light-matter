@@ -9,18 +9,6 @@
 @let isHdrImage = imageDynamicRange(selected?.path ?? '', imageTags(), imageBitDepth()) === 'HDR';
 
 @if (selected !== null) {
-  @if (!fullScreen) {
-    <ui-tool-menu>
-      <section></section>
-      <section>
-        <ui-text [title]="selected.path | fileName">
-          {{ selected.path | fileName }}
-        </ui-text>
-      </section>
-      <section></section>
-    </ui-tool-menu>
-  }
-
   <app-image-renderer [url]="selected.url"
                       [comparisonMode]="isHdrImage ? comparisonMode() : 'sdr'"
                       [comparisonSplit]="comparisonSplit()"
@@ -179,9 +167,9 @@
                 <span class="rgb-swatch" aria-label="No pixel selected"></span>
                 <span class="rgb-values">R:-- G:-- B:--</span>
                 <span class="rgb-channels" aria-hidden="true">
-                  <span class="rgb-channel"><span class="rgb-channel-label">R</span><span class="rgb-track"></span></span>
-                  <span class="rgb-channel"><span class="rgb-channel-label">G</span><span class="rgb-track"></span></span>
-                  <span class="rgb-channel"><span class="rgb-channel-label">B</span><span class="rgb-track"></span></span>
+                  <span class="rgb-channel"><span class="rgb-track"></span></span>
+                  <span class="rgb-channel"><span class="rgb-track"></span></span>
+                  <span class="rgb-channel"><span class="rgb-track"></span></span>
                 </span>
               }
             </span>
