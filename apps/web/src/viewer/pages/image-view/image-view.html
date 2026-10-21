@@ -214,9 +214,11 @@
                    [inherit]="true" />
         </ui-action-button>
 
+        <button class="zoom-step-button" type="button" title="Zoom out (-)" aria-label="Zoom out" (click)="adjustZoom(-1)">−</button>
         <ui-slider [formControl]="zoomSlider"
                    [min]="zoomConfig.min"
                    [max]="zoomConfig.max" />
+        <button class="zoom-step-button" type="button" title="Zoom in (+)" aria-label="Zoom in" (click)="adjustZoom(1)">+</button>
 
         <ui-text class="no-shrink zoom-info">
           @let zoomValue = location.zoom === 'fit' ? location.fitZoom : zoomSlider.value;
