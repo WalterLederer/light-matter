@@ -11,6 +11,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(OpenEXR CONFIG REQUIRED)
 
-add_executable(hdr-capture WIN32 main.cpp)
+add_executable(hdr-capture main.cpp)
 target_compile_definitions(hdr-capture PRIVATE UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
 target_link_libraries(hdr-capture PRIVATE d3d11 dxgi OpenEXR::OpenEXR)
