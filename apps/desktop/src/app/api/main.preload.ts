@@ -49,6 +49,12 @@ const api: Desktop = {
     calculate: (path: string) => ipcRenderer.invoke('Histogram.calculate', path)
   },
 
+  Loupe: {
+    capture: () => ipcRenderer.invoke('Loupe.capture'),
+    sample: (x: number, y: number, radius?: number) => ipcRenderer.invoke('Loupe.sample', x, y, radius),
+    release: () => ipcRenderer.invoke('Loupe.release')
+  },
+
   // TODO: Deprecated methods, should be moved into a handler class in the future
   openFolder: () => ipcRenderer.invoke('openFolder'),
   openFile: () => ipcRenderer.invoke('openFile'),
