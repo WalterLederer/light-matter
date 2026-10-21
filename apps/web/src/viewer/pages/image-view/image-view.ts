@@ -13,7 +13,7 @@ import {
   TextComponent,
   ToolMenuComponent
 } from '@light-matter/ui';
-import { ExifTags, ImageHistogram } from 'internal-api';
+import { Desktop, ExifTags, ImageHistogram } from 'internal-api';
 import { catchError, distinctUntilChanged, filter, from, fromEvent, map, of, startWith, switchMap, take, tap } from 'rxjs';
 import { ExifService } from '../../../ipc/exif';
 import { HistogramService } from '../../../ipc/histogram';
@@ -105,6 +105,26 @@ export class ImageView {
   protected readonly decodeDuration = signal<number | null>(null);
 
   protected readonly imageLoadFailed = signal(false);
+
+  protected readonly loupeEnabled = signal(false);
+
+  protected readonly loupeCapturePending = signal(false);
+
+  protected readonly loupeSample = signal<{
+    width: number; height: number; x: number; y: number; radius: number;
+    center: { r: number; g: number; b: number; rHex: string; gHex: string; bHex: string; color: string };
+    pixels: Array<{ x: number; y: number; color: string }>;
+  } | null>(null);
+
+  protected readonly loupePixelSize = signal(16);
+
+  private loupeCaptureRequest = 0;
+
+  private loupeSampleRequest = 0;
+
+  private get desktop(): Desktop | undefined {
+    return (this.document.defaultView as (Window & { desktop?: Desktop }) | null)?.desktop;
+  }
 
   protected readonly comparisonMode = signal<'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side' | 'dual-stacked'>('hdr');
 
@@ -382,9 +402,72 @@ export class ImageView {
     }
   };
 
-  protected readonly fitToWindow = () => this.imagePositioningService.setZoom('fit');
+  protected readonly fitToWindow = () => {
+    if (!this.loupeEnabled()) this.imagePositioningService.setZoom('fit');
+  };
+
+  protected readonly toggleLoupe = async (enabled: boolean) => {
+    this.loupeEnabled.set(enabled);
+    this.loupeSample.set(null);
+    this.loupeSampleRequest++;
+    if (!enabled) {
+      this.loupeCaptureRequest++;
+      this.loupeCapturePending.set(false);
+      await this.desktop?.Loupe.release().catch(() => undefined);
+      return;
+    }
+    await this.captureLoupeAfterRender();
+  };
+
+  protected readonly onLoupeMouseMove = (event: MouseEvent) => {
+    if (!this.loupeEnabled() || this.loupeCapturePending()) return;
+    const request = ++this.loupeSampleRequest;
+    const scale = this.document.defaultView?.devicePixelRatio ?? 1;
+    const radius = 5;
+    this.desktop?.Loupe.sample(event.clientX * scale, event.clientY * scale, radius)
+      .then(sample => {
+        if (request === this.loupeSampleRequest && this.loupeEnabled()) this.loupeSample.set(sample);
+      })
+      .catch(() => undefined);
+  };
+
+  protected readonly onLoupeMouseLeave = () => {
+    this.loupeSampleRequest++;
+    this.loupeSample.set(null);
+  };
+
+  protected readonly onImageRendered = () => {
+    if (this.loupeEnabled()) void this.captureLoupeAfterRender();
+  };
+
+  private readonly captureLoupeAfterRender = async () => {
+    const desktop = this.desktop;
+    if (!this.loupeEnabled() || !desktop) return;
+    const request = ++this.loupeCaptureRequest;
+    this.loupeSample.set(null);
+    this.loupeCapturePending.set(true);
+    // Let Angular update the image and hide the loupe overlay before capturing the window.
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    if (!this.loupeEnabled() || request !== this.loupeCaptureRequest) {
+      this.loupeCapturePending.set(false);
+      return;
+    }
+    try {
+      await desktop.Loupe.capture();
+    } catch (error) {
+      console.error('HDR loupe capture failed:', error);
+      this.loupeEnabled.set(false);
+    } finally {
+      if (request === this.loupeCaptureRequest) this.loupeCapturePending.set(false);
+    }
+  };
 
   protected readonly adjustZoom = (direction: 1 | -1) => {
+    if (this.loupeEnabled()) {
+      this.loupePixelSize.update(size => Math.max(8, Math.min(36, size + direction * 4)));
+      return;
+    }
+
     this.imageLocation$
       .pipe(take(1))
       .subscribe(location => {
