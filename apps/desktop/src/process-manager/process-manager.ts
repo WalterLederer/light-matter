@@ -12,7 +12,7 @@ export class ProcessManager {
   readonly getAppVersion = async (): Promise<string> => {
     try {
       const { mtime } = await stat(process.execPath);
-      return `${environment.version} Mod ${mtime.toLocaleString('de-AT')}`;
+      return `${environment.version} ${mtime.toLocaleString('de-AT')}`;
     } catch (_) {
       return environment.version;
     }
