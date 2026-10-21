@@ -55,27 +55,26 @@
       visibility: hidden;
     }
 
-    .loupe-pixel-grid {
-      display: grid;
-      grid-template-columns: repeat(11, var(--loupe-pixel-size));
-      grid-template-rows: repeat(11, var(--loupe-pixel-size));
-      width: max-content;
-      height: max-content;
-      border: 1px solid rgb(255 255 255 / 42%);
-      image-rendering: pixelated;
+    .loupe-image-viewport {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      overflow: hidden;
+      border: 1px solid rgb(255 255 255 / 58%);
+      background: #08090b;
+      contain: strict;
     }
 
-    .loupe-pixel {
-      display: block;
-      width: var(--loupe-pixel-size);
-      height: var(--loupe-pixel-size);
-      box-sizing: border-box;
-    }
-
-    .center-pixel {
-      outline: 2px solid #fff;
-      outline-offset: -2px;
-      box-shadow: inset 0 0 0 1px #000;
+    .loupe-image {
+      position: absolute;
+      max-width: none;
+      max-height: none;
+      transform-origin: top left;
+      dynamic-range-limit: no-limit;
+      clip-path: inset(0 0 0 0);
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
     }
 
     .loupe-readout {
@@ -87,7 +86,6 @@
       font-variant-numeric: tabular-nums;
     }
   }
-
   .histogram-overlay {
     position: absolute;
     z-index: 11;

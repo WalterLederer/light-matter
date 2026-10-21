@@ -27,18 +27,27 @@
                       (mousemove)="onLoupeMouseMove($event)"
                       (mouseleave)="onLoupeMouseLeave()" />
 
-  @if (loupeEnabled() && loupeSample(); as sample) {
-    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [style.--loupe-pixel-size]="loupePixelSize() + 'px'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
-      <div class="loupe-pixel-grid">
-        @for (pixel of sample.pixels; track pixel.x + ':' + pixel.y) {
-          <span class="loupe-pixel" [class.center-pixel]="pixel.x === 0 && pixel.y === 0" [style.background-color]="pixel.color"></span>
-        }
+  @if (loupeEnabled() && selected !== null) {
+    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
+      <div class="loupe-image-viewport">
+        <img class="loupe-image"
+             [src]="selected.url"
+             [width]="dimensions.width"
+             [height]="dimensions.height"
+             [style.left.px]="140 - loupeSourcePoint().x * loupePixelSize()"
+             [style.top.px]="140 - loupeSourcePoint().y * loupePixelSize()"
+             [style.transform]="'scale(' + loupePixelSize() + ')'"
+             alt=""
+             aria-hidden="true"
+             draggable="false" />
       </div>
-      <div class="loupe-readout">
-        <span>X {{ sample.x }} · Y {{ sample.y }}</span>
-        <span>R {{ sample.center.rHex }} · G {{ sample.center.gHex }} · B {{ sample.center.bHex }}</span>
-        <span>scRGB {{ sample.center.r | number:'1.0-4' }}, {{ sample.center.g | number:'1.0-4' }}, {{ sample.center.b | number:'1.0-4' }}</span>
-      </div>
+      @if (loupeSample(); as sample) {
+        <div class="loupe-readout">
+          <span>X {{ sample.x }} · Y {{ sample.y }}</span>
+          <span>R {{ sample.center.rHex }} · G {{ sample.center.gHex }} · B {{ sample.center.bHex }}</span>
+          <span>scRGB {{ sample.center.r | number:'1.0-4' }}, {{ sample.center.g | number:'1.0-4' }}, {{ sample.center.b | number:'1.0-4' }}</span>
+        </div>
+      }
     </aside>
   }
 

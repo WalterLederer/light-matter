@@ -120,6 +120,8 @@ export class ImageView {
 
   protected readonly loupePixelSize = signal(24);
 
+  protected readonly loupeSourcePoint = signal({ x: 0, y: 0 });
+
   protected readonly loupeCaptureGeometry = signal<{ width: number; height: number; x: number; y: number; windowWidth: number; windowHeight: number } | null>(null);
 
   protected readonly loupePosition = signal({ x: 24, y: 80 });
@@ -448,11 +450,35 @@ export class ImageView {
     const view = this.document.defaultView;
     const viewWidth = view?.innerWidth ?? 1280;
     const viewHeight = view?.innerHeight ?? 720;
-    const loupeWidth = 300;
-    const loupeHeight = 290;
+    const loupeWidth = 310;
+    const loupeHeight = 390;
     const left = event.clientX > viewWidth - loupeWidth - 24 ? event.clientX - loupeWidth - 20 : event.clientX + 20;
     const top = event.clientY > viewHeight - loupeHeight - 24 ? event.clientY - loupeHeight - 20 : event.clientY + 20;
     this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
+
+    // Map the pointer to source-image coordinates for the clipped HDR <img>.
+    // The independent FP16 screen capture below remains the source for RGB values.
+    const renderer = event.currentTarget as HTMLElement | null;
+    const candidateImages = renderer?.querySelectorAll<HTMLImageElement>('.comparison-image:not(.hidden-variant)');
+    const image = event.target instanceof HTMLImageElement && event.target.matches('.comparison-image:not(.hidden-variant)')
+      ? event.target
+      : Array.from(candidateImages ?? []).find(candidate => {
+          const bounds = candidate.getBoundingClientRect();
+          return event.clientX >= bounds.left && event.clientX < bounds.right &&
+            event.clientY >= bounds.top && event.clientY < bounds.bottom;
+        }) ?? null;
+    if (image !== null && image.naturalWidth > 0 && image.naturalHeight > 0) {
+      const bounds = image.getBoundingClientRect();
+      const scale = Math.min(bounds.width / image.naturalWidth, bounds.height / image.naturalHeight);
+      const renderedWidth = image.naturalWidth * scale;
+      const renderedHeight = image.naturalHeight * scale;
+      const imageLeft = bounds.left + (bounds.width - renderedWidth) / 2;
+      const imageTop = bounds.top + (bounds.height - renderedHeight) / 2;
+      const sourceX = Math.max(0, Math.min(image.naturalWidth - 1, (event.clientX - imageLeft) / scale));
+      const sourceY = Math.max(0, Math.min(image.naturalHeight - 1, (event.clientY - imageTop) / scale));
+      this.loupeSourcePoint.set({ x: sourceX, y: sourceY });
+    }
+
     const geometry = this.loupeCaptureGeometry();
     if (!geometry || !view) return;
     // screenX/screenY and BrowserWindow bounds are both in Electron DIP units.
