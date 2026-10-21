@@ -358,6 +358,16 @@
       }
     }
 
+    .zoom-step-button {
+      border: 0;
+      padding: 0 3px;
+      color: var(--color-content-primary-high);
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: underline;
+    }
+
     ui-slider {
       width: 150px;
     }
