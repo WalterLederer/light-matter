@@ -258,7 +258,7 @@ export class ImageView {
     this.selectedImage$
       .pipe(takeUntilDestroyed())
       .subscribe(image => {
-        this.processManager.setWindowTitle(image?.path ?? 'Light Matter').catch(() => undefined);
+        this.processManager.setWindowTitle(image ? `Light Matter - ${image.path}` : 'Light Matter').catch(() => undefined);
       });
 
     this.trackKeyboard();
@@ -369,6 +369,23 @@ export class ImageView {
   };
 
   protected readonly fitToWindow = () => this.imagePositioningService.setZoom('fit');
+
+  protected readonly adjustZoom = (direction: 1 | -1) => {
+    this.imageLocation$
+      .pipe(take(1))
+      .subscribe(location => {
+        const currentZoom = location.zoom === 'fit' ? location.fitZoom : this.zoomSlider.value;
+        const zoomStep = Math.min(
+          Math.max(
+            this.zoomConfig.scroll.minStep,
+            Math.round(currentZoom * this.zoomConfig.scroll.coefficient)
+          ),
+          this.zoomConfig.scroll.maxStep
+        );
+        const nextZoom = this.calculateWheelZoom(direction > 0 ? -1 : 1, currentZoom, zoomStep);
+        this.zoomSlider.setValue(Math.max(this.zoomConfig.min, Math.min(this.zoomConfig.max, nextZoom)));
+      });
+  };
 
   protected readonly toggleExifInfo = (path: string) => {
     const exifVisible = !this.exifVisible();
@@ -520,6 +537,18 @@ export class ImageView {
 
         const target = event.target;
         if (target instanceof HTMLElement && target.matches('input, textarea, [contenteditable="true"]')) {
+          return;
+        }
+
+        if (event.key === '+' || event.key === '=' || event.key === 'Add') {
+          event.preventDefault();
+          this.adjustZoom(1);
+          return;
+        }
+
+        if (event.key === '-' || event.key === '_' || event.key === 'Subtract') {
+          event.preventDefault();
+          this.adjustZoom(-1);
           return;
         }
 
