@@ -165,18 +165,15 @@
               @if (imagePosition !== null) {
                 · {{ imagePosition.position }} / {{ imagePosition.total }}
               }
-              @if (decodeDuration() !== null) {
-                · {{ decodeDuration() | number: '1.2-2' }} s
-              }
             </span>
             <span class="rgb-readout" title="RGB pixel color under mouse pointer">
               @if (pixelColor(); as rgb) {
                 <span class="rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
                 <span class="rgb-values">R:{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }} G:{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }} B:{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
                 <span class="rgb-channels" aria-label="RGB channel levels">
-                  <span class="rgb-channel"><span class="rgb-channel-label">R</span><span class="rgb-track"><span class="rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
-                  <span class="rgb-channel"><span class="rgb-channel-label">G</span><span class="rgb-track"><span class="rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
-                  <span class="rgb-channel"><span class="rgb-channel-label">B</span><span class="rgb-track"><span class="rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
+                  <span class="rgb-channel"><span class="rgb-track"><span class="rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
+                  <span class="rgb-channel"><span class="rgb-track"><span class="rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
+                  <span class="rgb-channel"><span class="rgb-track"><span class="rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
                 </span>
               } @else {
                 <span class="rgb-swatch" aria-label="No pixel selected"></span>
