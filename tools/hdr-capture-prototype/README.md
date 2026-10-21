@@ -27,14 +27,30 @@ If `VCPKG_ROOT` is not set, replace the toolchain path with the full path to you
 
 ## Run
 
-With Windows HDR enabled:
+With Windows HDR enabled, capture the primary monitor:
 
 ```powershell
 .\build\Release\hdr-capture.exe .\hdr-capture.exr
 
 ```
 
-Open the EXR in Light Matter. The important checks are whether WGC returns format enum `10` (`DXGI_FORMAT_R16G16B16A16_FLOAT`), whether the capture burst delivers frames continuously, and whether the EXR preserves expected HDR highlights.
+To test capturing only the Light Matter window, first find its HWND:
+
+```powershell
+Get-Process |
+  Where-Object { $_.MainWindowTitle -like '*Light Matter*' -and $_.MainWindowHandle -ne 0 } |
+  Select-Object ProcessName, MainWindowTitle, @{Name='HWND'; Expression={ '0x{0:X}' -f $_.MainWindowHandle.ToInt64() }}
+
+```
+
+Then pass that handle (keep Light Matter open and showing the HDR image):
+
+```powershell
+.\build\Release\hdr-capture.exe --hwnd 0x123456 .\light-matter-window.exr
+
+```
+
+Replace `0x123456` with the actual HWND printed by the command. Open the resulting EXR in Light Matter. For this test, verify that the dimensions match the app window and the actual texture format is enum `10` (`DXGI_FORMAT_R16G16B16A16_FLOAT`). If the window capture is SDR/8-bit, do not use it for the HDR loupe; report the complete console output instead.
 
 ## Integration design for the cursor loupe
 
