@@ -130,6 +130,7 @@
               <th scope="col">HDR</th>
               <th scope="col">Full-size cache</th>
               <th scope="col">Bit depth</th>
+              <th scope="col">Decoder</th>
               <th scope="col">Details</th>
             </tr>
           </thead>
@@ -155,6 +156,7 @@
                   }
                 </td>
                 <td>{{ format.bitDepth }}</td>
+                <td>{{ decoderFor(format.extensions) }}</td>
                 <td>{{ format.details }}</td>
               </tr>
             }

@@ -60,6 +60,31 @@ export class SettingsDialogComponent {
 
   protected readonly supportedFormats = supportedFileFormats;
 
+  protected readonly decoderFor = (extensions: readonly string[]): string => {
+    const normalized = extensions.map(extension => extension.toLowerCase());
+
+    if (normalized.some(extension => extension === '.jxr')) {
+      return 'jpegxr';
+    }
+    if (normalized.some(extension => extension === '.avif')) {
+      return 'libvips (AVIF/HEIF)';
+    }
+    if (normalized.some(extension => ['.heif', '.heic'].includes(extension))) {
+      return 'libheif-js (HDR: custom decoder)';
+    }
+    if (normalized.some(extension => extension === '.exr')) {
+      return 'exrs';
+    }
+    if (normalized.some(extension => extension === '.hdr')) {
+      return 'libvips (Radiance HDR)';
+    }
+    if (normalized.some(extension => ['.tif', '.tiff'].includes(extension))) {
+      return 'libvips (TIFF)';
+    }
+
+    return 'Chromium / Electron';
+  };
+
   /* Constructor */
   constructor() {
     this.updateCacheInfo().then();
