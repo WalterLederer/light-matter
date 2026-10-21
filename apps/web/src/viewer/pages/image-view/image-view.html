@@ -238,9 +238,13 @@
         </ui-action-button>
 
         <button class="zoom-step-button" type="button" title="Zoom out (-)" aria-label="Zoom out" (click)="adjustZoom(-1)">−</button>
-        <ui-slider [formControl]="zoomSlider"
-                   [min]="zoomConfig.min"
-                   [max]="zoomConfig.max" />
+        @if (loupeEnabled()) {
+          <ui-slider [formControl]="loupeSlider" [min]="8" [max]="36" />
+        } @else {
+          <ui-slider [formControl]="zoomSlider"
+                     [min]="zoomConfig.min"
+                     [max]="zoomConfig.max" />
+        }
         <button class="zoom-step-button" type="button" title="Zoom in (+)" aria-label="Zoom in" (click)="adjustZoom(1)">+</button>
 
         <label class="loupe-toggle" title="Toggle HDR cursor loupe (FP16 window capture)" [class.active]="loupeEnabled()">
@@ -250,7 +254,7 @@
 
         <ui-text class="no-shrink zoom-info">
           @let zoomValue = location.zoom === 'fit' ? location.fitZoom : zoomSlider.value;
-          {{ zoomValue | number: '1.0-0' }}%
+          @if (loupeEnabled()) { {{ loupePixelSize() }} px } @else { {{ zoomValue | number: '1.0-0' }}% }
         </ui-text>
 
         <app-vertical-divider />
