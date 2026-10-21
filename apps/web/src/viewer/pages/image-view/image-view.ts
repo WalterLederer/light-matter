@@ -24,7 +24,6 @@ import { Configuration } from '../../../system/services/configuration/configurat
 import { Keyboard } from '../../../system/services/keyboard/keyboard';
 import { ExifInfoComponent } from '../../components/exif-info/exif-info.component';
 import { ImageRendererComponent } from '../../components/image-renderer/image-renderer.component';
-import { FileNamePipe } from '../../pipes/file-name/file-name-pipe';
 import { imageDynamicRange } from '../../utils/image-dynamic-range';
 import { ImagePositioningService } from '../../services/image-positioning/image-positioning.service';
 import {
@@ -44,7 +43,6 @@ import { AnimationState } from './image-view.types';
     IconComponent,
     VerticalDivider,
     TextComponent,
-    FileNamePipe,
     DefaultPipe,
     SliderComponent,
     ReactiveFormsModule,

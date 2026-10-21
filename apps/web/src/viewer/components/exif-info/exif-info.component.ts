@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { ExifTags } from 'internal-api';
 import { ByteSizePipe } from '../../../ui/pipes/byte-size/byte-size.pipe';
@@ -7,7 +7,7 @@ import { imageDynamicRangeDiagnostics } from '../../utils/image-dynamic-range';
 
 @Component({
   selector: 'app-exif-info',
-  imports: [ DatePipe, ByteSizePipe ],
+  imports: [ DatePipe, DecimalPipe, ByteSizePipe ],
   templateUrl: './exif-info.component.html',
   styleUrl: './exif-info.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
