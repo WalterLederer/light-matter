@@ -530,7 +530,7 @@ export class ImageView {
 
   protected readonly adjustZoom = (direction: 1 | -1) => {
     if (this.loupeEnabled()) {
-      this.loupeSlider.setValue(Math.max(8, Math.min(64, this.loupeSlider.value + direction * 4)));
+      this.loupeSlider.setValue(Math.max(4, Math.min(64, this.loupeSlider.value + direction * 4)));
       return;
     }
 
@@ -616,7 +616,7 @@ export class ImageView {
     event.preventDefault();
 
     if (this.loupeEnabled()) {
-      if (event.deltaY !== 0) this.loupeSlider.setValue(Math.max(8, Math.min(64, this.loupeSlider.value + (event.deltaY < 0 ? 4 : -4))));
+      if (event.deltaY !== 0) this.loupeSlider.setValue(Math.max(4, Math.min(64, this.loupeSlider.value + (event.deltaY < 0 ? 4 : -4))));
       return;
     }
 
