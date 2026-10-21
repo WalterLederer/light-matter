@@ -5,6 +5,8 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { Injector } from '../../injector/injector';
 import { IpcRegistry } from '../decorators/ipc-registry';
+import { captureLoupeFrame, releaseLoupeFrame, sampleLoupeRegion } from '../loupe-capture';
+import App from '../app';
 
 export default class ElectronEvents {
   static bootstrapElectronEvents(): Electron.IpcMain {
@@ -81,6 +83,18 @@ ipcMain.handle('openFileFromArgs', async (_: IpcMainInvokeEvent, fileName: strin
     }
   };
 });
+
+ipcMain.handle('Loupe.capture', async () => {
+  if (process.platform !== 'win32' || !App.mainWindow || App.mainWindow.isDestroyed()) {
+    throw new Error('HDR loupe capture is unavailable.');
+  }
+  const handle = App.mainWindow.getNativeWindowHandle();
+  const windowHandle = Number(handle.readBigUInt64LE(0));
+  return captureLoupeFrame(windowHandle);
+});
+
+ipcMain.handle('Loupe.sample', (_event, x: number, y: number, radius?: number) => sampleLoupeRegion(x, y, radius));
+ipcMain.handle('Loupe.release', () => releaseLoupeFrame());
 
 ipcMain.on('quit', (_, code) => app.exit(code));
 
