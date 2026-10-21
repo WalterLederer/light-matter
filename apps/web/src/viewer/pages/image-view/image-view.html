@@ -30,6 +30,7 @@
                       (animationend)="onAnimationEnd($event)"
                       (dimensions)="imageDimensions.set($event)"
                       (pixelColorChange)="pixelColor.set($event)"
+                      (pixelDebugChange)="pixelDebug.set($event)"
                       (dblclick)="toggleFullScreen()"
                       (loadingChange)="isDecoding.set($event); decodeDuration.set(null); imageLoadFailed.set(false)"
                       (loadDuration)="decodeDuration.set($event)"
@@ -178,6 +179,7 @@
                 </span>
               }
             </span>
+            <span class="rgb-debug" title="Temporary RGB diagnostic">{{ pixelDebug() }}</span>
             ·
             {{ dimensions.width }} x {{ dimensions.height }}
             @if (imagePosition !== null) {

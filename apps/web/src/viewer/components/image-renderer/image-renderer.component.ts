@@ -65,6 +65,8 @@ export class ImageRendererComponent implements OnDestroy {
 
   readonly pixelColorChange = output<{ r: number; g: number; b: number } | null>();
 
+  readonly pixelDebugChange = output<string>();
+
   readonly loadingChange = output<boolean>();
 
   readonly loadDuration = output<number>();
@@ -191,11 +193,11 @@ export class ImageRendererComponent implements OnDestroy {
   protected readonly onSurfaceMouseMove = (event: MouseEvent) => {
     const surface = this.viewportRef()?.nativeElement;
     const target = event.target;
+    const images = surface?.querySelectorAll<HTMLImageElement>('.comparison-image:not(.hidden-variant)');
     const targetImage = target instanceof HTMLImageElement &&
       target.matches('.comparison-image:not(.hidden-variant)')
       ? target
       : null;
-    const images = surface?.querySelectorAll<HTMLImageElement>('.comparison-image:not(.hidden-variant)');
     const imageElement = targetImage ?? (images === undefined
       ? null
       : Array.from(images).find(image => {
@@ -203,12 +205,32 @@ export class ImageRendererComponent implements OnDestroy {
           return event.clientX >= bounds.left && event.clientX < bounds.right &&
             event.clientY >= bounds.top && event.clientY < bounds.bottom;
         }) ?? null);
-    const sourceWidth = imageElement?.naturalWidth ?? 0;
-    const sourceHeight = imageElement?.naturalHeight ?? 0;
-    const bounds = imageElement?.getBoundingClientRect();
 
-    if (imageElement === null || this.pixelContext === null || bounds === undefined ||
-        sourceWidth <= 0 || sourceHeight <= 0 || bounds.width <= 0 || bounds.height <= 0) {
+    const targetDescription = target instanceof HTMLElement
+      ? `${target.tagName.toLowerCase()}.${String(target.className).replace(/\\s+/g, '.').slice(0, 48)}`
+      : String(target);
+    const imageDescription = imageElement === null
+      ? 'none'
+      : `${imageElement.className} ${imageElement.naturalWidth}x${imageElement.naturalHeight} complete=${imageElement.complete}`;
+
+    if (imageElement === null) {
+      this.pixelDebugChange.emit(`move target=${targetDescription}; images=${images?.length ?? 0}; image=none`);
+      this.pixelColorChange.emit(null);
+      return;
+    }
+
+    const sourceWidth = imageElement.naturalWidth;
+    const sourceHeight = imageElement.naturalHeight;
+    const bounds = imageElement.getBoundingClientRect();
+
+    if (this.pixelContext === null) {
+      this.pixelDebugChange.emit(`move target=${targetDescription}; image=${imageDescription}; canvas=NONE`);
+      this.pixelColorChange.emit(null);
+      return;
+    }
+
+    if (sourceWidth <= 0 || sourceHeight <= 0 || bounds.width <= 0 || bounds.height <= 0) {
+      this.pixelDebugChange.emit(`move target=${targetDescription}; image=${imageDescription}; bounds=${Math.round(bounds.width)}x${Math.round(bounds.height)}`);
       this.pixelColorChange.emit(null);
       return;
     }
@@ -223,26 +245,26 @@ export class ImageRendererComponent implements OnDestroy {
     const y = Math.floor((event.clientY - top) / scale);
 
     if (x < 0 || y < 0 || x >= sourceWidth || y >= sourceHeight) {
+      this.pixelDebugChange.emit(`move image=${imageDescription}; outside x=${x} y=${y}; scale=${scale.toFixed(3)}`);
       this.pixelColorChange.emit(null);
       return;
     }
 
     try {
-      // Sample the visible image directly. This avoids stale or unavailable pixels
-      // in the separately preloaded canvas when the displayed image changes.
       this.pixelContext.clearRect(0, 0, 1, 1);
-      // Draw the source image at a negative offset so the requested source pixel
-      // lands at canvas coordinate (0, 0). This avoids source-rectangle edge cases.
       this.pixelContext.drawImage(imageElement, -x, -y);
       const pixel = this.pixelContext.getImageData(0, 0, 1, 1).data;
-      this.pixelColorChange.emit({ r: pixel[0], g: pixel[1], b: pixel[2] });
-    } catch {
-      // Some custom-protocol or protected images may disallow canvas readback.
+      const rgb = { r: pixel[0], g: pixel[1], b: pixel[2] };
+      this.pixelDebugChange.emit(`OK ${imageElement.classList.contains('sdr-image') ? 'SDR' : 'HDR'} x=${x} y=${y} rgb=${rgb.r},${rgb.g},${rgb.b}`);
+      this.pixelColorChange.emit(rgb);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.pixelDebugChange.emit(`CANVAS ERROR: ${message.slice(0, 90)}`);
       this.pixelColorChange.emit(null);
     }
   };
 
-  protected readonly onSurfaceMouseLeave = () => this.pixelColorChange.emit(null);
+  protected readonly onSurfaceMouseLeave = () => { this.pixelDebugChange.emit('mouseleave'); this.pixelColorChange.emit(null); };
 
   /* Misc */
   private readonly preloadImage = (url: string) => {

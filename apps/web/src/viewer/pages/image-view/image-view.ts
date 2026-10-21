@@ -96,6 +96,8 @@ export class ImageView {
 
   protected readonly pixelColor = signal<{ r: number; g: number; b: number } | null>(null);
 
+  protected readonly pixelDebug = signal('waiting for mouse movement');
+
   protected readonly isDecoding = signal(false);
 
   protected readonly decodeDuration = signal<number | null>(null);
