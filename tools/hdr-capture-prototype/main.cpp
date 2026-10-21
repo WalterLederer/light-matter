@@ -5,6 +5,7 @@
 
 #include <OpenEXR/ImfRgbaFile.h>
 #include <OpenEXR/ImfHeader.h>
+#include <OpenEXR/ImfStringAttribute.h>
 #include <OpenEXR/ImfChromaticitiesAttribute.h>
 #include <Imath/ImathBox.h>
 
@@ -15,6 +16,7 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <stdexcept>
 #include <vector>
 
 using Microsoft::WRL::ComPtr;
