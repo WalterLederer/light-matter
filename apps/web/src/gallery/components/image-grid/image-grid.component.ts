@@ -92,7 +92,7 @@ export class ImageGridComponent {
   private readonly thumbnailSliderMax = 8;
 
   private readonly thumbnailSliderSizes: ThumbnailSize[] = [
-    'small', 'small', 'smallMedium', 'smallMedium', 'medium', 'medium', 'mediumLarge', 'mediumLarge', 'large'
+    'small', 'smallPlus', 'smallMedium', 'smallMediumPlus', 'medium', 'mediumPlus', 'mediumLarge', 'mediumLargePlus', 'large'
   ];
 
   private hoverClearTimer: ReturnType<typeof setTimeout> | null = null;
