@@ -284,7 +284,6 @@
         align-items: center;
         gap: 5px;
         margin-left: 6px;
-        vertical-align: middle;
         flex-shrink: 0;
         font-variant-numeric: tabular-nums;
       }
@@ -318,10 +317,6 @@
         height: 4px;
       }
 
-      .rgb-channel:nth-child(1) .rgb-fill { background: #ff4242; }
-      .rgb-channel:nth-child(2) .rgb-fill { background: #36cf70; }
-      .rgb-channel:nth-child(3) .rgb-fill { background: #438cff; }
-
       .rgb-channel-label {
         width: 7px;
         font-size: 9px;
@@ -329,7 +324,6 @@
       }
 
       .rgb-track {
-        display: block;
         flex: 1;
         height: 3px;
         overflow: hidden;
