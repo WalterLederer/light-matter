@@ -1,14 +1,16 @@
 # Windows HDR desktop-capture prototype
 
-This is a deliberately standalone proof of concept for the proposed mouse loupe. It captures one frame from the display whose desktop origin is (0, 0), requests an FP16 desktop surface through `IDXGIOutput5::DuplicateOutput1`, and writes a linear scRGB OpenEXR file. It does not modify the Light Matter viewer and does not implement the loupe.
+This standalone proof of concept tests Windows Graphics Capture (WGC) after the DXGI Desktop Duplication API returned `DXGI_ERROR_UNSUPPORTED` for FP16, 10-bit and 8-bit output formats. It does not modify the Light Matter viewer and does not implement the loupe.
 
-## Important behavior
+## What it does
 
-- Windows HDR must be enabled for the target display.
-- The program writes an EXR only if the acquired texture is `DXGI_FORMAT_R16G16B16A16_FLOAT`. It deliberately refuses to label SDR/BGRA8 pixels as HDR.
-- The EXR stores RGBA half-float channels with Rec.709/scRGB primaries and linear values. It is **not** an HDR10/PQ file. scRGB values can exceed 1.0.
-- The prototype captures the desktop as composed by Windows. It may capture its own console/terminal window if that window is visible when the frame is acquired.
-- This initial prototype selects the attached output with desktop origin (0, 0); it is not yet a multi-monitor selector.
+- Selects the attached display whose desktop origin is (0, 0), matching the first prototype.
+- Uses `Windows.Graphics.Capture` with an FP16 `R16G16B16A16_FLOAT` frame pool.
+- Captures one composed desktop frame, copies the texture to CPU-readable memory and writes a linear scRGB OpenEXR file.
+- Prints the actual texture format and RGB minimum/maximum. It refuses to write an EXR if Windows does not deliver FP16.
+- Minimizes its console before capture so the console is less likely to appear in the screenshot.
+
+Windows HDR must be enabled on the target display. The EXR stores RGBA half-float channels with Rec.709/scRGB primaries and linear values; it is not an HDR10/PQ file. scRGB values can exceed 1.0.
 
 ## Build (Visual Studio 2022/2026, x64)
 
@@ -24,13 +26,15 @@ If `VCPKG_ROOT` is not set, replace the toolchain path with the full path to you
 
 ## Run
 
-With Windows HDR enabled on the target display:
+With Windows HDR enabled:
 
 ```powershell
 .\build\Release\hdr-capture.exe .\hdr-capture.exr
 
 ```
 
-Open the resulting EXR in Light Matter. The console reports the captured dimensions, DXGI format, min/max RGB values, and the center pixel in linear scRGB. Keep the output log if capture fails; the exact HRESULT or pixel format is important for the next iteration.
+Open the EXR in Light Matter. Send the complete console output if the build or capture fails. The important checks are whether WGC returns format enum `10` (`DXGI_FORMAT_R16G16B16A16_FLOAT`), and whether the resulting EXR preserves the expected HDR highlights.
 
-If the program reports that the frame is not FP16, do not treat the output as an HDR capture. Send the complete console output and confirm that Windows HDR is enabled for the display.
+## Current limitation
+
+This captures a single frame to validate HDR pixel fidelity. It is not yet a performance test for continuous loupe updates. Windows Graphics Capture is designed around a frame pool and frame-arrived events, which can be reused for the live magnifier after this validation.
