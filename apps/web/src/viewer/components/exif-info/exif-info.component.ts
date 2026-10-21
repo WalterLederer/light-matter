@@ -24,8 +24,6 @@ export class ExifInfoComponent {
 
   readonly modifiedAt = input<number | undefined>(undefined);
 
-  readonly loadDuration = input<number | null>(null);
-
   readonly path = input('');
 
   readonly dynamicRangeDiagnostics = () => {

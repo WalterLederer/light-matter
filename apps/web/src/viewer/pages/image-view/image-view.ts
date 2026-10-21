@@ -526,7 +526,7 @@ export class ImageView {
     this.keyboard.keyup()
       .pipe(takeUntilDestroyed())
       .subscribe(event => {
-        if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) {
+        if ((event.shiftKey && event.key !== '+' && event.key !== '_') || event.ctrlKey || event.altKey || event.metaKey) {
           return;
         }
 

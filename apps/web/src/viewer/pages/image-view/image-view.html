@@ -9,6 +9,18 @@
 @let isHdrImage = imageDynamicRange(selected?.path ?? '', imageTags(), imageBitDepth()) === 'HDR';
 
 @if (selected !== null) {
+  @if (!fullScreen) {
+    <ui-tool-menu>
+      <section></section>
+      <section>
+        <ui-text [title]="selected.path | fileName">
+          {{ selected.path | fileName }}
+        </ui-text>
+      </section>
+      <section></section>
+    </ui-tool-menu>
+  }
+
   <app-image-renderer [url]="selected.url"
                       [comparisonMode]="isHdrImage ? comparisonMode() : 'sdr'"
                       [comparisonSplit]="comparisonSplit()"
@@ -153,6 +165,9 @@
               @if (imagePosition !== null) {
                 · {{ imagePosition.position }} / {{ imagePosition.total }}
               }
+              @if (decodeDuration() !== null) {
+                · {{ decodeDuration() | number: '1.2-2' }} s
+              }
             </span>
             <span class="rgb-readout" title="RGB pixel color under mouse pointer">
               @if (pixelColor(); as rgb) {
@@ -214,8 +229,6 @@
                    [inherit]="true" />
         </ui-action-button>
 
-        <ui-text class="zoom-adjustment" title="Zoom out (-)" (click)="adjustZoom(-1)"><u>-</u></ui-text>
-
         <ui-slider [formControl]="zoomSlider"
                    [min]="zoomConfig.min"
                    [max]="zoomConfig.max" />
@@ -224,8 +237,6 @@
           @let zoomValue = location.zoom === 'fit' ? location.fitZoom : zoomSlider.value;
           {{ zoomValue | number: '1.0-0' }}%
         </ui-text>
-
-        <ui-text class="zoom-adjustment" title="Zoom in (+)" (click)="adjustZoom(1)"><u>+</u></ui-text>
 
         <app-vertical-divider />
 
@@ -249,8 +260,7 @@
                      [fileSize]="selected.size"
                      [bitDepth]="imageBitDepth()"
                      [path]="selected.path"
-                     [modifiedAt]="selected.modifiedAt"
-                     [loadDuration]="decodeDuration()" />
+                     [modifiedAt]="selected.modifiedAt" />
     </ui-info-overlay>
   }
 }
