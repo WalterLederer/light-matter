@@ -25,6 +25,12 @@
                       (loadError)="imageLoadFailed.set(true)"
                       (wheel)="onMouseWheel($event)" />
 
+  @if (isHdrImage && comparisonMode() === 'sdr') {
+    <div class="sdr-quality-logo" aria-label="SDR display mode" title="SDR view of an HDR-capable image">
+      <span>SDR</span>
+    </div>
+  }
+
   @if (histogramVisible()) {
     <section class="histogram-overlay" role="dialog" aria-label="SDR and HDR image histogram">
       <header>
