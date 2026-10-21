@@ -1,6 +1,6 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { AsyncPipe, DecimalPipe, DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
@@ -62,6 +62,8 @@ export class ImageView {
   protected readonly viewNavigator = inject(ViewNavigator);
 
   private readonly keyboard = inject(Keyboard);
+
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly document = inject(DOCUMENT);
 
@@ -295,6 +297,12 @@ export class ImageView {
       .subscribe(image => {
         this.processManager.setWindowTitle(this.makeWindowTitle(image?.path)).catch(() => undefined);
       });
+
+    this.destroyRef.onDestroy(() => {
+      this.loupeCaptureRequest++;
+      this.loupeSampleRequest++;
+      this.desktop?.Loupe.release().catch(() => undefined);
+    });
 
     this.trackKeyboard();
 
