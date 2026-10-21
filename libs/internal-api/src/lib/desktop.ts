@@ -58,6 +58,16 @@ export interface CacheInfo extends CacheClearResult {
   thumbnails: CacheClearResult;
 }
 
+export interface DesktopLoupe {
+  readonly capture: () => Promise<{ width: number; height: number }>;
+  readonly sample: (x: number, y: number, radius?: number) => Promise<{
+    width: number; height: number; x: number; y: number; radius: number;
+    center: { r: number; g: number; b: number; rHex: string; gHex: string; bHex: string; color: string };
+    pixels: Array<{ x: number; y: number; color: string }>;
+  } | null>;
+  readonly release: () => Promise<void>;
+}
+
 export interface DesktopHistogram {
   readonly calculate: (path: string) => Promise<ApiResponse<ImageHistogram>>;
 }
@@ -69,6 +79,7 @@ export interface Desktop {
   readonly Exif: DesktopExif;
   readonly CacheManager: DesktopCacheManager;
   readonly Histogram: DesktopHistogram;
+  readonly Loupe: DesktopLoupe;
 
   openFolder: () => Promise<FileListing>;
   openFile: () => Promise<FileListing>;
