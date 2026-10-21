@@ -66,8 +66,6 @@
     }
 
     .histogram-legend {
-      display: flex;
-      align-items: center;
       justify-content: flex-start;
       flex-wrap: wrap;
       gap: var(--dim-large);
@@ -145,8 +143,6 @@
     }
 
     .histogram-axis {
-      display: flex;
-      justify-content: space-between;
       gap: 4px;
       color: rgb(255 255 255 / 68%);
       font-size: 0.65rem;
