@@ -41,7 +41,8 @@
     "nanoid": "5.1.16",
     "tslib": "2.8.1",
     "wasm-vips": "0.0.18",
-    "yargs": "18.0.0"
+    "yargs": "18.0.0",
+    "@screen-capture/node": "1.1.0"
   },
   "devDependencies": {
     "@angular-devkit/core": "21.2.26",
