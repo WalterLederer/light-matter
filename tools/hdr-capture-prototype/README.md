@@ -52,6 +52,37 @@ Then pass that handle (keep Light Matter open and showing the HDR image):
 
 Replace `0x123456` with the actual HWND printed by the command. Open the resulting EXR in Light Matter. For this test, verify that the dimensions match the app window and the actual texture format is enum `10` (`DXGI_FORMAT_R16G16B16A16_FLOAT`). If the window capture is SDR/8-bit, do not use it for the HDR loupe; report the complete console output instead.
 
+## Test the Node.js capture package for FP16
+
+This test is deliberately separate from the Light Matter UI. It requests Windows Graphics Capture with `rgba16F`, waits for one frame, checks the reported format and packed buffer size, scans the half-float RGB values, and writes a JSON report. It does not modify the viewer.
+
+Requirements: Windows, HDR enabled on the monitor being tested, and Node.js 20.17+, 22.13+, or 23.5+.
+
+From this directory, run:
+
+```powershell
+node --version
+npm install --no-save @screen-capture/node
+node .\node-screen-capture-fp16-test.mjs
+
+```
+
+By default, it captures monitor 1 and samples the center pixel. To capture another monitor or inspect a specific pixel, use the monitor's zero-based pixel coordinates:
+
+```powershell
+node .\node-screen-capture-fp16-test.mjs --monitor 1 --sample 1920,1080
+
+```
+
+To also save the raw packed RGBA half-float frame (about 63 MiB for 3840×2160), explicitly request it:
+
+```powershell
+node .\node-screen-capture-fp16-test.mjs --raw .\node-wgc-fp16.rgba16f
+
+```
+
+The script prints and saves `node-wgc-fp16-test.json`. Check `actualColorFormat`, `byteLengthMatchesExpected`, `rowPitchMatchesExpected`, `rgbMax`, `rgbChannelValuesAboveOne`, and the center/sample pixel. A valid `rgba16F` format and the expected buffer length confirm the layout, but do not alone prove that the compositor preserved HDR values. Compare the same visible content and approximate pixel coordinates with the existing native WGC EXR capture. Keep the target image still during the comparison; a full-monitor capture includes all visible windows and overlays.
+
 ## Integration design for the cursor loupe
 
 The capture loop must be independent of pointer movement. The native side owns the WGC frame pool and retains only the latest valid frame/texture. A pointer update supplies only source coordinates and magnification; it must not start a capture, read back a 4K frame, or write a file.
