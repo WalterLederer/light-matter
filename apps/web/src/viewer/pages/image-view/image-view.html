@@ -28,7 +28,7 @@
                       (mouseleave)="onLoupeMouseLeave()" />
 
   @if (loupeEnabled() && loupeSample(); as sample) {
-    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [style.--loupe-pixel-size]="loupePixelSize() + 'px'" aria-label="HDR cursor loupe" aria-live="off">
+    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [style.--loupe-pixel-size]="loupePixelSize() + 'px'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
       <div class="loupe-pixel-grid">
         @for (pixel of sample.pixels; track pixel.x + ':' + pixel.y) {
           <span class="loupe-pixel" [class.center-pixel]="pixel.x === 0 && pixel.y === 0" [style.background-color]="pixel.color"></span>
