@@ -118,7 +118,9 @@ export class ImageView {
     pixels: Array<{ x: number; y: number; color: string }>;
   } | null>(null);
 
-  protected readonly loupePixelSize = signal(16);
+  protected readonly loupePixelSize = signal(24);
+
+  protected readonly loupeCaptureGeometry = signal<{ width: number; height: number; x: number; y: number; windowWidth: number; windowHeight: number } | null>(null);
 
   protected readonly loupePosition = signal({ x: 24, y: 80 });
 
@@ -433,6 +435,7 @@ export class ImageView {
     if (!enabled) {
       this.loupeCaptureRequest++;
       this.loupeCapturePending.set(false);
+      this.loupeCaptureGeometry.set(null);
       await this.desktop?.Loupe.release().catch(() => undefined);
       return;
     }
@@ -450,9 +453,15 @@ export class ImageView {
     const left = event.clientX > viewWidth - loupeWidth - 24 ? event.clientX - loupeWidth - 20 : event.clientX + 20;
     const top = event.clientY > viewHeight - loupeHeight - 24 ? event.clientY - loupeHeight - 20 : event.clientY + 20;
     this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
-    const scale = view?.devicePixelRatio ?? 1;
+    const geometry = this.loupeCaptureGeometry();
+    if (!geometry || !view) return;
+    // screenX/screenY and BrowserWindow bounds are both in Electron DIP units.
+    // Scale into the captured physical-pixel frame instead of assuming DPR or
+    // treating viewport-relative clientX/clientY as window-relative coordinates.
+    const x = (event.screenX - geometry.x) * geometry.width / geometry.windowWidth;
+    const y = (event.screenY - geometry.y) * geometry.height / geometry.windowHeight;
     const radius = 5;
-    this.desktop?.Loupe.sample(event.clientX * scale, event.clientY * scale, radius)
+    this.desktop?.Loupe.sample(x, y, radius)
       .then(sample => {
         if (request === this.loupeSampleRequest && this.loupeEnabled()) this.loupeSample.set(sample);
       })
@@ -481,10 +490,12 @@ export class ImageView {
       return;
     }
     try {
-      await desktop.Loupe.capture();
+      const geometry = await desktop.Loupe.capture();
+      this.loupeCaptureGeometry.set(geometry);
     } catch (error) {
       console.error('HDR loupe capture failed:', error);
       this.loupeEnabled.set(false);
+      this.loupeCaptureGeometry.set(null);
       await desktop.Loupe.release().catch(() => undefined);
     } finally {
       if (request === this.loupeCaptureRequest) this.loupeCapturePending.set(false);
@@ -493,7 +504,7 @@ export class ImageView {
 
   protected readonly adjustZoom = (direction: 1 | -1) => {
     if (this.loupeEnabled()) {
-      this.loupeSlider.setValue(Math.max(8, Math.min(36, this.loupeSlider.value + direction * 4)));
+      this.loupeSlider.setValue(Math.max(8, Math.min(64, this.loupeSlider.value + direction * 4)));
       return;
     }
 
@@ -579,7 +590,7 @@ export class ImageView {
     event.preventDefault();
 
     if (this.loupeEnabled()) {
-      if (event.deltaY !== 0) this.loupeSlider.setValue(Math.max(8, Math.min(36, this.loupeSlider.value + (event.deltaY < 0 ? 2 : -2))));
+      if (event.deltaY !== 0) this.loupeSlider.setValue(Math.max(8, Math.min(64, this.loupeSlider.value + (event.deltaY < 0 ? 4 : -4))));
       return;
     }
 

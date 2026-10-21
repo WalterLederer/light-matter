@@ -90,7 +90,9 @@ ipcMain.handle('Loupe.capture', async () => {
   }
   const handle = App.mainWindow.getNativeWindowHandle();
   const windowHandle = Number(handle.readBigUInt64LE(0));
-  return captureLoupeFrame(windowHandle);
+  const bounds = App.mainWindow.getBounds();
+  const frame = await captureLoupeFrame(windowHandle);
+  return { ...frame, x: bounds.x, y: bounds.y, windowWidth: bounds.width, windowHeight: bounds.height };
 });
 
 ipcMain.handle('Loupe.sample', (_event, x: number, y: number, radius?: number) => sampleLoupeRegion(x, y, radius));
