@@ -334,7 +334,7 @@ export class ImageView {
           return;
         }
 
-        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked', 'dual-side-by-side'] as const;
+        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked', 'dual-side-by-side', 'dual-stacked'] as const;
         const currentIndex = modes.indexOf(this.comparisonMode());
         this.setComparisonMode(modes[(currentIndex + 1) % modes.length]);
       });
