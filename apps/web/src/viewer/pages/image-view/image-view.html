@@ -21,9 +21,26 @@
                       (pixelDebugChange)="pixelDebug.set($event)"
                       (dblclick)="toggleFullScreen()"
                       (loadingChange)="isDecoding.set($event); decodeDuration.set(null); imageLoadFailed.set(false)"
-                      (loadDuration)="decodeDuration.set($event)"
+                      (loadDuration)="decodeDuration.set($event); onImageRendered()"
                       (loadError)="imageLoadFailed.set(true)"
-                      (wheel)="onMouseWheel($event)" />
+                      (wheel)="onMouseWheel($event)"
+                      (mousemove)="onLoupeMouseMove($event)"
+                      (mouseleave)="onLoupeMouseLeave()" />
+
+  @if (loupeEnabled() && loupeSample(); as sample) {
+    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [style.--loupe-pixel-size]="loupePixelSize() + 'px'" aria-label="HDR cursor loupe" aria-live="off">
+      <div class="loupe-pixel-grid">
+        @for (pixel of sample.pixels; track pixel.x + ':' + pixel.y) {
+          <span class="loupe-pixel" [class.center-pixel]="pixel.x === 0 && pixel.y === 0" [style.background-color]="pixel.color"></span>
+        }
+      </div>
+      <div class="loupe-readout">
+        <span>X {{ sample.x }} · Y {{ sample.y }}</span>
+        <span>R {{ sample.center.rHex }} · G {{ sample.center.gHex }} · B {{ sample.center.bHex }}</span>
+        <span>scRGB {{ sample.center.r | number:'1.0-4' }}, {{ sample.center.g | number:'1.0-4' }}, {{ sample.center.b | number:'1.0-4' }}</span>
+      </div>
+    </aside>
+  }
 
   @if (isHdrImage && comparisonMode() === 'sdr') {
     <div class="sdr-quality-logo" aria-label="SDR display mode" title="SDR view of an HDR-capable image">
@@ -225,6 +242,11 @@
                    [min]="zoomConfig.min"
                    [max]="zoomConfig.max" />
         <button class="zoom-step-button" type="button" title="Zoom in (+)" aria-label="Zoom in" (click)="adjustZoom(1)">+</button>
+
+        <label class="loupe-toggle" title="Toggle HDR cursor loupe (FP16 window capture)" [class.active]="loupeEnabled()">
+          <input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)" />
+          <span>Lupe</span>
+        </label>
 
         <ui-text class="no-shrink zoom-info">
           @let zoomValue = location.zoom === 'fit' ? location.fitZoom : zoomSlider.value;
