@@ -297,7 +297,15 @@
         gap: 5px;
         margin-left: auto;
         flex-shrink: 0;
+      }
+
+      .rgb-values {
+        display: inline-block;
+        width: 11.5em;
+        flex: 0 0 11.5em;
+        font-family: monospace;
         font-variant-numeric: tabular-nums;
+        white-space: pre;
       }
 
       .rgb-swatch {
