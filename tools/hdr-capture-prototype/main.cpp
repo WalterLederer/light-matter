@@ -168,6 +168,7 @@ int wmain(int argc, wchar_t** argv)
         std::condition_variable condition;
         Direct3D11CaptureFrame capturedFrame{ nullptr };
         bool frameReady = false;
+        std::uint64_t frameCount = 0;
         std::string callbackError;
 
         auto framePool = Direct3D11CaptureFramePool::CreateFreeThreaded(
@@ -185,13 +186,13 @@ int wmain(int argc, wchar_t** argv)
                     if (!frame)
                         return;
 
-                    std::lock_guard lock(mutex);
-                    if (!frameReady)
                     {
+                        std::lock_guard lock(mutex);
                         capturedFrame = std::move(frame);
                         frameReady = true;
-                        condition.notify_one();
+                        ++frameCount;
                     }
+                    condition.notify_one();
                 }
                 catch (const winrt::hresult_error& error)
                 {
@@ -201,15 +202,37 @@ int wmain(int argc, wchar_t** argv)
                 }
             });
 
+        const auto captureStarted = std::chrono::steady_clock::now();
         session.StartCapture();
 
+        std::uint64_t framesObserved = 0;
         {
             std::unique_lock lock(mutex);
             if (!condition.wait_for(lock, 10s, [&] { return frameReady || !callbackError.empty(); }))
                 throw std::runtime_error("Timed out waiting for a Windows.Graphics.Capture frame.");
             if (!callbackError.empty())
                 throw std::runtime_error("FrameArrived failed: " + callbackError);
+
+            // Keep the capture session running for a short burst and retain only
+            // the newest frame. This tests sustained delivery without writing
+            // every frame to disk.
+            const auto burstEnd = std::chrono::steady_clock::now() + 3s;
+            while (condition.wait_until(lock, burstEnd) != std::cv_status::timeout) {
+                if (!callbackError.empty())
+                    throw std::runtime_error("FrameArrived failed: " + callbackError);
+            }
+
+            framesObserved = frameCount;
+            if (!capturedFrame)
+                throw std::runtime_error("Capture frame pool did not retain a frame.");
         }
+
+        const auto captureElapsed = std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - captureStarted).count();
+        std::cout << "Frames received in capture burst: " << framesObserved << "\n";
+        std::cout << "Average frame delivery rate: "
+                  << (captureElapsed > 0.0 ? framesObserved / captureElapsed : 0.0)
+                  << " frames/s over " << captureElapsed << " s\n";
 
         const auto contentSize = capturedFrame.ContentSize();
         auto surfaceAccess = capturedFrame.Surface().as<::Windows::Graphics::DirectX::Direct3D11::IDirect3DDxgiInterfaceAccess>();
