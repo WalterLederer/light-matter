@@ -2,11 +2,11 @@
 
 This standalone proof of concept tests Windows Graphics Capture (WGC) after the DXGI Desktop Duplication API returned `DXGI_ERROR_UNSUPPORTED` for FP16, 10-bit and 8-bit output formats. It does not modify the Light Matter viewer and does not implement the loupe.
 
-## What it does
+## What the current executable proves
 
 - Selects the attached display whose desktop origin is (0, 0), matching the first prototype.
 - Uses `Windows.Graphics.Capture` with an FP16 `R16G16B16A16_FLOAT` frame pool.
-- Receives frames continuously for a short 3-second burst, retains the newest frame and reports the observed frame delivery rate.
+- Receives frames continuously for a short 3-second burst and retains the newest frame.
 - Copies the newest texture to CPU-readable memory and writes one linear scRGB OpenEXR file.
 - Prints the actual texture format and RGB minimum/maximum. It refuses to write an EXR if Windows does not deliver FP16.
 - Minimizes its console before capture so the console is less likely to appear in the screenshot.
@@ -34,8 +34,24 @@ With Windows HDR enabled:
 
 ```
 
-Open the EXR in Light Matter. Send the complete console output if the build or capture fails. The important checks are whether WGC returns format enum `10` (`DXGI_FORMAT_R16G16B16A16_FLOAT`), whether the capture burst delivers frames continuously, and whether the EXR preserves expected HDR highlights.
+Open the EXR in Light Matter. The important checks are whether WGC returns format enum `10` (`DXGI_FORMAT_R16G16B16A16_FLOAT`), whether the capture burst delivers frames continuously, and whether the EXR preserves expected HDR highlights.
+
+## Integration design for the cursor loupe
+
+The capture loop must be independent of pointer movement. The native side owns the WGC frame pool and retains only the latest valid frame/texture. A pointer update supplies only source coordinates and magnification; it must not start a capture, read back a 4K frame, or write a file.
+
+The intended division of work is:
+
+1. **Electron main/native capture owner:** starts and stops capture on demand and owns the latest WGC frame. The current EXR-writing path is diagnostic only and must not run in the live path.
+2. **GPU crop:** for each loupe position, use the latest frame texture and GPU-side crop/scale. Do not copy the complete 3840×2160 FP16 frame to JavaScript or CPU memory for every pointer event.
+3. **Separate loupe surface:** render the loupe in a separate native overlay/window or an equivalent surface excluded from the capture source. A DOM loupe inside the captured window would be captured again and could feed back into later frames.
+4. **HDR-preserving output:** keep FP16/scRGB through the crop and render path. A normal PNG/canvas conversion is not an acceptable substitute because it can discard values above 1.0.
+5. **Lifecycle:** start capture only while the loupe is enabled and the normal image view is active; stop it when disabled, entering fullscreen, leaving the image view, or closing the window. Overlay changes are reflected by the next naturally delivered WGC frame.
+
+### Next native integration milestone
+
+Before wiring UI controls, change the capture target from the whole monitor to the Light Matter window and validate that WGC still returns FP16/scRGB while capturing the rendered image plus its Info/Histogram overlays. The eventual loupe must be a separate capture-excluded surface; otherwise the magnifier can appear recursively in its own source. Only after that test passes should the frame cache and GPU crop be connected to Electron IPC.
 
 ## Current limitation
 
-This test captures a single saved frame after a 3-second capture burst. It validates ongoing frame delivery but does not yet benchmark low-latency cursor-loupe rendering or exclude an eventual loupe overlay from desktop capture.
+This is still a capture-format proof of concept. It does not yet capture the Light Matter window, expose a native API to Electron, or render a loupe. The 3-second burst measures frame delivery; it is not a requirement to recapture on mouse movement.
