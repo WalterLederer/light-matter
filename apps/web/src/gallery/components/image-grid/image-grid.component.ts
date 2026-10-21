@@ -1,9 +1,9 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe, DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { distinctUntilChanged, map } from 'rxjs';
+import { distinctUntilChanged, fromEvent, map } from 'rxjs';
 import {
   ActionButtonComponent,
   IconComponent,
@@ -81,6 +81,8 @@ export class ImageGridComponent {
 
   private readonly exif = inject(ExifService);
 
+  private readonly document = inject(DOCUMENT);
+
   protected readonly theme = inject(ThemeService);
 
   private readonly destroyRef = inject(DestroyRef);
@@ -139,6 +141,21 @@ export class ImageGridComponent {
 
   /* Constructor */
   constructor() {
+    fromEvent<KeyboardEvent>(this.document, 'keyup')
+      .pipe(takeUntilDestroyed())
+      .subscribe(event => {
+        if (event.ctrlKey || event.altKey || event.metaKey) return;
+        const target = event.target;
+        if (target instanceof HTMLElement && target.matches('input, textarea, select, [contenteditable="true"]')) return;
+        if (event.key === '+' || event.key === '=' || event.key === 'Add') {
+          event.preventDefault();
+          this.adjustThumbnailSize(1);
+        } else if (event.key === '-' || event.key === '_' || event.key === 'Subtract') {
+          event.preventDefault();
+          this.adjustThumbnailSize(-1);
+        }
+      });
+
     this.thumbSizeSlider.valueChanges
       .pipe(
         map(value => Math.max(0, Math.min(this.thumbnailSliderMax, Math.round(value)))),
