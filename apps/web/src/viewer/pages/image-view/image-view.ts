@@ -465,7 +465,7 @@ export class ImageView {
   };
 
   protected readonly onImageRendered = () => {
-    if (this.loupeEnabled() && this.animationState() === 'none') void this.captureLoupeAfterRender();
+    if (this.loupeEnabled() && !this.isDecoding() && this.animationState() === 'none') void this.captureLoupeAfterRender();
   };
 
   private readonly captureLoupeAfterRender = async () => {
