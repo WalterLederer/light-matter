@@ -132,6 +132,11 @@ export class ImageGridComponent {
     }
   };
 
+  protected readonly adjustThumbnailSize = (direction: -1 | 1) => {
+    const next = Math.max(0, Math.min(this.thumbnailSliderMax, this.thumbSizeSlider.value + direction));
+    this.thumbSizeSlider.setValue(next);
+  };
+
   /* Constructor */
   constructor() {
     this.thumbSizeSlider.valueChanges
