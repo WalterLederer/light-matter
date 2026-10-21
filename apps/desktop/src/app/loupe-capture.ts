@@ -59,10 +59,15 @@ export const captureLoupeFrame = async (windowHandle: number): Promise<{ width: 
 
   try {
     await capture.start();
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     const frame = await Promise.race([
       capture.nextFrame(),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('HDR window capture timed out.')), 10000))
-    ]);
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error('HDR window capture timed out.')), 10000);
+      })
+    ]).finally(() => {
+      if (timeout !== undefined) clearTimeout(timeout);
+    });
 
     if (!frame) throw new Error('HDR window capture returned no frame.');
     if (frame.colorFormat !== 'rgba16F') throw new Error('Capture did not return rgba16F data.');
