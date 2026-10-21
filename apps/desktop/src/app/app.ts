@@ -173,6 +173,7 @@ export default class App {
         scheme: appProtocol,
         privileges: {
           bypassCSP: true,
+          corsEnabled: true,
           stream: true,
           supportFetchAPI: true
         }

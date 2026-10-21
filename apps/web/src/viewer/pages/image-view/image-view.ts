@@ -20,11 +20,11 @@ import { HistogramService } from '../../../ipc/histogram';
 import { ProcessManager } from '../../../ipc/process-manager';
 import { VerticalDivider } from '../../../system/components/vertical-divider/vertical-divider';
 import { DefaultPipe } from '../../../system/pipes/default/default.pipe';
+import { FileNamePipe } from '../../pipes/file-name/file-name-pipe';
 import { Configuration } from '../../../system/services/configuration/configuration';
 import { Keyboard } from '../../../system/services/keyboard/keyboard';
 import { ExifInfoComponent } from '../../components/exif-info/exif-info.component';
 import { ImageRendererComponent } from '../../components/image-renderer/image-renderer.component';
-import { FileNamePipe } from '../../pipes/file-name/file-name-pipe';
 import { imageDynamicRange } from '../../utils/image-dynamic-range';
 import { ImagePositioningService } from '../../services/image-positioning/image-positioning.service';
 import {
@@ -44,8 +44,8 @@ import { AnimationState } from './image-view.types';
     IconComponent,
     VerticalDivider,
     TextComponent,
-    FileNamePipe,
     DefaultPipe,
+    FileNamePipe,
     SliderComponent,
     ReactiveFormsModule,
     DecimalPipe,
@@ -70,6 +70,8 @@ export class ImageView {
   private readonly histogram = inject(HistogramService);
 
   private readonly processManager = inject(ProcessManager);
+
+  private appTitleSuffix = '';
 
   private readonly imagePositioningService = inject(ImagePositioningService);
 
@@ -96,13 +98,15 @@ export class ImageView {
 
   protected readonly pixelColor = signal<{ r: number; g: number; b: number } | null>(null);
 
+  protected readonly pixelDebug = signal('waiting for mouse movement');
+
   protected readonly isDecoding = signal(false);
 
   protected readonly decodeDuration = signal<number | null>(null);
 
   protected readonly imageLoadFailed = signal(false);
 
-  protected readonly comparisonMode = signal<'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side'>('hdr');
+  protected readonly comparisonMode = signal<'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side' | 'dual-stacked'>('hdr');
 
   protected readonly comparisonSplit = signal(50);
 
@@ -238,6 +242,15 @@ export class ImageView {
 
   /* Constructor */
   constructor() {
+    this.processManager.getAppVersion()
+      .then(version => {
+        this.appTitleSuffix = version;
+        this.selectedImage$.pipe(take(1)).subscribe(image => {
+          this.processManager.setWindowTitle(this.makeWindowTitle(image?.path)).catch(() => undefined);
+        });
+      })
+      .catch(() => undefined);
+
     this.configuration.config()
       .pipe(take(1), takeUntilDestroyed())
       .subscribe(config => {
@@ -253,6 +266,12 @@ export class ImageView {
             .pipe(take(1), filter(image => image !== null))
             .subscribe(image => this.loadHistogram(image.path));
         }
+      });
+
+    this.selectedImage$
+      .pipe(takeUntilDestroyed())
+      .subscribe(image => {
+        this.processManager.setWindowTitle(this.makeWindowTitle(image?.path)).catch(() => undefined);
       });
 
     this.trackKeyboard();
@@ -301,7 +320,7 @@ export class ImageView {
     }
   };
 
-  protected readonly setComparisonMode = (mode: 'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side') => {
+  protected readonly setComparisonMode = (mode: 'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side' | 'dual-stacked') => {
     this.comparisonMode.set(mode);
     this.configuration.updateSystemConfig({ comparisonMode: mode });
   };
@@ -315,7 +334,7 @@ export class ImageView {
           return;
         }
 
-        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked', 'dual-side-by-side'] as const;
+        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked', 'dual-side-by-side', 'dual-stacked'] as const;
         const currentIndex = modes.indexOf(this.comparisonMode());
         this.setComparisonMode(modes[(currentIndex + 1) % modes.length]);
       });
@@ -355,6 +374,7 @@ export class ImageView {
   };
 
   protected readonly goBack = () => {
+    this.processManager.setWindowTitle(this.makeWindowTitle()).catch(() => undefined);
     if (this.viewNavigator.standalone()) {
       this.processManager.quit(0).then();
     } else {
@@ -363,6 +383,23 @@ export class ImageView {
   };
 
   protected readonly fitToWindow = () => this.imagePositioningService.setZoom('fit');
+
+  protected readonly adjustZoom = (direction: 1 | -1) => {
+    this.imageLocation$
+      .pipe(take(1))
+      .subscribe(location => {
+        const currentZoom = location.zoom === 'fit' ? location.fitZoom : this.zoomSlider.value;
+        const zoomStep = Math.min(
+          Math.max(
+            this.zoomConfig.scroll.minStep,
+            Math.round(currentZoom * this.zoomConfig.scroll.coefficient)
+          ),
+          this.zoomConfig.scroll.maxStep
+        );
+        const nextZoom = this.calculateWheelZoom(direction > 0 ? -1 : 1, currentZoom, zoomStep);
+        this.zoomSlider.setValue(Math.max(this.zoomConfig.min, Math.min(this.zoomConfig.max, nextZoom)));
+      });
+  };
 
   protected readonly toggleExifInfo = (path: string) => {
     const exifVisible = !this.exifVisible();
@@ -445,6 +482,12 @@ export class ImageView {
   };
 
   /* Misc */
+  private readonly makeWindowTitle = (imagePath?: string): string => {
+    const version = this.appTitleSuffix ? ` ${this.appTitleSuffix}` : '';
+    const path = imagePath ? ` - ${imagePath}` : '';
+    return `Light Matter${version}${path}`;
+  };
+
   private readonly calculateWheelZoom = (deltaY: number, currentZoom: number, zoomStep: number): number => {
     if (deltaY < 0) {
       return Math.min(currentZoom + zoomStep, this.zoomConfig.max);
@@ -503,7 +546,7 @@ export class ImageView {
     this.keyboard.keyup()
       .pipe(takeUntilDestroyed())
       .subscribe(event => {
-        if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) {
+        if ((event.shiftKey && event.key !== '+' && event.key !== '_') || event.ctrlKey || event.altKey || event.metaKey) {
           return;
         }
 
@@ -514,6 +557,18 @@ export class ImageView {
 
         const target = event.target;
         if (target instanceof HTMLElement && target.matches('input, textarea, [contenteditable="true"]')) {
+          return;
+        }
+
+        if (event.key === '+' || event.key === '=' || event.key === 'Add') {
+          event.preventDefault();
+          this.adjustZoom(1);
+          return;
+        }
+
+        if (event.key === '-' || event.key === '_' || event.key === 'Subtract') {
+          event.preventDefault();
+          this.adjustZoom(-1);
           return;
         }
 

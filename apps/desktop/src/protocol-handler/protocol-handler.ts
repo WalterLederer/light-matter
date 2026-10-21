@@ -41,7 +41,8 @@ export const streamFile = (filePath: string): GlobalResponse => {
     return new Response(webStream, {
       status: 200,
       headers: {
-        'Content-Type': mimeType
+        'Content-Type': mimeType,
+        'Access-Control-Allow-Origin': '*'
       }
     });
   } catch (err) {

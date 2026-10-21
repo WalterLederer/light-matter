@@ -40,7 +40,7 @@ export class ImageRendererComponent implements OnDestroy {
   /* Inputs */
   readonly url = input.required<string>();
 
-  readonly comparisonMode = input<'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side'>('hdr');
+  readonly comparisonMode = input<'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side' | 'dual-stacked'>('hdr');
 
   readonly comparisonSplit = input(50);
 
@@ -64,6 +64,8 @@ export class ImageRendererComponent implements OnDestroy {
   readonly dimensions = output<ImageDimensions>();
 
   readonly pixelColorChange = output<{ r: number; g: number; b: number } | null>();
+
+  readonly pixelDebugChange = output<string>();
 
   readonly loadingChange = output<boolean>();
 
@@ -189,16 +191,46 @@ export class ImageRendererComponent implements OnDestroy {
   protected readonly onMouseDown = (event: MouseEvent) => this.imagePositioningService.startPanning(event);
 
   protected readonly onSurfaceMouseMove = (event: MouseEvent) => {
+    const surface = this.viewportRef()?.nativeElement;
     const target = event.target;
-    const imageElement = target instanceof HTMLImageElement && target.classList.contains('comparison-image')
+    const images = surface?.querySelectorAll<HTMLImageElement>('.comparison-image:not(.hidden-variant)');
+    const targetImage = target instanceof HTMLImageElement &&
+      target.matches('.comparison-image:not(.hidden-variant)')
       ? target
       : null;
-    const sourceWidth = imageElement?.naturalWidth ?? 0;
-    const sourceHeight = imageElement?.naturalHeight ?? 0;
-    const bounds = imageElement?.getBoundingClientRect();
+    const imageElement = targetImage ?? (images === undefined
+      ? null
+      : Array.from(images).find(image => {
+          const bounds = image.getBoundingClientRect();
+          return event.clientX >= bounds.left && event.clientX < bounds.right &&
+            event.clientY >= bounds.top && event.clientY < bounds.bottom;
+        }) ?? null);
 
-    if (imageElement === null || this.pixelContext === null || bounds === undefined ||
-        sourceWidth <= 0 || sourceHeight <= 0 || bounds.width <= 0 || bounds.height <= 0) {
+    const targetDescription = target instanceof HTMLElement
+      ? `${target.tagName.toLowerCase()}.${String(target.className).replace(/\\s+/g, '.').slice(0, 48)}`
+      : String(target);
+    const imageDescription = imageElement === null
+      ? 'none'
+      : `${imageElement.className} ${imageElement.naturalWidth}x${imageElement.naturalHeight} complete=${imageElement.complete}`;
+
+    if (imageElement === null) {
+      this.pixelDebugChange.emit(`move target=${targetDescription}; images=${images?.length ?? 0}; image=none`);
+      this.pixelColorChange.emit(null);
+      return;
+    }
+
+    const sourceWidth = imageElement.naturalWidth;
+    const sourceHeight = imageElement.naturalHeight;
+    const bounds = imageElement.getBoundingClientRect();
+
+    if (this.pixelContext === null) {
+      this.pixelDebugChange.emit(`move target=${targetDescription}; image=${imageDescription}; canvas=NONE`);
+      this.pixelColorChange.emit(null);
+      return;
+    }
+
+    if (sourceWidth <= 0 || sourceHeight <= 0 || bounds.width <= 0 || bounds.height <= 0) {
+      this.pixelDebugChange.emit(`move target=${targetDescription}; image=${imageDescription}; bounds=${Math.round(bounds.width)}x${Math.round(bounds.height)}`);
       this.pixelColorChange.emit(null);
       return;
     }
@@ -213,20 +245,26 @@ export class ImageRendererComponent implements OnDestroy {
     const y = Math.floor((event.clientY - top) / scale);
 
     if (x < 0 || y < 0 || x >= sourceWidth || y >= sourceHeight) {
+      this.pixelDebugChange.emit(`move image=${imageDescription}; outside x=${x} y=${y}; scale=${scale.toFixed(3)}`);
       this.pixelColorChange.emit(null);
       return;
     }
 
     try {
-      const pixel = this.pixelContext.getImageData(x, y, 1, 1).data;
-      this.pixelColorChange.emit({ r: pixel[0], g: pixel[1], b: pixel[2] });
-    } catch {
-      // Some custom-protocol or protected images may disallow canvas readback.
+      this.pixelContext.clearRect(0, 0, 1, 1);
+      this.pixelContext.drawImage(imageElement, -x, -y);
+      const pixel = this.pixelContext.getImageData(0, 0, 1, 1).data;
+      const rgb = { r: pixel[0], g: pixel[1], b: pixel[2] };
+      this.pixelDebugChange.emit(`OK ${imageElement.classList.contains('sdr-image') ? 'SDR' : 'HDR'} x=${x} y=${y} rgb=${rgb.r},${rgb.g},${rgb.b}`);
+      this.pixelColorChange.emit(rgb);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.pixelDebugChange.emit(`CANVAS ERROR: ${message.slice(0, 90)}`);
       this.pixelColorChange.emit(null);
     }
   };
 
-  protected readonly onSurfaceMouseLeave = () => this.pixelColorChange.emit(null);
+  protected readonly onSurfaceMouseLeave = () => { this.pixelDebugChange.emit('mouseleave'); this.pixelColorChange.emit(null); };
 
   /* Misc */
   private readonly preloadImage = (url: string) => {
@@ -236,6 +274,8 @@ export class ImageRendererComponent implements OnDestroy {
     this.loadingChange.emit(true);
 
     const image = new Image();
+    // Allow pixel reads from the app's custom protocol; the protocol handler sends ACAO.
+    image.crossOrigin = 'anonymous';
 
     fromEvent(image, 'load')
       .pipe(take(1))
@@ -259,10 +299,9 @@ export class ImageRendererComponent implements OnDestroy {
     this.loadingChange.emit(false);
 
     const dimensions = { width: image.naturalWidth, height: image.naturalHeight };
-    this.pixelCanvas.width = dimensions.width;
-    this.pixelCanvas.height = dimensions.height;
+    this.pixelCanvas.width = 1;
+    this.pixelCanvas.height = 1;
     this.pixelContext = this.pixelCanvas.getContext('2d', { willReadFrequently: true });
-    this.pixelContext?.drawImage(image, 0, 0);
     this.pixelColorChange.emit(null);
     this.displayUrl.set(image.src);
     this.imagePositioningService.setImageDimensions(dimensions);

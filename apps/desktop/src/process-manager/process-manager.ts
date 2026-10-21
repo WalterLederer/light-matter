@@ -12,7 +12,7 @@ export class ProcessManager {
   readonly getAppVersion = async (): Promise<string> => {
     try {
       const { mtime } = await stat(process.execPath);
-      return `${environment.version} Mod ${mtime.toLocaleString('de-AT')}`;
+      return `${environment.version} ${mtime.toLocaleString('de-AT')}`;
     } catch (_) {
       return environment.version;
     }
@@ -20,6 +20,11 @@ export class ProcessManager {
 
   @IpcHandler({ name: 'ProcessManager.quit' })
   readonly quit = async (_: IpcMainInvokeEvent, code: number): Promise<void> => app.exit(code);
+
+  @IpcHandler({ name: 'ProcessManager.setWindowTitle' })
+  readonly setWindowTitle = async (_: IpcMainInvokeEvent, title: string): Promise<void> => {
+    App.mainWindow?.setTitle(title || 'Light Matter');
+  };
 
   @IpcHandler({ name: 'ProcessManager.isPackaged' })
   readonly isPackaged = async (): Promise<boolean> => App.application.isPackaged;

@@ -15,19 +15,20 @@
     }
     <dt>File size</dt>
     <dd>{{ fileSize() | byteSize }}</dd>
+    <dt>Dimensions</dt>
+    <dd>{{ dims.width }} x {{ dims.height }}</dd>
     <dt>Bit depth</dt>
     <dd>{{ bitDepth() ?? '—' }}</dd>
     @if (timestamp !== undefined) {
       <dt>Last modified</dt>
       <dd>{{ timestamp | date: 'yyyy-MM-dd HH:mm:ss' }}</dd>
     }
+    <dt>Load duration</dt>
+    <dd>{{ loadDuration() === null ? '—' : (loadDuration() | number: '1.2-2') + ' s' }}</dd>
     <dt>Format</dt>
     <dd>{{ exifData.FileType }}</dd>
     <dt>MIME type</dt>
     <dd>{{ exifData.MIMEType }}</dd>
-    <dt>Dimensions</dt>
-    <dd>{{ dims.width }} x {{ dims.height }}</dd>
-
     @let rangeInfo = dynamicRangeDiagnostics();
     <dt>HDR classification</dt>
     <dd class="hdr-classification">

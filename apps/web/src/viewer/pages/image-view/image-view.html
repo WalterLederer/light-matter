@@ -9,18 +9,6 @@
 @let isHdrImage = imageDynamicRange(selected?.path ?? '', imageTags(), imageBitDepth()) === 'HDR';
 
 @if (selected !== null) {
-  @if (!fullScreen) {
-    <ui-tool-menu>
-      <section></section>
-      <section>
-        <ui-text [title]="selected.path | fileName">
-          {{ selected.path | fileName }}
-        </ui-text>
-      </section>
-      <section></section>
-    </ui-tool-menu>
-  }
-
   <app-image-renderer [url]="selected.url"
                       [comparisonMode]="isHdrImage ? comparisonMode() : 'sdr'"
                       [comparisonSplit]="comparisonSplit()"
@@ -30,10 +18,18 @@
                       (animationend)="onAnimationEnd($event)"
                       (dimensions)="imageDimensions.set($event)"
                       (pixelColorChange)="pixelColor.set($event)"
+                      (pixelDebugChange)="pixelDebug.set($event)"
+                      (dblclick)="toggleFullScreen()"
                       (loadingChange)="isDecoding.set($event); decodeDuration.set(null); imageLoadFailed.set(false)"
                       (loadDuration)="decodeDuration.set($event)"
                       (loadError)="imageLoadFailed.set(true)"
                       (wheel)="onMouseWheel($event)" />
+
+  @if (isHdrImage && comparisonMode() === 'sdr') {
+    <div class="sdr-quality-logo" aria-label="SDR display mode" title="SDR view of an HDR-capable image">
+      <span>SDR</span>
+    </div>
+  }
 
   @if (histogramVisible()) {
     <section class="histogram-overlay" role="dialog" aria-label="SDR and HDR image histogram">
@@ -146,6 +142,7 @@
               <option value="side-by-side" [disabled]="!isHdrImage">SDR̲ + HDR̲ side by side</option>
               <option value="stacked" [disabled]="!isHdrImage">SDR̲ + HDR̲ stacked</option>
               <option value="dual-side-by-side" [disabled]="!isHdrImage">SDR̲ | HDR̲ full side by side</option>
+              <option value="dual-stacked" [disabled]="!isHdrImage">SDR̲ + HDR̲ full stacked</option>
             </select>
             @if (isHdrImage && (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked')) {
               <input class="comparison-split-slider"
@@ -158,25 +155,30 @@
                      (change)="setComparisonSplit($any($event.target).value)" />
               <span class="comparison-split-value">{{ comparisonSplit() }}%</span>
             }
-            ·
-            {{ dimensions.width }} x {{ dimensions.height }}
-            @if (pixelColor(); as rgb) {
-              <span class="rgb-readout" title="RGB pixel color">
+            <span class="status-metadata">
+              @if (imagePosition !== null) {
+                · {{ imagePosition.position }} / {{ imagePosition.total }}
+              }
+            </span>
+            <span class="rgb-readout" title="RGB pixel color under mouse pointer">
+              @if (pixelColor(); as rgb) {
                 <span class="rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
-                <span class="rgb-values">RGB {{ rgb.r }}, {{ rgb.g }}, {{ rgb.b }}</span>
+                <span class="rgb-values">R:{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }} G:{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }} B:{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
                 <span class="rgb-channels" aria-label="RGB channel levels">
-                  <span class="rgb-channel"><span class="rgb-channel-label">R</span><span class="rgb-track"><span class="rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
-                  <span class="rgb-channel"><span class="rgb-channel-label">G</span><span class="rgb-track"><span class="rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
-                  <span class="rgb-channel"><span class="rgb-channel-label">B</span><span class="rgb-track"><span class="rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
+                  <span class="rgb-channel"><span class="rgb-track"><span class="rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
+                  <span class="rgb-channel"><span class="rgb-track"><span class="rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
+                  <span class="rgb-channel"><span class="rgb-track"><span class="rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
                 </span>
-              </span>
-            }
-            @if (imagePosition !== null) {
-              · {{ imagePosition.position }} / {{ imagePosition.total }}
-            }
-            @if (decodeDuration() !== null) {
-              · {{ decodeDuration() | number: '1.2-2' }} s
-            }
+              } @else {
+                <span class="rgb-swatch" aria-label="No pixel selected"></span>
+                <span class="rgb-values">R:-- G:-- B:--</span>
+                <span class="rgb-channels" aria-hidden="true">
+                  <span class="rgb-channel"><span class="rgb-track"></span></span>
+                  <span class="rgb-channel"><span class="rgb-track"></span></span>
+                  <span class="rgb-channel"><span class="rgb-track"></span></span>
+                </span>
+              }
+            </span>
           }
         </ui-text>
       </section>
@@ -218,9 +220,11 @@
                    [inherit]="true" />
         </ui-action-button>
 
+        <button class="zoom-step-button" type="button" title="Zoom out (-)" aria-label="Zoom out" (click)="adjustZoom(-1)">−</button>
         <ui-slider [formControl]="zoomSlider"
                    [min]="zoomConfig.min"
                    [max]="zoomConfig.max" />
+        <button class="zoom-step-button" type="button" title="Zoom in (+)" aria-label="Zoom in" (click)="adjustZoom(1)">+</button>
 
         <ui-text class="no-shrink zoom-info">
           @let zoomValue = location.zoom === 'fit' ? location.fitZoom : zoomSlider.value;
@@ -249,7 +253,8 @@
                      [fileSize]="selected.size"
                      [bitDepth]="imageBitDepth()"
                      [path]="selected.path"
-                     [modifiedAt]="selected.modifiedAt" />
+                     [modifiedAt]="selected.modifiedAt"
+                     [loadDuration]="decodeDuration()" />
     </ui-info-overlay>
   }
 }

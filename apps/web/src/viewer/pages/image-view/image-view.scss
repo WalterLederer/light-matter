@@ -12,6 +12,30 @@
 
   position: relative;
 
+  .sdr-quality-logo {
+    position: absolute;
+    z-index: 10;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    opacity: 0.72;
+
+    span {
+      display: block;
+      padding: 3px 10px;
+      border: 1px solid rgb(255 255 255 / 65%);
+      border-radius: 4px;
+      color: #fff;
+      background: rgb(0 0 0 / 48%);
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      line-height: 1.2;
+      text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
+    }
+  }
+
   .histogram-overlay {
     position: absolute;
     z-index: 11;
@@ -66,8 +90,6 @@
     }
 
     .histogram-legend {
-      display: flex;
-      align-items: center;
       justify-content: flex-start;
       flex-wrap: wrap;
       gap: var(--dim-large);
@@ -145,8 +167,6 @@
     }
 
     .histogram-axis {
-      display: flex;
-      justify-content: space-between;
       gap: 4px;
       color: rgb(255 255 255 / 68%);
       font-size: 0.65rem;
@@ -252,6 +272,18 @@
       }
 
       &.status-info {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      .status-metadata {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -287,13 +319,21 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        margin-left: 6px;
-        vertical-align: middle;
+        margin-left: auto;
         flex-shrink: 0;
         font-variant-numeric: tabular-nums;
       }
 
+      .rgb-values {
+        font-family: Consolas, "Courier New", monospace;
+        font-variant-numeric: tabular-nums;
+        white-space: pre;
+        width: 10.5em;
+        flex: 0 0 10.5em;
+      }
+
       .rgb-swatch {
+        margin-left: 12px;
         display: inline-block;
         width: 20px;
         height: 16px;
@@ -301,10 +341,6 @@
         border-radius: 2px;
         box-sizing: border-box;
         box-shadow: inset 0 0 0 1px rgb(0 0 0 / 18%);
-      }
-
-      .rgb-values {
-        white-space: nowrap;
       }
 
       .rgb-channels {
@@ -322,14 +358,7 @@
         height: 4px;
       }
 
-      .rgb-channel-label {
-        width: 7px;
-        font-size: 9px;
-        line-height: 1;
-      }
-
       .rgb-track {
-        display: block;
         flex: 1;
         height: 3px;
         overflow: hidden;
@@ -340,7 +369,6 @@
       .rgb-fill {
         display: block;
         height: 100%;
-        min-width: 0;
         border-radius: inherit;
       }
 
@@ -353,6 +381,16 @@
         text-align: right;
         margin-left: 0;
       }
+    }
+
+    .zoom-step-button {
+      border: 0;
+      padding: 0 3px;
+      color: var(--color-content-primary-high);
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: underline;
     }
 
     ui-slider {
