@@ -160,6 +160,16 @@
                      (change)="setComparisonSplit($any($event.target).value)" />
               <span class="comparison-split-value">{{ comparisonSplit() }}%</span>
             }
+            <span class="status-metadata">
+              <span class="rgb-debug" title="Temporary RGB diagnostic">{{ pixelDebug() }}</span>
+              · {{ dimensions.width }} x {{ dimensions.height }}
+              @if (imagePosition !== null) {
+                · {{ imagePosition.position }} / {{ imagePosition.total }}
+              }
+              @if (decodeDuration() !== null) {
+                · {{ decodeDuration() | number: '1.2-2' }} s
+              }
+            </span>
             <span class="rgb-readout" title="RGB pixel color under mouse pointer">
               @if (pixelColor(); as rgb) {
                 <span class="rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
@@ -179,15 +189,6 @@
                 </span>
               }
             </span>
-            <span class="rgb-debug" title="Temporary RGB diagnostic">{{ pixelDebug() }}</span>
-            ·
-            {{ dimensions.width }} x {{ dimensions.height }}
-            @if (imagePosition !== null) {
-              · {{ imagePosition.position }} / {{ imagePosition.total }}
-            }
-            @if (decodeDuration() !== null) {
-              · {{ decodeDuration() | number: '1.2-2' }} s
-            }
           }
         </ui-text>
       </section>

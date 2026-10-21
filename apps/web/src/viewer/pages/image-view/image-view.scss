@@ -248,6 +248,18 @@
       }
 
       &.status-info {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      .status-metadata {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -283,7 +295,7 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        margin-left: 6px;
+        margin-left: auto;
         flex-shrink: 0;
         font-variant-numeric: tabular-nums;
       }
