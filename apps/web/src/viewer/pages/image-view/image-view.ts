@@ -567,14 +567,14 @@ export class ImageView {
       .subscribe(image =>
         ConfirmationDialogComponent
           .open(this.dialog, {
-            title: 'Bild löschen?',
-            description: `Möchtest du „${image.path}“ dauerhaft von der Festplatte löschen?`
+            title: 'Delete image?',
+            description: `Do you want to permanently delete "${image.path}" from disk?`
           })
           .subscribe(async () => {
             const deleted = await this.viewNavigator.deleteImage(image.path);
 
             if (!deleted) {
-              this.document.defaultView?.alert('Das Bild konnte nicht gelöscht werden.');
+              this.document.defaultView?.alert('The image could not be deleted.');
             }
           })
       );
