@@ -87,8 +87,6 @@ export class ImageGridComponent {
 
   protected readonly thumbSizeSlider = new FormControl(0, { nonNullable: true });
 
-  private readonly thumbnailSizes: ThumbnailSize[] = [ 'small', 'smallMedium', 'medium', 'mediumLarge', 'large' ];
-
   private readonly thumbnailSliderMax = 8;
 
   private readonly thumbnailSliderSizes: ThumbnailSize[] = [
