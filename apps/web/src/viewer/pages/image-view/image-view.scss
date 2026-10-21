@@ -300,6 +300,14 @@
         font-variant-numeric: tabular-nums;
       }
 
+      .rgb-values {
+        font-family: Consolas, "Courier New", monospace;
+        font-variant-numeric: tabular-nums;
+        white-space: pre;
+        width: 11.5em;
+        flex: 0 0 11.5em;
+      }
+
       .rgb-swatch {
         display: inline-block;
         width: 20px;
@@ -323,11 +331,6 @@
         align-items: center;
         gap: 3px;
         height: 4px;
-      }
-
-      .rgb-channel-label {
-        width: 7px;
-        font-size: 9px;
       }
 
       .rgb-track {
