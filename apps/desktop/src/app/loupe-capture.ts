@@ -51,7 +51,9 @@ export const captureLoupeFrame = async (windowHandle: number): Promise<{ width: 
   const request = ++captureRequest;
   const capture = new ScreenCapture({
     windowHandle,
-    colorFormat: 'rgba16F',
+    // The package runtime supports rgba16F (verified by the FP16 prototype),
+    // but its published TypeScript union omits this accepted format.
+    colorFormat: 'rgba16F' as unknown as ConstructorParameters<typeof ScreenCapture>[0]['colorFormat'],
     cursorCapture: false,
     drawBorder: false,
     minimumUpdateIntervalMs: 0
