@@ -87,15 +87,47 @@ static GraphicsCaptureItem CreateCaptureItemForMonitor(HMONITOR monitor)
     return item;
 }
 
+static GraphicsCaptureItem CreateCaptureItemForWindow(HWND window)
+{
+    auto interop = winrt::get_activation_factory<
+        GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
+    GraphicsCaptureItem item{ nullptr };
+    CheckHr(interop->CreateForWindow(
+        window, winrt::guid_of<GraphicsCaptureItem>(), winrt::put_abi(item)),
+        "IGraphicsCaptureItemInterop::CreateForWindow");
+    return item;
+}
+
 int wmain(int argc, wchar_t** argv)
 {
     try
     {
         winrt::init_apartment(winrt::apartment_type::multi_threaded);
 
-        const std::filesystem::path outputPath =
-            argc > 1 ? std::filesystem::path(argv[1])
-                     : std::filesystem::current_path() / L"hdr-capture.exr";
+        HWND targetWindow = nullptr;
+        std::filesystem::path outputPath =
+            std::filesystem::current_path() / L"hdr-capture.exr";
+
+        // Usage:
+        //   hdr-capture.exe [output.exr]
+        //   hdr-capture.exe --hwnd 0x123456 [output.exr]
+        int argIndex = 1;
+        if (argc > 2 && std::wstring(argv[1]) == L"--hwnd")
+        {
+            wchar_t* end = nullptr;
+            const unsigned long long value = std::wcstoull(argv[2], &end, 0);
+            if (end == argv[2] || *end != L'\\0' || value == 0)
+                throw std::runtime_error("Invalid HWND. Use --hwnd 0x123456.");
+
+            targetWindow = reinterpret_cast<HWND>(static_cast<std::uintptr_t>(value));
+            if (!IsWindow(targetWindow))
+                throw std::runtime_error("The supplied HWND is not a valid window handle.");
+
+            argIndex = 3;
+        }
+
+        if (argc > argIndex)
+            outputPath = std::filesystem::path(argv[argIndex]);
 
         if (!winrt::Windows::Graphics::Capture::GraphicsCaptureSession::IsSupported())
             throw std::runtime_error("Windows.Graphics.Capture is not supported on this system.");
