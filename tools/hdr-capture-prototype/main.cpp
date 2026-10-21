@@ -20,8 +20,6 @@
 #include <vector>
 
 using Microsoft::WRL::ComPtr;
-namespace Imf = OPENEXR_IMF_NAMESPACE;
-namespace Imath = IMATH_NAMESPACE;
 
 static void CheckHr(HRESULT hr, const char* what)
 {
