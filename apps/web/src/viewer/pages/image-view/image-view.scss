@@ -152,9 +152,9 @@
         top: 0;
         left: 0;
         display: block;
-        width: 8px;
-        height: 8px;
-        margin: -4px 0 0 -4px;
+        width: 12px;
+        height: 12px;
+        margin: -6px 0 0 -6px;
         border: 1px solid transparent;
         border-radius: 50%;
         box-sizing: border-box;
@@ -334,8 +334,9 @@
       font: 10px/1.35 sans-serif;
       text-align: left;
       letter-spacing: 0;
-      padding-bottom: 5px;
-      border-bottom: 1px solid rgb(255 255 255 / 12%);
+      margin-top: 3px;
+      padding-top: 6px;
+      border-top: 1px solid rgb(255 255 255 / 12%);
     }
 
     .loupe-info-heading {
@@ -390,6 +391,29 @@
       border-top: 1px solid rgb(255 255 255 / 16%);
     }
 
+    .loupe-pixel-row {
+      display: grid;
+      grid-template-columns: 29px minmax(0, 1fr) 42px;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .loupe-pixel-row .loupe-info-subheading {
+      align-self: start;
+      padding-top: 2px;
+    }
+
+    .loupe-pixel-row .loupe-rgb-summary {
+      min-width: 0;
+      gap: 4px;
+    }
+
+    .loupe-pixel-row .loupe-rgb-values {
+      font-size: 9px;
+      letter-spacing: -0.055em;
+    }
+
     .loupe-coordinates {
       color: rgb(205 205 205 / 90%);
       font: 11px/1.35 Consolas, "Courier New", monospace;
@@ -425,7 +449,9 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
-      margin-top: 6px;
+      width: 42px;
+      margin-top: 0;
+      justify-self: end;
     }
 
     .loupe-rgb-channel {
@@ -462,7 +488,8 @@
     }
 
     .loupe-hdr-linear {
-      margin-top: 5px;
+      margin-top: 1px;
+      margin-left: 34px;
       overflow-wrap: anywhere;
       color: rgb(255 255 255 / 82%);
     }
