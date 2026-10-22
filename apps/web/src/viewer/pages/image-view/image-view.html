@@ -29,7 +29,7 @@
 
   @if (loupeEnabled() && selected !== null) {
     <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
-      @if (loupeShape() !== 'ruler') {
+      @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
         <div class="loupe-handle" aria-hidden="true"></div>
       }
       <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular'" [class.ruler]="loupeShape() === 'ruler'" [class.vertical-ruler]="loupeShape() === 'vertical-ruler'">
