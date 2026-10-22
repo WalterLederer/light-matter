@@ -123,6 +123,8 @@ export class ImageView {
 
   protected readonly imageDecodeDuration = signal<number | null>(null);
 
+  protected readonly imageTotalDuration = signal<number | null>(null);
+
   protected readonly conversionDuration = signal<number | null>(null);
 
   private conversionRequestId = 0;
@@ -131,6 +133,7 @@ export class ImageView {
     this.isDecoding.set(loading);
     this.loadDuration.set(null);
     this.imageDecodeDuration.set(null);
+    this.imageTotalDuration.set(null);
     this.conversionRequestId++;
     this.conversionDuration.set(null);
     this.imageLoadFailed.set(false);
