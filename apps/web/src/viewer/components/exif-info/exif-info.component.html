@@ -69,12 +69,19 @@
     <dt>Total time</dt><dd>{{ totalDuration() === null ? '—' : (totalDuration() | number: '1.2-2') + ' s' }}</dd>
     <dt>Convert time · Decoder: {{ decoderName() ?? '—' }}</dt>
     <dd>
-      @if (conversionDuration() !== null) {
+      @if (conversionDuration() !== null && fullSizeFromCache() === false) {
         {{ conversionDuration() | number: '1.2-2' }} s
+      } @else if (fullSizeFromCache() === true) {
+        Full-size image loaded from cache
       } @else if (decoderName() === 'Chromium / Electron') {
         N/A — native decoding; no separate conversion
       } @else {
-        Not recorded — conversion may not have run this session or the result may have come from cache
+        Conversion time not recorded
+      }
+      @if (fullSizeFromCache() === false) {
+        <span class="cache-status">Full-size image: not loaded from cache (converted/generated now)</span>
+      } @else if (fullSizeFromCache() === true) {
+        <span class="cache-status">Full-size image: cache hit</span>
       }
     </dd>
   </dl>
