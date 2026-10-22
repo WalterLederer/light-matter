@@ -312,8 +312,16 @@ export class ImageRendererComponent implements OnDestroy {
 
     const decodeStartedAt = performance.now();
     image.decode()
-      .then(() => this.decodeDuration.emit((performance.now() - decodeStartedAt) / 1000))
-      .catch(() => this.decodeDuration.emit(null));
+      .then(() => {
+        if (loadId === this.loadId) {
+          this.decodeDuration.emit((performance.now() - decodeStartedAt) / 1000);
+        }
+      })
+      .catch(() => {
+        if (loadId === this.loadId) {
+          this.decodeDuration.emit(null);
+        }
+      });
   };
 
   private readonly onImageError = (loadId: number) => {
