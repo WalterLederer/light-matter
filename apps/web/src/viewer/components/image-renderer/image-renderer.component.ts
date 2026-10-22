@@ -319,7 +319,7 @@ export class ImageRendererComponent implements OnDestroy {
           const completedAt = performance.now();
           this.decodeDuration.emit((completedAt - decodeStartedAt) / 1000);
           // Total time is elapsed wall-clock time from preloadImage() starting
-          // until image.decode() succeeds. It is not Load + Decode + Convert:
+          // until the image.decode() promise settles. It is not Load + Decode + Convert:
           // conversion may already be included in the load/request interval.
           this.totalDuration.emit((completedAt - startedAt) / 1000);
         }
