@@ -821,7 +821,40 @@ export class ImageView {
       return `${bits}-bit`;
     }
 
-    return tags.ImagePixelDepth ?? null;
+    if (tags.ImagePixelDepth !== undefined) {
+      return tags.ImagePixelDepth;
+    }
+
+    // ExifTool does not consistently populate BitsPerSample/ImagePixelDepth
+    // for OpenEXR. Inspect its channel/type metadata before falling back to
+    // the format's supported sample types.
+    const metadata = tags as Record<string, unknown>;
+    const channelInfo = [
+      metadata['Channels'],
+      metadata['ChannelList'],
+      metadata['PixelType'],
+      metadata['DataType'],
+      metadata['SampleFormat']
+    ].filter(value => value !== undefined && value !== null).map(value =>
+      Array.isArray(value) ? value.join(' ') : String(value)
+    ).join(' ').toLowerCase();
+
+    if (/\\bhalf\\b/.test(channelInfo)) {
+      return '16-bit float (half)';
+    }
+    if (/\\bfloat\\b/.test(channelInfo)) {
+      return '32-bit float';
+    }
+    if (/\\buint\\b|unsigned integer/.test(channelInfo)) {
+      return '32-bit unsigned integer';
+    }
+
+    if (String(tags.FileType ?? '').toLowerCase() === 'exr' ||
+        String(metadata['FileTypeExtension'] ?? '').toLowerCase() === 'exr') {
+      return '16-bit half / 32-bit float (per channel)';
+    }
+
+    return null;
   };
 
   private readonly loadHistogram = (path: string) => {
