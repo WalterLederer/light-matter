@@ -7,27 +7,6 @@
     <button class="settings-close-button" type="button" title="Close settings" aria-label="Close settings" (click)="dialogRef.close(false)">×</button>
   </header>
   <section>
-    <div class="setting-row">
-      <div class="setting-description">
-        <strong>Chromium Developer Tools</strong>
-        <span>Show or hide the Chromium DevTools panel. The setting is saved and restored when Light Matter starts.</span>
-      </div>
-      <label class="setting-toggle">
-        <input type="checkbox"
-               [checked]="devToolsOpen()"
-               [disabled]="devToolsLoading()"
-               (change)="setDevToolsOpen($any($event.target).checked)" />
-        <span>Show DevTools</span>
-      </label>
-    </div>
-    @if (devToolsLoading()) {
-      <p class="cache-status" role="status">Loading DevTools setting…</p>
-    } @else if (devToolsError() !== null) {
-      <p class="cache-status error" role="alert">Could not update DevTools setting: {{ devToolsError() }}</p>
-    }
-  </section>
-
-  <section>
     <div class="setting-row setting-config-path">
       <div class="cache-path-details">
         <strong class="setting-section-title">Settings file</strong>
@@ -171,4 +150,42 @@
       </details>
     </section>
   </section>
+  <section class="debug-settings">
+    <details>
+      <summary>Debug</summary>
+      <div class="debug-settings-content">
+        <div class="setting-row">
+          <div class="setting-description">
+            <strong>Debug image switching</strong>
+            <span>Pause for one second at key image-loading and display phases and show the current phase in the viewer status bar.</span>
+          </div>
+          <label class="setting-toggle">
+            <input type="checkbox"
+                   [checked]="debugImageSwitching()"
+                   (change)="setDebugImageSwitching($any($event.target).checked)" />
+            <span>Debug image switching</span>
+          </label>
+        </div>
+    <div class="setting-row">
+      <div class="setting-description">
+        <strong>Chromium Developer Tools</strong>
+        <span>Show or hide the Chromium DevTools panel. The setting is saved and restored when Light Matter starts.</span>
+      </div>
+      <label class="setting-toggle">
+        <input type="checkbox"
+               [checked]="devToolsOpen()"
+               [disabled]="devToolsLoading()"
+               (change)="setDevToolsOpen($any($event.target).checked)" />
+        <span>Show DevTools</span>
+      </label>
+    </div>
+    @if (devToolsLoading()) {
+      <p class="cache-status" role="status">Loading DevTools setting…</p>
+    } @else if (devToolsError() !== null) {
+      <p class="cache-status error" role="alert">Could not update DevTools setting: {{ devToolsError() }}</p>
+    }
+      </div>
+    </details>
+  </section>
+
 </ui-dialog>
