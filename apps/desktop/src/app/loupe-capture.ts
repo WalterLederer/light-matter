@@ -46,11 +46,18 @@ const readPixel = (frame: CapturedFrame, x: number, y: number) => {
 const describeCaptureError = (error: unknown, phase: string): Error => {
   const value = error as { message?: unknown; code?: unknown; hresult?: unknown } | null;
   const message = value && typeof value.message === 'string' ? value.message : String(error);
-  const code = value && (typeof value.hresult === 'string' || typeof value.hresult === 'number')
-    ? `; HRESULT=${String(value.hresult)}`
+  const explicitCode = value && (typeof value.hresult === 'string' || typeof value.hresult === 'number')
+    ? String(value.hresult)
     : value && (typeof value.code === 'string' || typeof value.code === 'number')
-      ? `; code=${String(value.code)}`
-      : '';
+      ? String(value.code)
+      : message.match(/(?:HRESULT[=: ]*|DXGI_ERROR_[A-Z_]*\s*\(?)(0x[0-9a-f]{8})/i)?.[1] ?? '';
+  const dxgiDescriptions: Record<string, string> = {
+    '0x887a0005': 'DXGI_ERROR_DEVICE_REMOVED (GPU/device reset or driver restart)',
+    '0x887a0006': 'DXGI_ERROR_DEVICE_HUNG (GPU stopped responding)',
+    '0x887a0004': 'DXGI_ERROR_UNSUPPORTED (unsupported operation or format)',
+    '0x887a0001': 'DXGI_ERROR_INVALID_CALL (invalid graphics API call)'
+  };
+  const code = explicitCode ? `; code/HRESULT=${explicitCode}${dxgiDescriptions[explicitCode.toLowerCase()] ? ` — ${dxgiDescriptions[explicitCode.toLowerCase()]}` : ''}` : '';
   return new Error(`Capture phase: ${phase}. ${message}${code}`);
 };
 
