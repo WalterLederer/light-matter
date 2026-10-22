@@ -34,7 +34,7 @@
 
 .info-box {
   > details > summary,
-  > .measurement-details > summary {
+  .measurement-details > summary {
     font-weight: 700;
     cursor: pointer;
     user-select: none;
