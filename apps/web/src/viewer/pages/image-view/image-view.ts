@@ -859,7 +859,7 @@ export class ImageView {
           return;
         }
 
-        if (event.key.toLowerCase() === 'v') {
+        if (event.key.toLowerCase() === 's') {
           event.preventDefault();
           this.toggleLoupeShape();
           return;
