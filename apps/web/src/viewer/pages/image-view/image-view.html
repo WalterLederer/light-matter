@@ -35,9 +35,15 @@
         <div class="loupe-handle" aria-hidden="true"></div>
       }
       @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
-        <div class="loupe-led-ring" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [style.opacity]="loupeBrightnessIndicatorOpacity()" aria-hidden="true">
-          @for (angle of loupeLedAngles; track angle) {
-            <span class="loupe-led" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [style.transform]="'rotate(' + angle + 'deg) translateY(-' + (loupeShape() === 'small-circular' ? 78 : 150) + 'px)'"></span>
+        <div class="loupe-led-ring" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [class.rectangular]="loupeShape() === 'rectangular'" [class.small-circular]="loupeShape() === 'small-circular'" [style.opacity]="loupeBrightnessIndicatorOpacity()" aria-hidden="true">
+          @if (loupeShape() === 'rectangular') {
+            @for (position of loupeLedRectPositions; track $index) {
+              <span class="loupe-led" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [style.left.px]="position.x" [style.top.px]="position.y"></span>
+            }
+          } @else {
+            @for (angle of loupeLedAngles; track angle) {
+              <span class="loupe-led" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [style.transform]="'rotate(' + angle + 'deg) translateY(-' + (loupeShape() === 'small-circular' ? 64 : 132) + 'px)'"></span>
+            }
           }
         </div>
       }
@@ -72,15 +78,18 @@
         </div>
       }
       <section class="loupe-info-box location-info-box" [class.collapsed]="!locationInfoExpanded()" aria-label="Location pixel information">
-        <div class="loupe-info-heading"><span><u>L</u>ocation</span><span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? '−' : '+' }}</span></div>
-        @if (locationInfoExpanded()) {
-        <div class="loupe-coordinates">
-          @if (loupeSample(); as sample) {
-            X {{ sample.x }} · Y {{ sample.y }}
-          } @else {
-            X — · Y —
-          }
+        <div class="loupe-info-heading location-heading">
+          <span><u>L</u>ocation</span>
+          <span class="loupe-coordinates">
+            @if (loupeSample(); as sample) {
+              X: {{ sample.x }}/{{ dimensions.width || '—' }} · Y: {{ sample.y }}/{{ dimensions.height || '—' }}
+            } @else {
+              X: —/{{ dimensions.width || '—' }} · Y: —/{{ dimensions.height || '—' }}
+            }
+          </span>
+          <span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? '−' : '+' }}</span>
         </div>
+        @if (locationInfoExpanded()) {
         <section class="loupe-sdr-info" aria-label="SDR pixel information">
           <div class="loupe-pixel-row">
             <div class="loupe-info-subheading">SDR</div>

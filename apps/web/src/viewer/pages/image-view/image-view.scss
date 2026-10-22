@@ -135,6 +135,18 @@
       height: 0;
       pointer-events: none;
 
+      &.rectangular {
+        top: 0;
+        left: 0;
+        width: 280px;
+        height: 280px;
+      }
+
+      &.small-circular {
+        top: 0;
+        left: 0;
+      }
+
       &.bright .loupe-led {
         border: 1px solid rgb(20 24 30 / 70%);
         background: #fff;
@@ -152,9 +164,9 @@
         top: 0;
         left: 0;
         display: block;
-        width: 12px;
-        height: 12px;
-        margin: -6px 0 0 -6px;
+        width: 18px;
+        height: 18px;
+        margin: -9px 0 0 -9px;
         border: 1px solid transparent;
         border-radius: 50%;
         box-sizing: border-box;
@@ -162,8 +174,8 @@
     }
 
     &.small-circular .loupe-led-ring {
-      top: 70px;
-      left: 70px;
+      top: 0;
+      left: 0;
     }
 
     .loupe-image-viewport {
@@ -418,6 +430,19 @@
       color: rgb(205 205 205 / 90%);
       font: 11px/1.35 Consolas, "Courier New", monospace;
       font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .location-heading {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .location-heading .loupe-coordinates {
+      justify-self: end;
+      text-align: right;
     }
 
     .loupe-rgb-summary {

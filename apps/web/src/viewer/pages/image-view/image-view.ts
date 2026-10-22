@@ -180,6 +180,17 @@ export class ImageView {
 
   protected readonly loupeLedAngles = Array.from({ length: 16 }, (_, index) => index * 22.5);
 
+  /** LED centers distributed along the four sides of the rectangular loupe. */
+  protected readonly loupeLedRectPositions = Array.from({ length: 20 }, (_, index) => {
+    const perEdge = 5;
+    const edge = Math.floor(index / perEdge);
+    const offset = 18 + (index % perEdge) * 61;
+    if (edge === 0) return { x: offset, y: 9 };
+    if (edge === 1) return { x: 271, y: offset };
+    if (edge === 2) return { x: 262 - (index % perEdge) * 61, y: 271 };
+    return { x: 9, y: 262 - (index % perEdge) * 61 };
+  });
+
   protected readonly loupeSourcePoint = signal({ x: 0, y: 0 });
 
   protected readonly loupeCaptureGeometry = signal<{ width: number; height: number; x: number; y: number; windowWidth: number; windowHeight: number } | null>(null);
