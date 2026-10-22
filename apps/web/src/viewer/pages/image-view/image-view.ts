@@ -123,10 +123,10 @@ export class ImageView {
 
   protected readonly debugSwitchingPhase = signal<string | null>(null);
 
-  private readonly readDebugImageSwitching = (): boolean => {
+  private readDebugImageSwitching(): boolean {
     try { return this.document.defaultView?.localStorage.getItem('light-matter.debugImageSwitching') === 'true'; }
     catch { return false; }
-  };
+  }
 
   protected readonly onDebugSwitchingPhase = (phase: string): void => {
     if (this.debugImageSwitching()) this.debugSwitchingPhase.set(phase);
