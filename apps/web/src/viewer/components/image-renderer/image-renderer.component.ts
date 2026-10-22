@@ -305,11 +305,23 @@ export class ImageRendererComponent implements OnDestroy {
 
   private loadId = 0;
 
-  private readonly debugPause = async (phase: string, loadId: number): Promise<void> => {
-    if (!this.debugImageSwitching()) return;
-    this.debugSwitchingPhase.emit(phase);
-    await new Promise<void>(resolve => setTimeout(resolve, 1000));
-    if (loadId !== this.loadId) return;
+  // Several image-loading callbacks can overlap (for example, assigning src and
+  // receiving the browser load event). Serialize debug pauses so each phase is
+  // visible for the full interval instead of being overwritten by another callback.
+  private debugPauseQueue: Promise<void> = Promise.resolve();
+
+  private readonly debugPause = (phase: string, loadId: number): Promise<void> => {
+    if (!this.debugImageSwitching()) return Promise.resolve();
+
+    const pause = this.debugPauseQueue.then(async () => {
+      if (loadId !== this.loadId || !this.debugImageSwitching()) return;
+      this.debugSwitchingPhase.emit(phase);
+      await new Promise<void>(resolve => setTimeout(resolve, 1000));
+    });
+
+    // Keep the queue usable even if a future phase callback unexpectedly fails.
+    this.debugPauseQueue = pause.catch(() => undefined);
+    return pause;
   };
 
   private readonly onImageLoad = async (image: HTMLImageElement, loadId: number, startedAt: number) => {
