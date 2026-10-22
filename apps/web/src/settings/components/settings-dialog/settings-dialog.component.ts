@@ -44,13 +44,13 @@ export class SettingsDialogComponent {
 
   protected readonly debugImageSwitching = signal(this.readDebugImageSwitching());
 
-  private readonly readDebugImageSwitching = (): boolean => {
+  private readDebugImageSwitching(): boolean {
     try {
       return globalThis.localStorage.getItem('light-matter.debugImageSwitching') === 'true';
     } catch {
       return false;
     }
-  };
+  }
 
   protected readonly setDebugImageSwitching = (enabled: boolean) => {
     this.debugImageSwitching.set(enabled);
