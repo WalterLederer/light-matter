@@ -311,12 +311,13 @@ export class ImageRendererComponent implements OnDestroy {
     await new Promise<void>(resolve => setTimeout(resolve, 1000));
   };
 
-  private readonly onImageLoad = (image: HTMLImageElement, loadId: number, startedAt: number) => {
+  private readonly onImageLoad = async (image: HTMLImageElement, loadId: number, startedAt: number) => {
     if (loadId !== this.loadId) {
       return;
     }
 
-    void this.debugPause('load: browser load event', loadId);
+    await this.debugPause('load: browser load event', loadId);
+    if (loadId !== this.loadId) return;
     this.isLoading.set(false);
     this.loadingChange.emit(false);
 
@@ -326,9 +327,11 @@ export class ImageRendererComponent implements OnDestroy {
     this.pixelContext = this.pixelCanvas.getContext('2d', { willReadFrequently: true });
     this.pixelColorChange.emit(null);
     this.displayUrl.set(image.src);
-    void this.debugPause('display: displayUrl updated', loadId);
+    await this.debugPause('display: displayUrl updated', loadId);
+    if (loadId !== this.loadId) return;
     this.imagePositioningService.setImageDimensions(dimensions);
-    void this.debugPause('layout: image dimensions updated', loadId);
+    await this.debugPause('layout: image dimensions updated', loadId);
+    if (loadId !== this.loadId) return;
     this.dimensions.emit(dimensions);
     this.loadDuration.emit((performance.now() - startedAt) / 1000);
 
