@@ -28,11 +28,11 @@
                       (mouseleave)="onLoupeMouseLeave()" />
 
   @if (loupeEnabled() && selected !== null) {
-    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
+    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'circular-detail'" [class.circular-detail]="loupeShape() === 'circular-detail'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
       @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
         <div class="loupe-handle" aria-hidden="true"></div>
       }
-      <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular'" [class.ruler]="loupeShape() === 'ruler'" [class.vertical-ruler]="loupeShape() === 'vertical-ruler'">
+      <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'circular-detail'" [class.ruler]="loupeShape() === 'ruler'" [class.vertical-ruler]="loupeShape() === 'vertical-ruler'">
         <img class="loupe-image"
              [src]="selected.url"
              [width]="dimensions.width"
@@ -45,6 +45,21 @@
              draggable="false" />
         <div class="loupe-crosshair" aria-hidden="true"></div>
       </div>
+      @if (loupeShape() === 'circular-detail') {
+        <div class="loupe-detail-viewport" aria-label="Magnified detail, 2× main loupe">
+          <img class="loupe-image loupe-detail-image"
+               [src]="selected.url"
+               [width]="dimensions.width"
+               [height]="dimensions.height"
+               [style.left.px]="52 - loupeSourcePoint().x * loupePixelSize() * 2"
+               [style.top.px]="52 - loupeSourcePoint().y * loupePixelSize() * 2"
+               [style.transform]="'scale(' + (loupePixelSize() * 2) + ')'"
+               alt=""
+               aria-hidden="true"
+               draggable="false" />
+          <div class="loupe-detail-crosshair" aria-hidden="true"></div>
+        </div>
+      }
       <section class="loupe-info-box location-info-box" [class.collapsed]="!locationInfoExpanded()" aria-label="Location pixel information">
         <div class="loupe-info-heading"><span><u>L</u>ocation</span><span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? '−' : '+' }}</span></div>
         @if (locationInfoExpanded()) {

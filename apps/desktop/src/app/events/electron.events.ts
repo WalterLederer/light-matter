@@ -3,6 +3,7 @@ import { FileListing, supportedFileExtensions } from 'internal-api';
 import * as fsSync from 'node:fs';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import * as os from 'node:os';
 import { Injector } from '../../injector/injector';
 import { IpcRegistry } from '../decorators/ipc-registry';
 import { captureLoupeFrame, releaseLoupeFrame, sampleLoupeRegion } from '../loupe-capture';
@@ -85,14 +86,26 @@ ipcMain.handle('openFileFromArgs', async (_: IpcMainInvokeEvent, fileName: strin
 });
 
 ipcMain.handle('Loupe.capture', async () => {
-  if (process.platform !== 'win32' || !App.mainWindow || App.mainWindow.isDestroyed()) {
-    throw new Error('HDR loupe capture is unavailable.');
+  let phase = 'prepare application window';
+  try {
+    if (process.platform !== 'win32' || !App.mainWindow || App.mainWindow.isDestroyed()) {
+      throw new Error('HDR loupe capture is unavailable: a live Windows application window is required.');
+    }
+    const handle = App.mainWindow.getNativeWindowHandle();
+    const windowHandle = Number(handle.readBigUInt64LE(0));
+    const bounds = App.mainWindow.getBounds();
+    phase = 'capture FP16 window frame';
+    const frame = await captureLoupeFrame(windowHandle);
+    return { ...frame, x: bounds.x, y: bounds.y, windowWidth: bounds.width, windowHeight: bounds.height };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const gpuInfo = await app.getGPUInfo('complete').catch(() => null);
+    const devices = (gpuInfo as { gpuDevice?: Array<{ description?: string; driverVersion?: string; driverDate?: string; vendorId?: number; deviceId?: number }> } | null)?.gpuDevice ?? [];
+    const gpu = devices.length
+      ? devices.map(device => `${device.description ?? 'Unknown GPU'} (vendor ${device.vendorId ?? '?'}, device ${device.deviceId ?? '?'}, driver ${device.driverVersion ?? 'unknown'}${device.driverDate ? `, ${device.driverDate}` : ''})`).join(' | ')
+      : 'GPU/driver information unavailable from Electron';
+    throw new Error(`${message}\nDiagnostics: phase=${phase}; OS=${os.version()} [${os.release()}]; Electron=${process.versions.electron}; API=@screen-capture/node; requested format=rgba16F (FP16 / R16G16B16A16_FLOAT); GPU=${gpu}`);
   }
-  const handle = App.mainWindow.getNativeWindowHandle();
-  const windowHandle = Number(handle.readBigUInt64LE(0));
-  const bounds = App.mainWindow.getBounds();
-  const frame = await captureLoupeFrame(windowHandle);
-  return { ...frame, x: bounds.x, y: bounds.y, windowWidth: bounds.width, windowHeight: bounds.height };
 });
 
 ipcMain.handle('Loupe.sample', (_event, x: number, y: number, radius?: number) => sampleLoupeRegion(x, y, radius));

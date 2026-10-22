@@ -127,17 +127,17 @@ export class ImageView {
 
   protected readonly loupeEnabled = signal(false);
 
-  private readonly readStoredLoupeShape = (): 'circular' | 'rectangular' | 'ruler' | 'vertical-ruler' => {
+  private readonly readStoredLoupeShape = (): 'circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler' => {
     try {
       const stored = this.document.defaultView?.localStorage.getItem('light-matter.loupeShape');
-      if (stored === 'circular' || stored === 'rectangular' || stored === 'ruler' || stored === 'vertical-ruler') return stored;
+      if (stored === 'circular' || stored === 'circular-detail' || stored === 'rectangular' || stored === 'ruler' || stored === 'vertical-ruler') return stored;
       return this.readStoredBoolean('loupeCircular', false) ? 'circular' : 'rectangular';
     } catch {
       return 'rectangular';
     }
   };
 
-  protected readonly loupeShape = signal<'circular' | 'rectangular' | 'ruler' | 'vertical-ruler'>(this.readStoredLoupeShape());
+  protected readonly loupeShape = signal<'circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler'>(this.readStoredLoupeShape());
 
   protected readonly locationInfoExpanded = signal(this.readStoredBoolean('locationInfoExpanded', true));
 
@@ -292,7 +292,16 @@ export class ImageView {
 
   protected readonly zoomSlider = new FormControl(100, { nonNullable: true });
 
-  protected readonly loupeSlider = new FormControl(16, { nonNullable: true });
+  private readonly readStoredLoupeZoom = (): number => {
+    try {
+      const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.loupeZoom'));
+      return Number.isFinite(stored) && stored >= 4 && stored <= 64 ? stored : 16;
+    } catch {
+      return 16;
+    }
+  };
+
+  protected readonly loupeSlider = new FormControl(this.readStoredLoupeZoom(), { nonNullable: true });
 
   protected readonly isFullScreen = toSignal(
     fromEvent(this.document, 'fullscreenchange')
@@ -376,10 +385,18 @@ export class ImageView {
         }
       });
 
+    this.loupePixelSize.set(this.loupeSlider.value);
     this.loupeSlider
       .valueChanges
       .pipe(takeUntilDestroyed())
-      .subscribe(value => this.loupePixelSize.set(value));
+      .subscribe(value => {
+        this.loupePixelSize.set(value);
+        try {
+          this.document.defaultView?.localStorage.setItem('light-matter.loupeZoom', String(value));
+        } catch {
+          // The zoom remains usable for the current session if storage is unavailable.
+        }
+      });
 
     this.zoomSlider
       .valueChanges
@@ -466,13 +483,13 @@ export class ImageView {
   };
 
   protected readonly toggleLoupeShape = () => {
-    const shapes = ['circular', 'rectangular', 'ruler', 'vertical-ruler'] as const;
+    const shapes = ['circular', 'circular-detail', 'rectangular', 'ruler', 'vertical-ruler'] as const;
     const currentIndex = shapes.indexOf(this.loupeShape());
     const value = shapes[(currentIndex + 1) % shapes.length];
     this.loupeShape.set(value);
     try {
       this.document.defaultView?.localStorage.setItem('light-matter.loupeShape', value);
-      this.storeBoolean('loupeCircular', value === 'circular');
+      this.storeBoolean('loupeCircular', value === 'circular' || value === 'circular-detail');
     } catch {
       // The shape remains usable for the current session if storage is unavailable.
     }

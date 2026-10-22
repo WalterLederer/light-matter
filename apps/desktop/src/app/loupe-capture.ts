@@ -43,6 +43,17 @@ const readPixel = (frame: CapturedFrame, x: number, y: number) => {
   };
 };
 
+const describeCaptureError = (error: unknown, phase: string): Error => {
+  const value = error as { message?: unknown; code?: unknown; hresult?: unknown } | null;
+  const message = value && typeof value.message === 'string' ? value.message : String(error);
+  const code = value && (typeof value.hresult === 'string' || typeof value.hresult === 'number')
+    ? `; HRESULT=${String(value.hresult)}`
+    : value && (typeof value.code === 'string' || typeof value.code === 'number')
+      ? `; code=${String(value.code)}`
+      : '';
+  return new Error(`Capture phase: ${phase}. ${message}${code}`);
+};
+
 export const captureLoupeFrame = async (windowHandle: number): Promise<{ width: number; height: number }> => {
   if (process.platform !== 'win32') {
     throw new Error('The HDR loupe capture currently requires Windows.');
@@ -59,8 +70,11 @@ export const captureLoupeFrame = async (windowHandle: number): Promise<{ width: 
     minimumUpdateIntervalMs: 0
   });
 
+  let phase = 'initialize capture';
   try {
+    phase = 'start capture session';
     await capture.start();
+    phase = 'wait for first frame';
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const frame = await Promise.race([
       capture.nextFrame(),
@@ -71,8 +85,9 @@ export const captureLoupeFrame = async (windowHandle: number): Promise<{ width: 
       if (timeout !== undefined) clearTimeout(timeout);
     });
 
+    phase = 'validate captured frame';
     if (!frame) throw new Error('HDR window capture returned no frame.');
-    if (frame.colorFormat !== 'rgba16F') throw new Error('Capture did not return rgba16F data.');
+    if (frame.colorFormat !== 'rgba16F') throw new Error(`Expected rgba16F but received ${String(frame.colorFormat)}.`);
     if (frame.rowPitch !== frame.width * 8 || frame.buffer.byteLength !== frame.width * frame.height * 8) {
       throw new Error('Unexpected FP16 frame layout; refusing to sample incorrect pixels.');
     }
@@ -81,6 +96,8 @@ export const captureLoupeFrame = async (windowHandle: number): Promise<{ width: 
       capturedFrame = { buffer: Buffer.from(frame.buffer), width: frame.width, height: frame.height };
     }
     return { width: frame.width, height: frame.height };
+  } catch (error) {
+    throw describeCaptureError(error, phase);
   } finally {
     await capture.stop().catch(() => undefined);
   }
