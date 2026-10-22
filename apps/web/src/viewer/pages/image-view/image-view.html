@@ -56,7 +56,7 @@
              [style.left.px]="(loupeShape() === 'ruler' ? 280 : loupeShape() === 'vertical-ruler' ? 50 : loupeShape() === 'small-circular' ? 70 : 140) - loupeSourcePoint().x * loupePixelSize()"
              [style.top.px]="(loupeShape() === 'ruler' ? 50 : loupeShape() === 'vertical-ruler' ? 280 : loupeShape() === 'small-circular' ? 70 : 140) - loupeSourcePoint().y * loupePixelSize()"
              [style.transform]="'scale(' + loupePixelSize() + ')'"
-             [style.filter]="'brightness(' + loupeBrightness() + ')'"
+             [style.filter]="loupeBrightness() === 1 ? null : 'brightness(' + loupeBrightness() + ')'"
              alt=""
              aria-hidden="true"
              draggable="false" />
@@ -71,7 +71,7 @@
                [style.left.px]="52 - loupeSourcePoint().x * loupePixelSize() * 2"
                [style.top.px]="52 - loupeSourcePoint().y * loupePixelSize() * 2"
                [style.transform]="'scale(' + (loupePixelSize() * 2) + ')'"
-               [style.filter]="'brightness(' + loupeBrightness() + ')'"
+               [style.filter]="loupeBrightness() === 1 ? null : 'brightness(' + loupeBrightness() + ')'"
                alt=""
                aria-hidden="true"
                draggable="false" />
