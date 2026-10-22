@@ -126,6 +126,7 @@ export class ImageView {
   protected readonly imageTotalDuration = signal<number | null>(null);
 
   protected readonly conversionDuration = signal<number | null>(null);
+  protected readonly fullSizeFromCache = signal<boolean | null>(null);
 
   private conversionRequestId = 0;
 
@@ -136,6 +137,7 @@ export class ImageView {
     this.imageTotalDuration.set(null);
     this.conversionRequestId++;
     this.conversionDuration.set(null);
+    this.fullSizeFromCache.set(null);
     this.imageLoadFailed.set(false);
   };
 
@@ -799,7 +801,8 @@ export class ImageView {
     try {
       const response = await fetch('atom://app/conversion-time?image=' + encodeURIComponent(path));
       if (!response.ok || requestId !== this.conversionRequestId) return;
-      const result = await response.json() as { durationMs: number | null };
+      const result = await response.json() as { durationMs: number | null; fromCache: boolean | null };
+      if (requestId === this.conversionRequestId) this.fullSizeFromCache.set(result.fromCache);
       if (requestId === this.conversionRequestId && result.durationMs !== null && Number.isFinite(result.durationMs)) {
         this.conversionDuration.set(result.durationMs / 1000);
       }
