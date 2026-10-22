@@ -396,7 +396,11 @@ export class ImageView {
     this.selectedImage$
       .pipe(takeUntilDestroyed())
       .subscribe(image => {
+        this.debugSelectedImagePath = image?.path ?? 'none';
         this.processManager.setWindowTitle(this.makeWindowTitle(image?.path)).catch(() => undefined);
+        if (this.debugImageSwitching()) {
+          this.debugSwitchingPhase.set(`navigation: selected=${image?.path ?? 'none'} · animation=${this.animationState()}`);
+        }
       });
 
     this.destroyRef.onDestroy(() => {
@@ -729,6 +733,13 @@ export class ImageView {
     this.exifState.set(exifVisible ? this.imageTags() ?? false : false);
   };
 
+  private readonly selectedImagePathForDebug = (): string => {
+    // selectedImage$ is a stream; use the latest path cached by its subscription below.
+    return this.debugSelectedImagePath;
+  };
+
+  private debugSelectedImagePath = 'unknown';
+
   protected readonly prevPhoto = () => this.viewNavigator.previous();
 
   protected readonly nextPhoto = () => this.viewNavigator.next();
@@ -753,6 +764,14 @@ export class ImageView {
   };
 
   protected readonly onAnimationEnd = (event: AnimationEvent) => {
+    if (this.debugImageSwitching()) {
+      const renderer = event.currentTarget as HTMLElement | null;
+      const bounds = renderer?.getBoundingClientRect();
+      this.debugSwitchingPhase.set(
+        `animationend: ${event.animationName} · state=${this.animationState()} · selected=${this.selectedImagePathForDebug()} · renderer=${bounds ? `${Math.round(bounds.left)},${Math.round(bounds.top)},${Math.round(bounds.width)}x${Math.round(bounds.height)}` : 'none'}`
+      );
+    }
+
     const split = event.animationName.split('animation-');
 
     if (split.length < 2) {
