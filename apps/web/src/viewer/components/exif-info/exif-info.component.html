@@ -31,7 +31,7 @@
 
 <section class="info-box color-info">
   <details>
-    <summary>Color information · {{ exifData === false ? 'Loading…' : rangeInfo.result }}</summary>
+    <summary>Color information · {{ exifData === false ? 'Loading…' : rangeInfo.result }} · {{ bitDepth() ?? 'Bit depth —' }} · Subsampling {{ exifData === false ? '—' : (exifData.YCbCrSubSampling ?? exifData.ChromaFormat ?? '—') }}</summary>
   <dl>
     @if (exifData !== false) {
       <dt>Dynamic range</dt>
@@ -68,7 +68,15 @@
     <dt>Decode time</dt><dd>{{ decodeDuration() === null ? '—' : (decodeDuration() | number: '1.2-2') + ' s' }}</dd>
     <dt>Total time</dt><dd>{{ totalDuration() === null ? '—' : (totalDuration() | number: '1.2-2') + ' s' }}</dd>
     <dt>Convert time · Decoder: {{ decoderName() ?? '—' }}</dt>
-    <dd>{{ !requiresConversion() || conversionDuration() === null ? '—' : (conversionDuration() | number: '1.2-2') + ' s' }}</dd>
+    <dd>
+      @if (conversionDuration() !== null) {
+        {{ conversionDuration() | number: '1.2-2' }} s
+      } @else if (decoderName() === 'Chromium / Electron') {
+        N/A — native decoding; no separate conversion
+      } @else {
+        Not recorded — conversion may not have run this session or the result may have come from cache
+      }
+    </dd>
   </dl>
   <details class="measurement-details">
     <summary>Measurement logic</summary>
