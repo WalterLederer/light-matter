@@ -123,13 +123,28 @@ export class ImageView {
 
   protected readonly debugSwitchingPhase = signal<string | null>(null);
 
+  protected readonly debugSwitchingTrace = signal<string[]>([]);
+
+  private debugTraceStartedAt = 0;
+
+  private readonly traceDebugSwitching = (event: string): void => {
+    if (!this.debugImageSwitching()) return;
+    if (this.debugTraceStartedAt === 0) this.debugTraceStartedAt = performance.now();
+    const elapsed = Math.round(performance.now() - this.debugTraceStartedAt);
+    const trace = [...this.debugSwitchingTrace(), `${elapsed}ms ${event}`].slice(-5);
+    this.debugSwitchingTrace.set(trace);
+  };
+
   private readDebugImageSwitching(): boolean {
     try { return this.document.defaultView?.localStorage.getItem('light-matter.debugImageSwitching') === 'true'; }
     catch { return false; }
   }
 
   protected readonly onDebugSwitchingPhase = (phase: string): void => {
-    if (this.debugImageSwitching()) this.debugSwitchingPhase.set(phase);
+    if (this.debugImageSwitching()) {
+      this.debugSwitchingPhase.set(phase);
+      this.traceDebugSwitching(`renderer ${phase.split(' · ')[0]}`);
+    }
   };
 
   protected readonly loadDuration = signal<number | null>(null);
@@ -397,6 +412,7 @@ export class ImageView {
       .pipe(takeUntilDestroyed())
       .subscribe(image => {
         this.debugSelectedImagePath = image?.path ?? 'none';
+        this.traceDebugSwitching(`selected ${image?.path?.split(/[\\/]/).pop() ?? 'none'}`);
         this.processManager.setWindowTitle(this.makeWindowTitle(image?.path)).catch(() => undefined);
         if (this.debugImageSwitching()) {
           this.debugSwitchingPhase.set(`navigation: selected=${image?.path ?? 'none'} · animation=${this.animationState()}`);
@@ -770,6 +786,7 @@ export class ImageView {
       this.debugSwitchingPhase.set(
         `animationend: ${event.animationName} · state=${this.animationState()} · selected=${this.selectedImagePathForDebug()} · renderer=${bounds ? `${Math.round(bounds.left)},${Math.round(bounds.top)},${Math.round(bounds.width)}x${Math.round(bounds.height)}` : 'none'}`
       );
+      this.traceDebugSwitching(`animationend ${event.animationName} state=${this.animationState()}`);
     }
 
     const split = event.animationName.split('animation-');
@@ -1030,6 +1047,7 @@ export class ImageView {
 
           case 'arrowleft':
             event.preventDefault();
+            this.traceDebugSwitching(`key ArrowLeft state=${this.animationState()}`);
             this.hasPrevious$
               .pipe(
                 take(1),
@@ -1042,6 +1060,7 @@ export class ImageView {
           case ' ':
           case 'spacebar':
             event.preventDefault();
+            this.traceDebugSwitching(`key ${event.key} state=${this.animationState()}`);
             this.hasNext$
               .pipe(
                 take(1),
