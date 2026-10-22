@@ -90,7 +90,8 @@
     bottom: 12px;
     left: auto;
     right: 12px;
-    width: 102px;
+    width: 165px;
+    max-width: calc(100% - 24px);
     height: auto;
     display: grid;
     overflow: visible;
