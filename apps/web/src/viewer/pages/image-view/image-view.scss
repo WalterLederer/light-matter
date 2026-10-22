@@ -266,13 +266,19 @@
       max-height: none;
       transform-origin: top left;
       dynamic-range-limit: no-limit;
-      // Keep source pixels discrete instead of smoothing them during loupe scaling.
+      // Keep source pixels discrete instead of smoothing them during enlargement.
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       clip-path: inset(0 0 0 0);
       user-select: none;
       -webkit-user-drag: none;
       pointer-events: none;
+
+      // Pixelated rendering may prevent meaningful downscaling below 1×.
+      // Use normal interpolation so the negative loupe actually shrinks.
+      &.sub-one {
+        image-rendering: auto;
+      }
     }
 
     .loupe-key-hint {

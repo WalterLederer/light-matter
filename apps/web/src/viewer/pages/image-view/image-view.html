@@ -34,6 +34,7 @@
       }
       <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'circular-detail'" [class.ruler]="loupeShape() === 'ruler'" [class.vertical-ruler]="loupeShape() === 'vertical-ruler'">
         <img class="loupe-image"
+             [class.sub-one]="loupePixelSize() < 1"
              [src]="selected.url"
              [width]="dimensions.width"
              [height]="dimensions.height"
@@ -48,6 +49,7 @@
       @if (loupeShape() === 'circular-detail') {
         <div class="loupe-detail-viewport" aria-label="Magnified detail, 2× main loupe">
           <img class="loupe-image loupe-detail-image"
+               [class.sub-one]="loupePixelSize() * 2 < 1"
                [src]="selected.url"
                [width]="dimensions.width"
                [height]="dimensions.height"
