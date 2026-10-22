@@ -112,9 +112,7 @@ export class ImageView {
 
   protected readonly loupeCircular = signal(false);
 
-  protected readonly sdrInfoExpanded = signal(true);
-
-  protected readonly hdrInfoExpanded = signal(true);
+  protected readonly locationInfoExpanded = signal(true);
 
   protected readonly loupeCapturePending = signal(false);
 
@@ -438,9 +436,7 @@ export class ImageView {
 
   protected readonly toggleLoupeShape = () => this.loupeCircular.update(value => !value);
 
-  protected readonly toggleSdrInfo = () => this.sdrInfoExpanded.update(value => !value);
-
-  protected readonly toggleHdrInfo = () => this.hdrInfoExpanded.update(value => !value);
+  protected readonly toggleLocationInfo = () => this.locationInfoExpanded.update(value => !value);
 
   protected readonly toggleLoupe = async (enabled: boolean) => {
     this.loupeEnabled.set(enabled);
@@ -462,8 +458,8 @@ export class ImageView {
     const view = this.document.defaultView;
     const viewWidth = view?.innerWidth ?? 1280;
     const viewHeight = view?.innerHeight ?? 720;
-    const loupeWidth = 330;
-    const loupeHeight = 500;
+    const loupeWidth = 310;
+    const loupeHeight = this.locationInfoExpanded() ? 430 : 310;
     const left = event.clientX > viewWidth - loupeWidth - 24 ? event.clientX - loupeWidth - 20 : event.clientX + 20;
     const top = event.clientY > viewHeight - loupeHeight - 24 ? event.clientY - loupeHeight - 20 : event.clientY + 20;
     this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
@@ -761,13 +757,9 @@ export class ImageView {
               event.preventDefault();
               this.toggleLoupeShape();
               return;
-            case 's':
+            case 'l':
               event.preventDefault();
-              this.toggleSdrInfo();
-              return;
-            case 'h':
-              event.preventDefault();
-              this.toggleHdrInfo();
+              this.toggleLocationInfo();
               return;
           }
         }

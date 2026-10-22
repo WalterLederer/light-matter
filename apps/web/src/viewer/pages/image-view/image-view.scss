@@ -42,12 +42,12 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 10px;
-    border: 1px solid rgb(255 255 255 / 38%);
-    border-radius: 6px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
     color: #fff;
-    background: rgb(12 14 18 / 96%);
-    box-shadow: 0 6px 24px rgb(0 0 0 / 48%);
+    background: transparent;
+    box-shadow: none;
     pointer-events: none;
     user-select: none;
 
@@ -63,12 +63,12 @@
       border: 1px solid rgb(255 255 255 / 58%);
       background: #08090b;
       contain: strict;
-      transition: border-radius 100ms ease;
+      transition: clip-path 100ms ease;
 
       &.circular {
-        border-radius: 50%;
+        border: 0;
         background: transparent;
-        border-color: transparent;
+        clip-path: circle(50% at 50% 50%);
       }
     }
 
@@ -110,25 +110,33 @@
       letter-spacing: 0.06em;
     }
 
-    .loupe-collapse-indicator {
-      color: rgb(205 205 205 / 90%);
-      font-size: 14px;
-    }
-
     .loupe-info-box {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
       min-width: 0;
-      padding: 6px;
-      border: 1px solid rgb(255 255 255 / 24%);
-      border-radius: 4px;
-      background: rgb(255 255 255 / 5%);
+      padding: 8px;
+      border: 1px solid rgb(255 255 255 / 30%);
+      border-radius: 5px;
+      background: rgb(12 14 18 / 96%);
+      box-shadow: 0 4px 16px rgb(0 0 0 / 36%);
       font: 10px/1.35 Consolas, "Courier New", monospace;
       font-variant-numeric: tabular-nums;
     }
 
-    .loupe-info-box {
+    .loupe-info-subheading {
+      color: rgb(220 220 220 / 92%);
+      font: 600 10px/1.2 sans-serif;
+      letter-spacing: 0.05em;
+    }
+
+    .loupe-sdr-info,
+    .loupe-hdr-info {
       display: flex;
       flex-direction: column;
       gap: 5px;
+      padding-top: 6px;
+      border-top: 1px solid rgb(255 255 255 / 16%);
     }
 
     .loupe-coordinates {

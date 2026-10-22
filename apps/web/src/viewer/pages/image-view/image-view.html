@@ -41,56 +41,57 @@
              aria-hidden="true"
              draggable="false" />
       </div>
-      <div class="loupe-coordinates">
-        @if (loupeSample(); as sample) {
-          X {{ sample.x }} · Y {{ sample.y }}
-        } @else {
-          X — · Y —
-        }
-      </div>
-      <section class="loupe-info-box sdr-info-box" aria-label="SDR pixel information">
-        <div class="loupe-info-heading"><span><u>S</u>DR</span><span class="loupe-collapse-indicator">{{ sdrInfoExpanded() ? '−' : '+' }}</span></div>
-        @if (sdrInfoExpanded()) {
-          @if (pixelColor(); as rgb) {
-            <div class="loupe-rgb-summary">
-              <span class="loupe-rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'SDR RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
-              <span class="loupe-rgb-values">R:0x{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }} G:0x{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }} B:0x{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
-            </div>
-            <div class="loupe-rgb-channels" aria-label="SDR RGB channel levels">
-              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
-              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
-              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
-            </div>
-          } @else {
-            <div class="loupe-rgb-summary">
-              <span class="loupe-rgb-swatch" aria-label="No SDR pixel selected"></span>
-              <span class="loupe-rgb-values">R:-- G:-- B:--</span>
-            </div>
-            <div class="loupe-rgb-channels" aria-hidden="true">
-              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
-              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
-              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
-            </div>
-          }
-        }
-      </section>
-      <section class="loupe-info-box hdr-info-box" aria-label="HDR pixel information">
-        <div class="loupe-info-heading"><span><u>H</u>DR</span><span class="loupe-collapse-indicator">{{ hdrInfoExpanded() ? '−' : '+' }}</span></div>
-        @if (hdrInfoExpanded()) {
+      <section class="loupe-info-box location-info-box" aria-label="Location pixel information">
+        <div class="loupe-info-heading"><span><u>L</u>ocation</span><span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? '−' : '+' }}</span></div>
+        @if (locationInfoExpanded()) {
+        <div class="loupe-coordinates">
           @if (loupeSample(); as sample) {
-            <div class="loupe-rgb-summary">
-              <span class="loupe-rgb-swatch" [style.backgroundColor]="sample.center.color" aria-label="HDR pixel color"></span>
-              <span class="loupe-rgb-values">R:0x{{ sample.center.rHex }} G:0x{{ sample.center.gHex }} B:0x{{ sample.center.bHex }}</span>
-            </div>
-            <div class="loupe-hdr-linear">scRGB {{ sample.center.r | number:'1.0-4' }}, {{ sample.center.g | number:'1.0-4' }}, {{ sample.center.b | number:'1.0-4' }}</div>
+            X {{ sample.x }} · Y {{ sample.y }}
           } @else {
-            <div class="loupe-rgb-values">R:-- G:-- B:--</div>
-            <div class="loupe-hdr-linear">scRGB —, —, —</div>
+            X — · Y —
           }
+        </div>
+        <section class="loupe-sdr-info" aria-label="SDR pixel information">
+          <div class="loupe-info-subheading">SDR</div>
+            @if (pixelColor(); as rgb) {
+              <div class="loupe-rgb-summary">
+                <span class="loupe-rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'SDR RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
+                <span class="loupe-rgb-values">R:0x{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }} G:0x{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }} B:0x{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
+              </div>
+              <div class="loupe-rgb-channels" aria-label="SDR RGB channel levels">
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
+              </div>
+            } @else {
+              <div class="loupe-rgb-summary">
+                <span class="loupe-rgb-swatch" aria-label="No SDR pixel selected"></span>
+                <span class="loupe-rgb-values">R:-- G:-- B:--</span>
+              </div>
+              <div class="loupe-rgb-channels" aria-hidden="true">
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
+              </div>
+            }
+        </section>
+        <section class="loupe-hdr-info" aria-label="HDR pixel information">
+          <div class="loupe-info-subheading">HDR</div>
+            @if (loupeSample(); as sample) {
+              <div class="loupe-rgb-summary">
+                <span class="loupe-rgb-swatch" [style.backgroundColor]="sample.center.color" aria-label="HDR pixel color"></span>
+                <span class="loupe-rgb-values">R:0x{{ sample.center.rHex }} G:0x{{ sample.center.gHex }} B:0x{{ sample.center.bHex }}</span>
+              </div>
+              <div class="loupe-hdr-linear">scRGB {{ sample.center.r | number:'1.0-4' }}, {{ sample.center.g | number:'1.0-4' }}, {{ sample.center.b | number:'1.0-4' }}</div>
+            } @else {
+              <div class="loupe-rgb-values">R:-- G:-- B:--</div>
+              <div class="loupe-hdr-linear">scRGB —, —, —</div>
+            }
+        </section>
         }
       </section>
       <div class="loupe-key-hint-row">
-        <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>C</u>: Circle · + / −: Zoom<br /><u>S</u>: Toggle SDR · <u>H</u>: Toggle HDR · <u>G</u>: Histogram</div>
+        <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>C</u>: Circle · <u>L</u>: Location · + / −: Zoom<br /><u>H</u>: Histogram</div>
       </div>
     </aside>
   }
