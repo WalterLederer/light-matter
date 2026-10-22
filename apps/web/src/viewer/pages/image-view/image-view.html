@@ -17,8 +17,6 @@
                       [comparisonSplit]="comparisonSplit()"
                       (comparisonSplitChange)="previewComparisonSplit($event)"
                       (comparisonSplitCommit)="setComparisonSplit($event)"
-                      [class]="animationState()"
-                      (animationend)="onAnimationEnd($event)"
                       (dimensions)="imageDimensions.set($event)"
                       (pixelColorChange)="pixelColor.set($event)"
                       (pixelDebugChange)="pixelDebug.set($event)"
