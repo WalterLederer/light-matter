@@ -77,10 +77,13 @@
     }
 
     &:not(.circular) .loupe-handle {
-      top: 238px;
-      left: 218px;
+      top: 248px;
+      left: 250px;
       width: 86px;
       height: 20px;
+      border-color: #76512e;
+      background: linear-gradient(180deg, #f0d8b9 0%, #c49a68 24%, #8d6338 50%, #684522 52%, #a97945 82%, #ead0ad 100%);
+      box-shadow: 0 2px 4px rgb(0 0 0 / 65%), inset 0 1px 1px rgb(255 244 225 / 80%);
       transform: rotate(43deg);
     }
 
