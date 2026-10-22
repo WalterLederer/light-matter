@@ -1029,7 +1029,7 @@ export class ImageView {
               .subscribe(() => this.nextPhoto());
             break;
 
-          case 'Delete':
+          case 'delete':
             event.preventDefault();
             this.deletePhoto();
             break;
