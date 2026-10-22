@@ -171,6 +171,15 @@ export class ImageView {
 
   protected readonly loupePixelSize = signal(24);
 
+  /** Relative display brightness for the magnified image; 1 means unchanged. */
+  protected readonly loupeBrightness = signal(1);
+
+  protected readonly loupeBrightnessIndicatorOpacity = computed(() =>
+    Math.min(1, Math.abs(this.loupeBrightness() - 1) / 1.5)
+  );
+
+  protected readonly loupeLedAngles = Array.from({ length: 16 }, (_, index) => index * 22.5);
+
   protected readonly loupeSourcePoint = signal({ x: 0, y: 0 });
 
   protected readonly loupeCaptureGeometry = signal<{ width: number; height: number; x: number; y: number; windowWidth: number; windowHeight: number } | null>(null);
@@ -662,6 +671,12 @@ export class ImageView {
     }
   };
 
+  protected readonly adjustLoupeBrightness = (direction: 1 | -1) => {
+    if (!this.loupeEnabled()) return;
+    const next = Math.max(0.1, Math.min(3, Number((this.loupeBrightness() + direction * 0.1).toFixed(2))));
+    this.loupeBrightness.set(next);
+  };
+
   protected readonly adjustZoom = (direction: 1 | -1) => {
     if (this.loupeEnabled()) {
       this.loupeSlider.setValue(Math.max(0.1, Math.min(64, Number((this.loupeSlider.value * (direction > 0 ? 1.25 : 0.8)).toFixed(2)))));
@@ -911,6 +926,12 @@ export class ImageView {
 
         const target = event.target;
         if (target instanceof HTMLElement && target.matches('input:not([type="checkbox"]), textarea, [contenteditable="true"]')) {
+          return;
+        }
+
+        if (this.loupeEnabled() && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+          event.preventDefault();
+          this.adjustLoupeBrightness(event.key === 'ArrowUp' ? 1 : -1);
           return;
         }
 
