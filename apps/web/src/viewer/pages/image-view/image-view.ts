@@ -83,6 +83,23 @@ export class ImageView {
 
   private readonly configuration = inject(Configuration);
 
+  private readonly readStoredBoolean = (key: string, fallback: boolean): boolean => {
+    try {
+      const value = this.document.defaultView?.localStorage.getItem(`light-matter.${key}`);
+      return value === null || value === undefined ? fallback : value === 'true';
+    } catch {
+      return fallback;
+    }
+  };
+
+  private readonly storeBoolean = (key: string, value: boolean): void => {
+    try {
+      this.document.defaultView?.localStorage.setItem(`light-matter.${key}`, String(value));
+    } catch {
+      // Preferences remain usable for the current session if storage is unavailable.
+    }
+  };
+
   /* State */
   protected readonly selectedImage$ = this.viewNavigator.selectedImage();
 
@@ -110,9 +127,9 @@ export class ImageView {
 
   protected readonly loupeEnabled = signal(false);
 
-  protected readonly loupeCircular = signal(false);
+  protected readonly loupeCircular = signal(this.readStoredBoolean('loupeCircular', false));
 
-  protected readonly locationInfoExpanded = signal(true);
+  protected readonly locationInfoExpanded = signal(this.readStoredBoolean('locationInfoExpanded', true));
 
   protected readonly loupeCapturePending = signal(false);
 
@@ -434,9 +451,17 @@ export class ImageView {
     if (!this.loupeEnabled()) this.imagePositioningService.setZoom('fit');
   };
 
-  protected readonly toggleLoupeShape = () => this.loupeCircular.update(value => !value);
+  protected readonly toggleLoupeShape = () => {
+    const value = !this.loupeCircular();
+    this.loupeCircular.set(value);
+    this.storeBoolean('loupeCircular', value);
+  };
 
-  protected readonly toggleLocationInfo = () => this.locationInfoExpanded.update(value => !value);
+  protected readonly toggleLocationInfo = () => {
+    const value = !this.locationInfoExpanded();
+    this.locationInfoExpanded.set(value);
+    this.storeBoolean('locationInfoExpanded', value);
+  };
 
   protected readonly toggleLoupe = async (enabled: boolean) => {
     this.loupeEnabled.set(enabled);
@@ -776,7 +801,8 @@ export class ImageView {
             this.toggleHistogram();
             break;
 
-          case 'ArrowLeft':
+          case 'arrowleft':
+            event.preventDefault();
             this.hasPrevious$
               .pipe(
                 take(1),
@@ -785,7 +811,10 @@ export class ImageView {
               .subscribe(() => this.prevPhoto());
             break;
 
-          case 'ArrowRight':
+          case 'arrowright':
+          case ' ':
+          case 'spacebar':
+            event.preventDefault();
             this.hasNext$
               .pipe(
                 take(1),
