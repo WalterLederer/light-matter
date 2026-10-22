@@ -258,6 +258,19 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .location-info-box.collapsed {
+      gap: 0;
+      padding: 5px 8px;
+      border-color: rgb(255 255 255 / 12%);
+      background: rgb(12 14 18 / 12%);
+      box-shadow: none;
+    }
+
+    .location-info-box.collapsed .loupe-info-heading {
+      color: rgb(255 255 255 / 98%);
+      text-shadow: 0 1px 3px rgb(0 0 0 / 95%);
+    }
+
     .loupe-info-subheading {
       color: rgb(220 220 220 / 92%);
       font: 600 10px/1.2 sans-serif;

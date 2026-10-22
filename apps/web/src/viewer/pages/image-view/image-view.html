@@ -45,7 +45,7 @@
              draggable="false" />
         <div class="loupe-crosshair" aria-hidden="true"></div>
       </div>
-      <section class="loupe-info-box location-info-box" aria-label="Location pixel information">
+      <section class="loupe-info-box location-info-box" [class.collapsed]="!locationInfoExpanded()" aria-label="Location pixel information">
         <div class="loupe-info-heading"><span><u>L</u>ocation</span><span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? '−' : '+' }}</span></div>
         @if (locationInfoExpanded()) {
           <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>C</u>: Shape · <u>L</u>: Location · + / −: Zoom · <u>H</u>: Histogram</div>
