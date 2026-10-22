@@ -550,7 +550,10 @@ export class ImageView {
   };
 
   protected readonly fitToWindow = () => {
-    if (!this.loupeEnabled()) this.imagePositioningService.setZoom('fit');
+    if (!this.loupeEnabled()) {
+      this.loupeBrightness.set(1);
+      this.imagePositioningService.setZoom('fit');
+    }
   };
 
   protected readonly toggleLoupeShape = () => {
