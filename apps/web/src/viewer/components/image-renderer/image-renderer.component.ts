@@ -73,6 +73,8 @@ export class ImageRendererComponent implements OnDestroy {
 
   readonly decodeDuration = output<number | null>();
 
+  readonly totalDuration = output<number | null>();
+
   readonly loadError = output<void>();
 
   readonly comparisonSplitChange = output<number>();
