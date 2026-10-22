@@ -31,7 +31,6 @@ import {
   ImageDimensions
 } from '../../services/image-positioning/image-positioning.types';
 import { ViewNavigator } from '../../services/view-navigator/view-navigator';
-import { AnimationState } from './image-view.types';
 
 @Component({
   selector: 'app-image-view',
@@ -354,7 +353,6 @@ export class ImageView {
 
   protected readonly exifState = signal<false | ExifTags>(false);
 
-  protected readonly animationState = signal<AnimationState>('none');
 
   protected readonly zoomSlider = new FormControl(100, { nonNullable: true });
 
@@ -415,7 +413,7 @@ export class ImageView {
         this.traceDebugSwitching(`selected ${image?.path?.split(/[\\/]/).pop() ?? 'none'}`);
         this.processManager.setWindowTitle(this.makeWindowTitle(image?.path)).catch(() => undefined);
         if (this.debugImageSwitching()) {
-          this.debugSwitchingPhase.set(`navigation: selected=${image?.path ?? 'none'} · animation=${this.animationState()}`);
+          this.debugSwitchingPhase.set(`navigation: selected=${image?.path ?? 'none'} · animation=disabled`);
         }
       });
 
@@ -615,7 +613,7 @@ export class ImageView {
       this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
     }
 
-    if (!this.isDecoding() && this.animationState() === 'none') await this.captureLoupeAfterRender();
+    if (!this.isDecoding()) await this.captureLoupeAfterRender();
   };
 
   private readonly updateLoupeSourcePoint = (clientX: number, clientY: number) => {
@@ -684,7 +682,7 @@ export class ImageView {
   };
 
   protected readonly onImageRendered = () => {
-    if (this.loupeEnabled() && !this.isDecoding() && this.animationState() === 'none') void this.captureLoupeAfterRender();
+    if (this.loupeEnabled() && !this.isDecoding()) void this.captureLoupeAfterRender();
   };
 
   private readonly captureLoupeAfterRender = async () => {
@@ -779,46 +777,6 @@ export class ImageView {
       );
   };
 
-  protected readonly onAnimationEnd = (event: AnimationEvent) => {
-    if (this.debugImageSwitching()) {
-      const renderer = event.currentTarget as HTMLElement | null;
-      const bounds = renderer?.getBoundingClientRect();
-      this.debugSwitchingPhase.set(
-        `animationend: ${event.animationName} · state=${this.animationState()} · selected=${this.selectedImagePathForDebug()} · renderer=${bounds ? `${Math.round(bounds.left)},${Math.round(bounds.top)},${Math.round(bounds.width)}x${Math.round(bounds.height)}` : 'none'}`
-      );
-      this.traceDebugSwitching(`animationend ${event.animationName} state=${this.animationState()}`);
-    }
-
-    const split = event.animationName.split('animation-');
-
-    if (split.length < 2) {
-      return;
-    }
-
-    const name = split[1];
-
-    switch (name) {
-      case 'leave-left':
-        this.viewNavigator.previous();
-        this.animationState.set('enter-left');
-        break;
-      case 'enter-left':
-        this.animationState.set('none');
-        this.onImageRendered();
-        break;
-      case 'leave-right':
-        this.viewNavigator.next();
-        this.animationState.set('enter-right');
-        break;
-      case 'enter-right':
-        this.animationState.set('none');
-        this.onImageRendered();
-        break;
-      default:
-        this.animationState.set('none');
-        break;
-    }
-  };
 
   protected readonly onMouseWheel = (event: WheelEvent) => {
     event.preventDefault();
@@ -1047,7 +1005,7 @@ export class ImageView {
 
           case 'arrowleft':
             event.preventDefault();
-            this.traceDebugSwitching(`key ArrowLeft state=${this.animationState()}`);
+            this.traceDebugSwitching('key ArrowLeft');
             this.hasPrevious$
               .pipe(
                 take(1),
@@ -1060,7 +1018,7 @@ export class ImageView {
           case ' ':
           case 'spacebar':
             event.preventDefault();
-            this.traceDebugSwitching(`key ${event.key} state=${this.animationState()}`);
+            this.traceDebugSwitching(`key ${event.key}`);
             this.hasNext$
               .pipe(
                 take(1),
