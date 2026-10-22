@@ -772,7 +772,7 @@ export class ImageView {
               .subscribe(image => this.toggleExifInfo(image.path));
             break;
 
-          case 'g':
+          case 'h':
             this.toggleHistogram();
             break;
 
