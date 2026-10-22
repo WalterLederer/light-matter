@@ -81,7 +81,7 @@
     }
 
     .loupe-key-hint {
-      color: rgb(255 255 255 / 72%);
+      color: rgb(205 205 205 / 90%);
       font: 11px/1.2 sans-serif;
       text-align: center;
     }
@@ -100,6 +100,26 @@
       background: rgb(255 255 255 / 5%);
       font: 10px/1.35 Consolas, "Courier New", monospace;
       font-variant-numeric: tabular-nums;
+    }
+
+    .sdr-info-box {
+      grid-column: 1;
+      grid-row: 1 / span 2;
+    }
+
+    .loupe-coordinates {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: end;
+      margin: 0 0 2px;
+      color: rgb(205 205 205 / 90%);
+      font: 10px/1.35 Consolas, "Courier New", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hdr-info-box {
+      grid-column: 2;
+      grid-row: 2;
     }
 
     .loupe-info-title {
@@ -165,11 +185,6 @@
     .loupe-rgb-fill.red { background: #ff4242; }
     .loupe-rgb-fill.green { background: #36cf70; }
     .loupe-rgb-fill.blue { background: #438cff; }
-
-    .loupe-coordinates {
-      margin-bottom: 4px;
-      color: rgb(255 255 255 / 72%);
-    }
 
     .loupe-hdr-linear {
       margin-top: 5px;

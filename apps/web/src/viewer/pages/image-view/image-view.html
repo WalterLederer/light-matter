@@ -48,7 +48,7 @@
           @if (pixelColor(); as rgb) {
             <div class="loupe-rgb-summary">
               <span class="loupe-rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'SDR RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
-              <span class="loupe-rgb-values">R:{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }} G:{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }} B:{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
+              <span class="loupe-rgb-values">R:0x{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }} G:0x{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }} B:0x{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
             </div>
             <div class="loupe-rgb-channels" aria-label="SDR RGB channel levels">
               <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
@@ -67,13 +67,19 @@
             </div>
           }
         </section>
+        <div class="loupe-coordinates">
+          @if (loupeSample(); as sample) {
+            X {{ sample.x }} · Y {{ sample.y }}
+          } @else {
+            X — · Y —
+          }
+        </div>
         <section class="loupe-info-box hdr-info-box" aria-label="HDR pixel information">
           <strong class="loupe-info-title">HDR</strong>
           @if (loupeSample(); as sample) {
-            <div class="loupe-coordinates">X {{ sample.x }} · Y {{ sample.y }}</div>
             <div class="loupe-rgb-summary">
               <span class="loupe-rgb-swatch" [style.backgroundColor]="sample.center.color" aria-label="HDR pixel color"></span>
-              <span class="loupe-rgb-values">R:{{ sample.center.rHex }} G:{{ sample.center.gHex }} B:{{ sample.center.bHex }}</span>
+              <span class="loupe-rgb-values">R:0x{{ sample.center.rHex }} G:0x{{ sample.center.gHex }} B:0x{{ sample.center.bHex }}</span>
             </div>
             <div class="loupe-hdr-linear">scRGB {{ sample.center.r | number:'1.0-4' }}, {{ sample.center.g | number:'1.0-4' }}, {{ sample.center.b | number:'1.0-4' }}</div>
           } @else {
@@ -219,6 +225,9 @@
             <span class="status-metadata">
               @if (imagePosition !== null) {
                 · {{ imagePosition.position }} / {{ imagePosition.total }}
+              }
+              @if (imageDimensions().width > 0 && imageDimensions().height > 0) {
+                · {{ imageDimensions().width }} × {{ imageDimensions().height }}
               }
             </span>
 
