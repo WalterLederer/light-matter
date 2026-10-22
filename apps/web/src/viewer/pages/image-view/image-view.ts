@@ -854,17 +854,16 @@ export class ImageView {
           return;
         }
 
-        if (this.loupeEnabled()) {
-          switch (event.key.toLowerCase()) {
-            case 'c':
-              event.preventDefault();
-              this.toggleLoupeShape();
-              return;
-            case 'l':
-              event.preventDefault();
-              this.toggleLocationInfo();
-              return;
-          }
+        if (event.key.toLowerCase() === 'c') {
+          event.preventDefault();
+          this.toggleLoupeShape();
+          return;
+        }
+
+        if (this.loupeEnabled() && event.key.toLowerCase() === 'l') {
+          event.preventDefault();
+          this.toggleLocationInfo();
+          return;
         }
 
         switch (event.key.toLowerCase()) {
