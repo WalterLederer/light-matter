@@ -484,25 +484,19 @@ export class ImageView {
 
   protected readonly toggleLoupeShape = () => {
     const shapes = ['circular', 'circular-detail', 'rectangular', 'ruler', 'vertical-ruler'] as const;
-    // C cycles through all loupe shapes, then turns the loupe off before restarting.
-    if (!this.loupeEnabled()) {
-      void this.toggleLoupe(true);
-      return;
-    }
-
     const currentIndex = shapes.indexOf(this.loupeShape());
-    if (currentIndex === shapes.length - 1) {
-      void this.toggleLoupe(false);
-      return;
-    }
+    const value = shapes[(currentIndex + 1) % shapes.length];
 
-    const value = shapes[currentIndex + 1];
     this.loupeShape.set(value);
     try {
       this.document.defaultView?.localStorage.setItem('light-matter.loupeShape', value);
       this.storeBoolean('loupeCircular', value === 'circular' || value === 'circular-detail');
     } catch {
       // The shape remains usable for the current session if storage is unavailable.
+    }
+
+    if (!this.loupeEnabled()) {
+      void this.toggleLoupe(true);
     }
   };
 
@@ -854,7 +848,7 @@ export class ImageView {
           return;
         }
 
-        if (event.key.toLowerCase() === 'c') {
+        if (event.key.toLowerCase() === 'v') {
           event.preventDefault();
           this.toggleLoupeShape();
           return;

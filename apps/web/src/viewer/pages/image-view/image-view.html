@@ -63,7 +63,7 @@
       <section class="loupe-info-box location-info-box" [class.collapsed]="!locationInfoExpanded()" aria-label="Location pixel information">
         <div class="loupe-info-heading"><span><u>L</u>ocation</span><span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? '−' : '+' }}</span></div>
         @if (locationInfoExpanded()) {
-          <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>C</u>: Shape · <u>L</u>: Location · + / −: Zoom · <u>H</u>: Histogram</div>
+          <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>V</u>: Shape · <u>L</u>: Location · + / −: Zoom · <u>H</u>: Histogram</div>
         <div class="loupe-coordinates">
           @if (loupeSample(); as sample) {
             X {{ sample.x }} · Y {{ sample.y }}
