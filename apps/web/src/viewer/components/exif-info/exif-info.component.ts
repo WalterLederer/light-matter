@@ -33,6 +33,7 @@ export class ExifInfoComponent {
   readonly totalDuration = input<number | null>(null);
 
   readonly conversionDuration = input<number | null>(null);
+  readonly fullSizeFromCache = input<boolean | null>(null);
 
   readonly requiresConversion = input(false);
 
