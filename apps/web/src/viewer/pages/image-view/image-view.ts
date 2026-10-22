@@ -125,6 +125,10 @@ export class ImageView {
 
   protected readonly imageDecodeDuration = signal<number | null>(null);
 
+  protected readonly conversionDuration = signal<number | null>(null);
+
+  private conversionRequestId = 0;
+
   protected readonly imageLoadFailed = signal(false);
 
   protected readonly loupeEnabled = signal(false);
@@ -772,6 +776,26 @@ export class ImageView {
     }
 
     return currentZoom;
+  };
+
+  protected readonly requiresConversion = (path: string): boolean =>
+    ['jxr', 'avif', 'heif', 'heic', 'exr', 'hdr', 'tif', 'tiff'].includes(path.split('.').pop()?.toLowerCase() ?? '');
+
+  protected readonly loadConversionDuration = async (path: string) => {
+    const requestId = ++this.conversionRequestId;
+    this.conversionDuration.set(null);
+    if (!this.requiresConversion(path)) return;
+
+    try {
+      const response = await fetch('atom://app/conversion-time?image=' + encodeURIComponent(path));
+      if (!response.ok || requestId !== this.conversionRequestId) return;
+      const result = await response.json() as { durationMs: number | null };
+      if (requestId === this.conversionRequestId && result.durationMs !== null && Number.isFinite(result.durationMs)) {
+        this.conversionDuration.set(result.durationMs / 1000);
+      }
+    } catch {
+      // Conversion timing is diagnostic only; an unavailable endpoint must not affect image viewing.
+    }
   };
 
   protected readonly decoderForPath = (path: string): string => {

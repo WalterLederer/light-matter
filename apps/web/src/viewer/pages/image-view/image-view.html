@@ -20,8 +20,8 @@
                       (pixelColorChange)="pixelColor.set($event)"
                       (pixelDebugChange)="pixelDebug.set($event)"
                       (dblclick)="toggleFullScreen()"
-                      (loadingChange)="isDecoding.set($event); loadDuration.set(null); imageDecodeDuration.set(null); imageLoadFailed.set(false)"
-                      (loadDuration)="loadDuration.set($event); onImageRendered()"
+                      (loadingChange)="isDecoding.set($event); loadDuration.set(null); imageDecodeDuration.set(null); conversionDuration.set(null); imageLoadFailed.set(false)"
+                      (loadDuration)="loadDuration.set($event); loadConversionDuration(selected.path); onImageRendered()"
                       (decodeDuration)="imageDecodeDuration.set($event)"
                       (loadError)="imageLoadFailed.set(true)"
                       (wheel)="onMouseWheel($event)"
@@ -343,7 +343,9 @@
                      [decoderName]="decoderForPath(selected.path)"
                      [modifiedAt]="selected.modifiedAt"
                      [loadDuration]="loadDuration()"
-                     [decodeDuration]="imageDecodeDuration()" />
+                     [decodeDuration]="imageDecodeDuration()"
+                     [conversionDuration]="conversionDuration()"
+                     [requiresConversion]="requiresConversion(selected.path)" />
     </ui-info-overlay>
   }
 }

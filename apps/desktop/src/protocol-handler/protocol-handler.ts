@@ -64,8 +64,29 @@ export const protocolHandler = async (request: GlobalRequest): Promise<GlobalRes
     case appPaths.histogram:
       return await histogram(parsed.searchParams, request.signal);
 
+    case appPaths.conversionTime:
+      return await conversionTime(parsed.searchParams);
+
     default:
       return notFound();
+  }
+};
+
+const conversionTime = async (params: URLSearchParams): Promise<GlobalResponse> => {
+  const fileName = params.get('image');
+  if (fileName === null) return notFound();
+
+  try {
+    const thumbManager = Injector.getInstance().inject('ThumbManager');
+    const durationMs = thumbManager.fullSizeConversionDuration(fileName);
+    return new Response(JSON.stringify({ durationMs }), {
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
+    });
+  } catch (error) {
+    console.error('[protocolHandler] Failed to read conversion timing:', error);
+    return new Response(JSON.stringify({ durationMs: null }), {
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
+    });
   }
 };
 

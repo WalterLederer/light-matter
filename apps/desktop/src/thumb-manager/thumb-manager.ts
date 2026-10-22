@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { extname, join } from 'node:path';
+import { extname, join, resolve } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import type { ImageHistogram } from 'internal-api';
 import type {
@@ -24,6 +24,8 @@ export class ThumbManager {
 
   private heavyImagesSinceRestart = 0;
 
+  private readonly fullSizeConversionDurations = new Map<string, number>();
+
   private isTerminated = false;
 
   constructor(customWorkerPath?: string) {
@@ -40,8 +42,18 @@ export class ThumbManager {
     signal?: AbortSignal
   ): Promise<boolean> => this.enqueue(() => this.runWorkerOperation(
     source,
-    () => this.generateQueued(source, target, width, height, signal)
+    async () => {
+      const startedAt = performance.now();
+      const generated = await this.generateQueued(source, target, width, height, signal);
+      if (generated && width === 0 && height === 0) {
+        this.fullSizeConversionDurations.set(resolve(source), performance.now() - startedAt);
+      }
+      return generated;
+    }
   ));
+
+  readonly fullSizeConversionDuration = (source: string): number | null =>
+    this.fullSizeConversionDurations.get(resolve(source)) ?? null;
 
   private readonly generateQueued = async (
     source: string,
