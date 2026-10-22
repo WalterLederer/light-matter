@@ -326,8 +326,11 @@ export class ImageRendererComponent implements OnDestroy {
       })
       .catch(() => {
         if (loadId === this.loadId) {
+          const completedAt = performance.now();
           this.decodeDuration.emit(null);
-          this.totalDuration.emit(null);
+          // If decode rejects, still report elapsed time through the settled decode
+          // attempt. The displayed Decode time remains unavailable in that case.
+          this.totalDuration.emit((completedAt - startedAt) / 1000);
         }
       });
   };
