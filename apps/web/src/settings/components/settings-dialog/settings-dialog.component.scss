@@ -316,9 +316,13 @@ section {
 .format-details {
   margin-top: var(--dim-large);
 
-  summary {
+  > details > summary {
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 700;
+  }
+
+  > details[open] > summary {
+    margin-bottom: var(--dim-medium);
   }
 }
 
