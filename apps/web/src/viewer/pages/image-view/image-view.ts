@@ -129,6 +129,15 @@ export class ImageView {
 
   private conversionRequestId = 0;
 
+  protected readonly onImageLoadingChange = (loading: boolean): void => {
+    this.isDecoding.set(loading);
+    this.loadDuration.set(null);
+    this.imageDecodeDuration.set(null);
+    this.conversionRequestId++;
+    this.conversionDuration.set(null);
+    this.imageLoadFailed.set(false);
+  };
+
   protected readonly imageLoadFailed = signal(false);
 
   protected readonly loupeEnabled = signal(false);
