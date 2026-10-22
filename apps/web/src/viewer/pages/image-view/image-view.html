@@ -291,6 +291,9 @@
               @if (imageDimensions().width > 0 && imageDimensions().height > 0) {
                 · {{ imageDimensions().width }} × {{ imageDimensions().height }}
               }
+              @if (!loupeEnabled() && loupeBrightness() !== 1) {
+                · Brightness {{ loupeBrightness() > 1 ? '+' : '' }}{{ ((loupeBrightness() - 1) * 100).toFixed(0) }}%
+              }
             </span>
 
           }
