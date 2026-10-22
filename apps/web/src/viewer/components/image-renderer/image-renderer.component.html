@@ -19,7 +19,8 @@
      (pointercancel)="onSplitPointerUp($event)">
 
   @if (imageUrl !== null) {
-    <img alt=""
+    @if (comparisonMode() !== 'hdr') {
+      <img alt=""
          class="comparison-image sdr-image"
          [class.pannable]="location.zoom !== 'fit' && comparisonMode() !== 'dual-side-by-side' && comparisonMode() !== 'dual-stacked'"
          [class.hidden-variant]="comparisonMode() === 'hdr'"
@@ -35,6 +36,7 @@
          [src]="imageUrl"
          crossorigin="anonymous"
          (mousedown)="onMouseDown($event)">
+    }
     @if (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked') {
       <div class="comparison-split-handle"
            [class.vertical]="comparisonMode() === 'side-by-side'"
@@ -54,7 +56,8 @@
       </div>
     }
 
-    <img alt=""
+    @if (comparisonMode() !== 'sdr') {
+      <img alt=""
          class="comparison-image hdr-image"
          [class.hidden-variant]="comparisonMode() === 'sdr'"
          [class.pannable]="location.zoom !== 'fit' && comparisonMode() !== 'dual-side-by-side' && comparisonMode() !== 'dual-stacked'"
@@ -70,6 +73,7 @@
          [src]="imageUrl"
          crossorigin="anonymous"
          (mousedown)="onMouseDown($event)">
+    }
   }
 
 </div>
