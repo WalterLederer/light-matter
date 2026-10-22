@@ -56,10 +56,6 @@
     }
 
     .loupe-handle {
-      display: none;
-    }
-
-    &.circular .loupe-handle {
       display: block;
       position: absolute;
       z-index: 0;
@@ -75,35 +71,38 @@
       transform-origin: 10px 11px;
     }
 
+    &.circular .loupe-handle {
+      top: 236px;
+      left: 218px;
+    }
+
+    &:not(.circular) .loupe-handle {
+      top: 238px;
+      left: 218px;
+      width: 86px;
+      height: 20px;
+      transform: rotate(43deg);
+    }
+
     .loupe-image-viewport {
       position: relative;
       width: 280px;
       height: 280px;
       overflow: hidden;
-      border: 1px solid rgb(255 255 255 / 58%);
+      border: 6px solid #858c94;
+      border-radius: 4px;
       background: #08090b;
+      box-shadow: inset 0 0 0 2px #dfe2e5, inset 0 0 0 4px #42484f, 0 2px 5px rgb(0 0 0 / 75%);
       contain: strict;
-      transition: clip-path 100ms ease;
+      transition: clip-path 100ms ease, border-radius 100ms ease;
 
       &.circular {
         z-index: 1;
-        border: 0;
+        border: 6px solid #858c94;
+        border-radius: 50%;
         background: transparent;
+        box-shadow: inset 0 0 0 2px #dfe2e5, inset 0 0 0 4px #42484f, 0 2px 5px rgb(0 0 0 / 75%);
         clip-path: circle(50% at 50% 50%);
-
-        &::after {
-          content: "";
-          position: absolute;
-          z-index: 2;
-          inset: 2px;
-          border: 5px solid transparent;
-          border-radius: 50%;
-          background:
-            linear-gradient(transparent, transparent) padding-box,
-            linear-gradient(145deg, #f4f5f6 0%, #aeb4bb 13%, #515860 30%, #dfe2e5 46%, #777f87 63%, #f0f1f2 79%, #454b52 100%) border-box;
-          box-shadow: inset 0 0 0 1px rgb(0 0 0 / 65%), 0 1px 4px rgb(0 0 0 / 75%);
-          pointer-events: none;
-        }
       }
     }
 
