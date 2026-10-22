@@ -23,6 +23,7 @@
                       (loadingChange)="onImageLoadingChange($event)"
                       (loadDuration)="loadDuration.set($event); loadConversionDuration(selected.path); onImageRendered()"
                       (decodeDuration)="imageDecodeDuration.set($event)"
+                      (totalDuration)="imageTotalDuration.set($event)"
                       (loadError)="imageLoadFailed.set(true)"
                       (wheel)="onMouseWheel($event)"
                       (mousemove)="onLoupeMouseMove($event)"
@@ -344,6 +345,7 @@
                      [modifiedAt]="selected.modifiedAt"
                      [loadDuration]="loadDuration()"
                      [decodeDuration]="imageDecodeDuration()"
+                     [totalDuration]="imageTotalDuration()"
                      [conversionDuration]="conversionDuration()"
                      [requiresConversion]="requiresConversion(selected.path)" />
     </ui-info-overlay>
