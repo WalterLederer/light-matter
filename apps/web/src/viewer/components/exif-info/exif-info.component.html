@@ -67,15 +67,14 @@
     <dt>Load time</dt><dd>{{ loadDuration() === null ? '—' : (loadDuration() | number: '1.2-2') + ' s' }}</dd>
     <dt>Decode time</dt><dd>{{ decodeDuration() === null ? '—' : (decodeDuration() | number: '1.2-2') + ' s' }}</dd>
     <dt>Total time</dt><dd>{{ totalDuration() === null ? '—' : (totalDuration() | number: '1.2-2') + ' s' }}</dd>
-    @if (requiresConversion()) {
-      <dt>Convert time · {{ decoderName() ?? '—' }}</dt><dd>{{ conversionDuration() === null ? '—' : (conversionDuration() | number: '1.2-2') + ' s' }}</dd>
-    }
+    <dt>Convert time · Decoder: {{ decoderName() ?? '—' }}</dt>
+    <dd>{{ !requiresConversion() || conversionDuration() === null ? '—' : (conversionDuration() | number: '1.2-2') + ' s' }}</dd>
   </dl>
   <details class="measurement-details">
     <summary>Measurement logic</summary>
     <p>Load time: from the start of the image request until the browser fires the <code>load</code> event.</p>
     <p>Decode time: duration of the subsequent <code>image.decode()</code> call.</p>
-    <p>Total time: elapsed wall-clock time from the start of the image request until <code>image.decode()</code> completes successfully.</p>
+    <p>Total time: elapsed wall-clock time from the start of the image request until the <code>image.decode()</code> promise settles (success or failure).</p>
     <p>These measurements are not additive phases. Conversion may already be included in Load time and Total time. Convert time is shown separately for diagnostics and must not be added to Total time.</p>
   </details>
   </details>
