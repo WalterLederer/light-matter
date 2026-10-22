@@ -110,6 +110,12 @@ export class ImageView {
 
   protected readonly loupeEnabled = signal(false);
 
+  protected readonly loupeCircular = signal(false);
+
+  protected readonly sdrInfoExpanded = signal(true);
+
+  protected readonly hdrInfoExpanded = signal(true);
+
   protected readonly loupeCapturePending = signal(false);
 
   protected readonly loupeSample = signal<{
@@ -430,6 +436,12 @@ export class ImageView {
     if (!this.loupeEnabled()) this.imagePositioningService.setZoom('fit');
   };
 
+  protected readonly toggleLoupeShape = () => this.loupeCircular.update(value => !value);
+
+  protected readonly toggleSdrInfo = () => this.sdrInfoExpanded.update(value => !value);
+
+  protected readonly toggleHdrInfo = () => this.hdrInfoExpanded.update(value => !value);
+
   protected readonly toggleLoupe = async (enabled: boolean) => {
     this.loupeEnabled.set(enabled);
     this.loupeSample.set(null);
@@ -450,8 +462,8 @@ export class ImageView {
     const view = this.document.defaultView;
     const viewWidth = view?.innerWidth ?? 1280;
     const viewHeight = view?.innerHeight ?? 720;
-    const loupeWidth = 310;
-    const loupeHeight = 390;
+    const loupeWidth = 330;
+    const loupeHeight = 500;
     const left = event.clientX > viewWidth - loupeWidth - 24 ? event.clientX - loupeWidth - 20 : event.clientX + 20;
     const top = event.clientY > viewHeight - loupeHeight - 24 ? event.clientY - loupeHeight - 20 : event.clientY + 20;
     this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });

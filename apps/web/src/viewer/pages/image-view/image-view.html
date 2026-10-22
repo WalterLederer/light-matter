@@ -29,7 +29,7 @@
 
   @if (loupeEnabled() && selected !== null) {
     <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
-      <div class="loupe-image-viewport">
+      <div class="loupe-image-viewport" [class.circular]="loupeCircular()">
         <img class="loupe-image"
              [src]="selected.url"
              [width]="dimensions.width"
@@ -41,10 +41,24 @@
              aria-hidden="true"
              draggable="false" />
       </div>
-      <div class="loupe-key-hint"><u>M</u>: Toggle Magnifier · + / −: Zoom · Scroll wheel: Zoom</div>
-      <div class="loupe-info-groups">
-        <section class="loupe-info-box sdr-info-box" aria-label="SDR pixel information">
-          <strong class="loupe-info-title">SDR</strong>
+      <div class="loupe-key-hint-row">
+        <div class="loupe-key-hint"><u>M</u>: Toggle Magnifier · + / −: Zoom · Scroll wheel: Zoom</div>
+        <button class="loupe-shape-toggle" type="button" (click)="toggleLoupeShape()" [attr.aria-pressed]="loupeCircular()" [attr.title]="loupeCircular() ? 'Switch to rectangular view' : 'Switch to circular view'">
+          {{ loupeCircular() ? 'Rectangle' : 'Circle' }}
+        </button>
+      </div>
+      <div class="loupe-coordinates">
+        @if (loupeSample(); as sample) {
+          X {{ sample.x }} · Y {{ sample.y }}
+        } @else {
+          X — · Y —
+        }
+      </div>
+      <section class="loupe-info-box sdr-info-box" aria-label="SDR pixel information">
+        <button class="loupe-info-toggle" type="button" (click)="toggleSdrInfo()" [attr.aria-expanded]="sdrInfoExpanded()">
+          <span>SDR</span><span class="loupe-collapse-indicator">{{ sdrInfoExpanded() ? '−' : '+' }}</span>
+        </button>
+        @if (sdrInfoExpanded()) {
           @if (pixelColor(); as rgb) {
             <div class="loupe-rgb-summary">
               <span class="loupe-rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'SDR RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
@@ -66,16 +80,13 @@
               <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
             </div>
           }
-        </section>
-        <div class="loupe-coordinates">
-          @if (loupeSample(); as sample) {
-            X {{ sample.x }} · Y {{ sample.y }}
-          } @else {
-            X — · Y —
-          }
-        </div>
-        <section class="loupe-info-box hdr-info-box" aria-label="HDR pixel information">
-          <strong class="loupe-info-title">HDR</strong>
+        }
+      </section>
+      <section class="loupe-info-box hdr-info-box" aria-label="HDR pixel information">
+        <button class="loupe-info-toggle" type="button" (click)="toggleHdrInfo()" [attr.aria-expanded]="hdrInfoExpanded()">
+          <span>HDR</span><span class="loupe-collapse-indicator">{{ hdrInfoExpanded() ? '−' : '+' }}</span>
+        </button>
+        @if (hdrInfoExpanded()) {
           @if (loupeSample(); as sample) {
             <div class="loupe-rgb-summary">
               <span class="loupe-rgb-swatch" [style.backgroundColor]="sample.center.color" aria-label="HDR pixel color"></span>
@@ -86,9 +97,8 @@
             <div class="loupe-rgb-values">R:-- G:-- B:--</div>
             <div class="loupe-hdr-linear">scRGB —, —, —</div>
           }
-        </section>
-      </div>
-    </aside>
+        }
+      </section>   </aside>
   }
 
   @if (isHdrImage && comparisonMode() === 'sdr') {
