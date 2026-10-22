@@ -447,6 +447,29 @@
       text-align: right;
     }
 
+    .loupe-brightness-correction {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 2px 0 4px;
+      color: rgb(205 205 205 / 90%);
+      font: 11px/1.35 Consolas, "Courier New", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .loupe-brightness-value {
+      font-weight: 600;
+    }
+
+    .loupe-brightness-value.positive {
+      color: #ffe08a;
+    }
+
+    .loupe-brightness-value.negative {
+      color: #a9caff;
+    }
+
     .loupe-rgb-summary {
       display: flex;
       align-items: center;

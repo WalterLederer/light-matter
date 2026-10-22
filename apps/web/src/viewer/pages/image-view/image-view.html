@@ -90,6 +90,12 @@
           <span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? '−' : '+' }}</span>
         </div>
         @if (locationInfoExpanded()) {
+        <div class="loupe-brightness-correction" aria-label="Brightness correction">
+          <span>Brightness correction</span>
+          <span class="loupe-brightness-value" [class.positive]="loupeBrightness() > 1" [class.negative]="loupeBrightness() < 1">
+            {{ loupeBrightness() > 1 ? '+' : '' }}{{ ((loupeBrightness() - 1) * 100).toFixed(0) }}%
+          </span>
+        </div>
         <section class="loupe-sdr-info" aria-label="SDR pixel information">
           <div class="loupe-pixel-row">
             <div class="loupe-info-subheading">SDR</div>
