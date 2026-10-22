@@ -127,7 +127,17 @@ export class ImageView {
 
   protected readonly loupeEnabled = signal(false);
 
-  protected readonly loupeCircular = signal(this.readStoredBoolean('loupeCircular', false));
+  private readonly readStoredLoupeShape = (): 'circular' | 'rectangular' | 'ruler' => {
+    try {
+      const stored = this.document.defaultView?.localStorage.getItem('light-matter.loupeShape');
+      if (stored === 'circular' || stored === 'rectangular' || stored === 'ruler') return stored;
+      return this.readStoredBoolean('loupeCircular', false) ? 'circular' : 'rectangular';
+    } catch {
+      return 'rectangular';
+    }
+  };
+
+  protected readonly loupeShape = signal<'circular' | 'rectangular' | 'ruler'>(this.readStoredLoupeShape());
 
   protected readonly locationInfoExpanded = signal(this.readStoredBoolean('locationInfoExpanded', true));
 
@@ -454,9 +464,16 @@ export class ImageView {
   };
 
   protected readonly toggleLoupeShape = () => {
-    const value = !this.loupeCircular();
-    this.loupeCircular.set(value);
-    this.storeBoolean('loupeCircular', value);
+    const shapes = ['circular', 'rectangular', 'ruler'] as const;
+    const currentIndex = shapes.indexOf(this.loupeShape());
+    const value = shapes[(currentIndex + 1) % shapes.length];
+    this.loupeShape.set(value);
+    try {
+      this.document.defaultView?.localStorage.setItem('light-matter.loupeShape', value);
+      this.storeBoolean('loupeCircular', value === 'circular');
+    } catch {
+      // The shape remains usable for the current session if storage is unavailable.
+    }
   };
 
   protected readonly toggleLocationInfo = () => {
@@ -499,8 +516,8 @@ export class ImageView {
     const view = this.document.defaultView;
     const viewWidth = view?.innerWidth ?? 1280;
     const viewHeight = view?.innerHeight ?? 720;
-    const loupeWidth = 310;
-    const loupeHeight = this.locationInfoExpanded() ? 430 : 310;
+    const loupeWidth = this.loupeShape() === 'ruler' ? 590 : 310;
+    const loupeHeight = (this.locationInfoExpanded() ? 430 : 310) + (this.loupeShape() === 'ruler' ? -180 : 0);
     const left = event.clientX > viewWidth - loupeWidth - 24 ? event.clientX - loupeWidth - 20 : event.clientX + 20;
     const top = event.clientY > viewHeight - loupeHeight - 24 ? event.clientY - loupeHeight - 20 : event.clientY + 20;
     this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });

@@ -28,15 +28,17 @@
                       (mouseleave)="onLoupeMouseLeave()" />
 
   @if (loupeEnabled() && selected !== null) {
-    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeCircular()" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
-      <div class="loupe-handle" aria-hidden="true"></div>
-      <div class="loupe-image-viewport" [class.circular]="loupeCircular()">
+    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
+      @if (loupeShape() !== 'ruler') {
+        <div class="loupe-handle" aria-hidden="true"></div>
+      }
+      <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular'" [class.ruler]="loupeShape() === 'ruler'">
         <img class="loupe-image"
              [src]="selected.url"
              [width]="dimensions.width"
              [height]="dimensions.height"
-             [style.left.px]="140 - loupeSourcePoint().x * loupePixelSize()"
-             [style.top.px]="140 - loupeSourcePoint().y * loupePixelSize()"
+             [style.left.px]="(loupeShape() === 'ruler' ? 280 : 140) - loupeSourcePoint().x * loupePixelSize()"
+             [style.top.px]="(loupeShape() === 'ruler' ? 50 : 140) - loupeSourcePoint().y * loupePixelSize()"
              [style.transform]="'scale(' + loupePixelSize() + ')'"
              alt=""
              aria-hidden="true"
