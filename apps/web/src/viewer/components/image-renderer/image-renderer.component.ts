@@ -40,6 +40,8 @@ export class ImageRendererComponent implements OnDestroy {
   /* Inputs */
   readonly url = input.required<string>();
 
+  readonly debugImageSwitching = input(false);
+
   readonly comparisonMode = input<'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side' | 'dual-stacked'>('hdr');
 
   readonly comparisonSplit = input(50);
@@ -71,6 +73,8 @@ export class ImageRendererComponent implements OnDestroy {
   readonly pixelDebugChange = output<string>();
 
   readonly loadingChange = output<boolean>();
+
+  readonly debugSwitchingPhase = output<string>();
 
   readonly loadDuration = output<number>();
 
@@ -274,11 +278,14 @@ export class ImageRendererComponent implements OnDestroy {
   protected readonly onSurfaceMouseLeave = () => { this.pixelDebugChange.emit('mouseleave'); this.pixelColorChange.emit(null); };
 
   /* Misc */
-  private readonly preloadImage = (url: string) => {
+  private readonly preloadImage = async (url: string) => {
     const loadId = ++this.loadId;
     const startedAt = performance.now();
     this.isLoading.set(true);
     this.loadingChange.emit(true);
+
+    await this.debugPause('preload: start', loadId);
+    if (loadId !== this.loadId) return;
 
     const image = new Image();
     // Allow pixel reads from the app's custom protocol; the protocol handler sends ACAO.
@@ -293,15 +300,23 @@ export class ImageRendererComponent implements OnDestroy {
       .subscribe(() => this.onImageError(loadId));
 
     image.src = url;
+    await this.debugPause('preload: image.src assigned', loadId);
   };
 
   private loadId = 0;
+
+  private readonly debugPause = async (phase: string, loadId: number): Promise<void> => {
+    if (!this.debugImageSwitching()) return;
+    this.debugSwitchingPhase.emit(phase);
+    await new Promise<void>(resolve => setTimeout(resolve, 1000));
+  };
 
   private readonly onImageLoad = (image: HTMLImageElement, loadId: number, startedAt: number) => {
     if (loadId !== this.loadId) {
       return;
     }
 
+    void this.debugPause('load: browser load event', loadId);
     this.isLoading.set(false);
     this.loadingChange.emit(false);
 
@@ -311,7 +326,9 @@ export class ImageRendererComponent implements OnDestroy {
     this.pixelContext = this.pixelCanvas.getContext('2d', { willReadFrequently: true });
     this.pixelColorChange.emit(null);
     this.displayUrl.set(image.src);
+    void this.debugPause('display: displayUrl updated', loadId);
     this.imagePositioningService.setImageDimensions(dimensions);
+    void this.debugPause('layout: image dimensions updated', loadId);
     this.dimensions.emit(dimensions);
     this.loadDuration.emit((performance.now() - startedAt) / 1000);
 
