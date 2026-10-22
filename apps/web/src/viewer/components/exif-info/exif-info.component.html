@@ -30,7 +30,8 @@
 </section>
 
 <section class="info-box color-info">
-  <h3>Color information</h3>
+  <details>
+    <summary>Color information · {{ exifData === false ? 'Loading…' : rangeInfo.result }}</summary>
   <dl>
     @if (exifData !== false) {
       <dt>Dynamic range</dt>
@@ -57,18 +58,25 @@
       @if (exifData.ColorSpace !== undefined) { <dt>Color space</dt><dd>{{ exifData.ColorSpace }}</dd> }
     }
   </dl>
+  </details>
 </section>
-
 <section class="info-box performance-info">
-  <h3>Performance</h3>
+  <details>
+    <summary>Performance · Decode {{ decodeDuration() === null ? '—' : (decodeDuration() | number: '1.2-2') + ' s' }} · Total {{ totalDuration() === null ? '—' : (totalDuration() | number: '1.2-2') + ' s' }}</summary>
   <dl>
-    <dt>Decoder</dt><dd>{{ decoderName() ?? '—' }}</dd>
     <dt>Load time</dt><dd>{{ loadDuration() === null ? '—' : (loadDuration() | number: '1.2-2') + ' s' }}</dd>
     <dt>Decode time</dt><dd>{{ decodeDuration() === null ? '—' : (decodeDuration() | number: '1.2-2') + ' s' }}</dd>
     <dt>Total time</dt><dd>{{ totalDuration() === null ? '—' : (totalDuration() | number: '1.2-2') + ' s' }}</dd>
     @if (requiresConversion()) {
-      <dt>Convert time</dt><dd>{{ conversionDuration() === null ? '—' : (conversionDuration() | number: '1.2-2') + ' s' }}</dd>
+      <dt>Convert time · {{ decoderName() ?? '—' }}</dt><dd>{{ conversionDuration() === null ? '—' : (conversionDuration() | number: '1.2-2') + ' s' }}</dd>
     }
   </dl>
-  <p class="performance-note">Measurement: Load time runs from the start of the image request to the browser's load event. Decode time measures the subsequent image.decode() call. Total time runs from the start of the image request until image.decode() completes successfully. These are elapsed times, not additive phases; conversion may already be included in Load/Total time. Convert time is shown separately for diagnostics and must not be added to Total time.</p>
+  <details class="measurement-details">
+    <summary>Measurement logic</summary>
+    <p>Load time: from the start of the image request until the browser fires the <code>load</code> event.</p>
+    <p>Decode time: duration of the subsequent <code>image.decode()</code> call.</p>
+    <p>Total time: elapsed wall-clock time from the start of the image request until <code>image.decode()</code> completes successfully.</p>
+    <p>These measurements are not additive phases. Conversion may already be included in Load time and Total time. Convert time is shown separately for diagnostics and must not be added to Total time.</p>
+  </details>
+  </details>
 </section>
