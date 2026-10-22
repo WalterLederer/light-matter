@@ -839,19 +839,19 @@ export class ImageView {
       Array.isArray(value) ? value.join(' ') : String(value)
     ).join(' ').toLowerCase();
 
-    if (/\\bhalf\\b/.test(channelInfo)) {
+    if (/\bhalf\b/.test(channelInfo)) {
       return '16-bit float (half)';
     }
-    if (/\\bfloat\\b/.test(channelInfo)) {
+    if (/\bfloat\b/.test(channelInfo)) {
       return '32-bit float';
     }
-    if (/\\buint\\b|unsigned integer/.test(channelInfo)) {
+    if (/\buint\b|unsigned integer/.test(channelInfo)) {
       return '32-bit unsigned integer';
     }
 
     if (String(tags.FileType ?? '').toLowerCase() === 'exr' ||
         String(metadata['FileTypeExtension'] ?? '').toLowerCase() === 'exr') {
-      return '16-bit half / 32-bit float (per channel)';
+      return 'Variable: 16-bit half / 32-bit float per channel';
     }
 
     return null;
