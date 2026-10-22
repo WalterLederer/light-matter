@@ -329,8 +329,8 @@
       </section>
 
       <section>
-        <ui-action-button title="Fit to window"
-                          [disabled]="loupeEnabled() || location.zoom === 'fit'"
+        <ui-action-button title="Fit to window / reset brightness"
+                          [disabled]="loupeEnabled() || (location.zoom === 'fit' && loupeBrightness() === 1)"
                           (pressed)="fitToWindow()">
           <ui-icon icon="scaleFit"
                    size="large"
