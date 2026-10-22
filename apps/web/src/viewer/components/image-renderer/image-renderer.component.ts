@@ -309,6 +309,7 @@ export class ImageRendererComponent implements OnDestroy {
     if (!this.debugImageSwitching()) return;
     this.debugSwitchingPhase.emit(phase);
     await new Promise<void>(resolve => setTimeout(resolve, 1000));
+    if (loadId !== this.loadId) return;
   };
 
   private readonly onImageLoad = async (image: HTMLImageElement, loadId: number, startedAt: number) => {
@@ -335,10 +336,14 @@ export class ImageRendererComponent implements OnDestroy {
     this.dimensions.emit(dimensions);
     this.loadDuration.emit((performance.now() - startedAt) / 1000);
 
+    await this.debugPause('decode: start', loadId);
+    if (loadId !== this.loadId) return;
     const decodeStartedAt = performance.now();
     image.decode()
-      .then(() => {
+      .then(async () => {
         if (loadId === this.loadId) {
+          await this.debugPause('decode: completed', loadId);
+          if (loadId !== this.loadId) return;
           const completedAt = performance.now();
           this.decodeDuration.emit((completedAt - decodeStartedAt) / 1000);
           // Total time is elapsed wall-clock time from preloadImage() starting
@@ -347,8 +352,10 @@ export class ImageRendererComponent implements OnDestroy {
           this.totalDuration.emit((completedAt - startedAt) / 1000);
         }
       })
-      .catch(() => {
+      .catch(async () => {
         if (loadId === this.loadId) {
+          await this.debugPause('decode: failed', loadId);
+          if (loadId !== this.loadId) return;
           const completedAt = performance.now();
           this.decodeDuration.emit(null);
           // If decode rejects, still report elapsed time through the settled decode
