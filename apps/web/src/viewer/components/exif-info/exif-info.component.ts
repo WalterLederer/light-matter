@@ -30,6 +30,10 @@ export class ExifInfoComponent {
 
   readonly decodeDuration = input<number | null>(null);
 
+  readonly conversionDuration = input<number | null>(null);
+
+  readonly requiresConversion = input(false);
+
   readonly path = input('');
 
   readonly dynamicRangeDiagnostics = () => {

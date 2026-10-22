@@ -1,3 +1,32 @@
 :host {
   display: block;
+  min-width: 0;
+}
+
+.info-box {
+  min-width: 0;
+  margin: 0 0 var(--dim-medium);
+  padding: var(--dim-medium);
+  border: 1px solid var(--color-content-default-low);
+  border-radius: var(--border-radius-medium);
+
+  &:last-child { margin-bottom: 0; }
+
+  h3 {
+    margin: 0 0 var(--dim-small);
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: minmax(7.5rem, max-content) minmax(0, 1fr);
+    gap: 4px var(--dim-medium);
+    margin: 0;
+  }
+
+  dt { color: var(--color-content-default-medium); }
+  dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+
+  .hdr-classification, .hdr-metadata { display: grid; gap: 3px; }
 }

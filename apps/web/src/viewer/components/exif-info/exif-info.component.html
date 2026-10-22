@@ -1,135 +1,72 @@
 @let exifData = exif();
 @let dims = dimensions();
 @let timestamp = modifiedAt();
+@let rangeInfo = dynamicRangeDiagnostics();
 
-<dl>
-  @if (exifData === false) {
-    <dt>Loading...</dt>
-    <dd></dd>
-  } @else {
-    <dt>File name</dt>
-    <dd>{{ exifData.FileName }}</dd>
-    @if (exifData.Directory !== undefined) {
-      <dt>Directory</dt>
-      <dd>{{ exifData.Directory }}</dd>
+<section class="info-box file-info">
+  <h3>Image information</h3>
+  <dl>
+    @if (exifData === false) {
+      <dt>Loading...</dt><dd></dd>
+    } @else {
+      <dt>File name</dt><dd>{{ exifData.FileName }}</dd>
+      @if (exifData.Directory !== undefined) { <dt>Directory</dt><dd>{{ exifData.Directory }}</dd> }
+      <dt>File size</dt><dd>{{ fileSize() | byteSize }}</dd>
+      <dt>Dimensions</dt><dd>{{ dims.width }} x {{ dims.height }}</dd>
+      @if (timestamp !== undefined) { <dt>Last modified</dt><dd>{{ timestamp | date: 'yyyy-MM-dd HH:mm:ss' }}</dd> }
+      <dt>Format</dt><dd>{{ exifData.FileType }}</dd>
+      <dt>MIME type</dt><dd>{{ exifData.MIMEType }}</dd>
+      @if (exifData.Comment !== undefined) { <dt>Comment</dt><dd>{{ exifData.Comment }}</dd> }
+      @if (exifData.GPSLatitude !== undefined && exifData.GPSLongitude !== undefined) { <dt>GPS coordinates</dt><dd>{{ exifData.GPSLatitude }} {{ exifData.GPSLongitude }}</dd> }
+      @if (exifData.Make !== undefined) { <dt>Camera make</dt><dd>{{ exifData.Make }}</dd> }
+      @if (exifData.Model !== undefined) { <dt>Camera model</dt><dd>{{ exifData.Model }}</dd> }
+      @if (exifData.LensID !== undefined) { <dt>Lens</dt><dd>{{ exifData.LensID }}</dd> }
+      @if (exifData.FocalLength !== undefined) { <dt>Focal length</dt><dd>{{ exifData.FocalLength }}</dd> }
+      @if (exifData.ApertureValue !== undefined) { <dt>Aperture</dt><dd>{{ exifData.ApertureValue }}</dd> }
+      @if (exifData.ShutterSpeedValue !== undefined) { <dt>Shutter speed</dt><dd>{{ exifData.ShutterSpeedValue }}</dd> }
+      @if (exifData.ISO !== undefined) { <dt>ISO</dt><dd>{{ exifData.ISO }}</dd> }
     }
-    <dt>File size</dt>
-    <dd>{{ fileSize() | byteSize }}</dd>
-    <dt>Dimensions</dt>
-    <dd>{{ dims.width }} x {{ dims.height }}</dd>
-    <dt>Bit depth</dt>
-    <dd>{{ bitDepth() ?? '—' }}</dd>
-    @if (timestamp !== undefined) {
-      <dt>Last modified</dt>
-      <dd>{{ timestamp | date: 'yyyy-MM-dd HH:mm:ss' }}</dd>
-    }
-    <dt>Decoder</dt>
-    <dd>{{ decoderName() ?? '—' }}</dd>
-    <dt>Load time</dt>
-    <dd>{{ loadDuration() === null ? '—' : (loadDuration() | number: '1.2-2') + ' s' }}</dd>
-    <dt>Decode time</dt>
-    <dd>{{ decodeDuration() === null ? '—' : (decodeDuration() | number: '1.2-2') + ' s' }}</dd>
-    <dt>Format</dt>
-    <dd>{{ exifData.FileType }}</dd>
-    <dt>MIME type</dt>
-    <dd>{{ exifData.MIMEType }}</dd>
-    @let rangeInfo = dynamicRangeDiagnostics();
-    <dt>HDR classification</dt>
-    <dd class="hdr-classification">
-      <strong>{{ rangeInfo.result }}</strong>
-      <div>Rule: {{ rangeInfo.rule }}</div>
-      <div>Extension: .{{ rangeInfo.extension || 'unknown' }}</div>
-      <div>Bit depth used: {{ rangeInfo.bitDepth === null ? 'unavailable' : rangeInfo.bitDepth + '-bit' }}</div>
-      <div>HDR markers matched: {{ rangeInfo.matchedMarkers.length > 0 ? rangeInfo.matchedMarkers.join(', ') : 'none' }}</div>
-    </dd>
+  </dl>
+</section>
 
-    @if (hdrMetadata().length > 0) {
-      <dt>HDR / colour metadata</dt>
-      <dd class="hdr-metadata">
-        @for (item of hdrMetadata(); track item.key) {
-          <div><strong>{{ item.key }}:</strong> {{ item.value }}</div>
-        }
+<section class="info-box color-info">
+  <h3>Color information</h3>
+  <dl>
+    @if (exifData !== false) {
+      <dt>Dynamic range</dt>
+      <dd class="hdr-classification">
+        <strong>{{ rangeInfo.result }}</strong>
+        <div>Rule: {{ rangeInfo.rule }}</div>
+        <div>Extension: .{{ rangeInfo.extension || 'unknown' }}</div>
+        <div>Bit depth used: {{ rangeInfo.bitDepth === null ? 'unavailable' : rangeInfo.bitDepth + '-bit' }}</div>
+        <div>HDR markers matched: {{ rangeInfo.matchedMarkers.length > 0 ? rangeInfo.matchedMarkers.join(', ') : 'none' }}</div>
       </dd>
+      <dt>Bit depth</dt><dd>{{ bitDepth() ?? '—' }}</dd>
+      @if (hdrMetadata().length > 0) {
+        <dt>HDR / color metadata</dt>
+        <dd class="hdr-metadata">
+          @for (item of hdrMetadata(); track item.key) { <div><strong>{{ item.key }}:</strong> {{ item.value }}</div> }
+        </dd>
+      }
+      @if (exifData.ColorComponents !== undefined) { <dt>Color components</dt><dd>{{ exifData.ColorComponents }}</dd> }
+      @if (exifData.ChromaFormat !== undefined) { <dt>Chroma format</dt><dd>{{ exifData.ChromaFormat }}</dd> }
+      @if (exifData.YCbCrSubSampling !== undefined) { <dt>YCbCr sub sampling</dt><dd>{{ exifData.YCbCrSubSampling }}</dd> }
+      @if (exifData.EncodingProcess !== undefined) { <dt>Encoding process</dt><dd>{{ exifData.EncodingProcess }}</dd> }
+      @if (exifData.ColorPrimaries !== undefined) { <dt>Color primaries</dt><dd>{{ exifData.ColorPrimaries }}</dd> }
+      @if (exifData.ProfileDescription !== undefined) { <dt>Color profile</dt><dd>{{ exifData.ProfileDescription }}</dd> }
+      @if (exifData.ColorSpace !== undefined) { <dt>Color space</dt><dd>{{ exifData.ColorSpace }}</dd> }
     }
+  </dl>
+</section>
 
-    @if (exifData.Comment !== undefined) {
-      <dt>Comment</dt>
-      <dd>{{ exifData.Comment }}</dd>
+<section class="info-box performance-info">
+  <h3>Performance</h3>
+  <dl>
+    <dt>Decoder</dt><dd>{{ decoderName() ?? '—' }}</dd>
+    <dt>Load time</dt><dd>{{ loadDuration() === null ? '—' : (loadDuration() | number: '1.2-2') + ' s' }}</dd>
+    <dt>Decode time</dt><dd>{{ decodeDuration() === null ? '—' : (decodeDuration() | number: '1.2-2') + ' s' }}</dd>
+    @if (requiresConversion()) {
+      <dt>Convert time</dt><dd>{{ conversionDuration() === null ? '—' : (conversionDuration() | number: '1.2-2') + ' s' }}</dd>
     }
-
-    @if (exifData.ColorComponents !== undefined) {
-      <dt>Color components</dt>
-      <dd>{{ exifData.ColorComponents }}</dd>
-    }
-
-    @if (exifData.ChromaFormat !== undefined) {
-      <dt>Chroma format</dt>
-      <dd>{{ exifData.ChromaFormat }}</dd>
-    }
-
-    @if (exifData.YCbCrSubSampling !== undefined) {
-      <dt>YCbCr sub sampling</dt>
-      <dd>{{ exifData.YCbCrSubSampling }}</dd>
-    }
-
-    @if (exifData.EncodingProcess !== undefined) {
-      <dt>Encoding process</dt>
-      <dd>{{ exifData.EncodingProcess }}</dd>
-    }
-
-    @if (exifData.ColorPrimaries !== undefined) {
-      <dt>Color primaries</dt>
-      <dd>{{ exifData.ColorPrimaries }}</dd>
-    }
-
-    @if (exifData.ProfileDescription !== undefined) {
-      <dt>Colour profile</dt>
-      <dd>{{ exifData.ProfileDescription }}</dd>
-    }
-
-    @if (exifData.ColorSpace !== undefined) {
-      <dt>Colour space</dt>
-      <dd>{{ exifData.ColorSpace }}</dd>
-    }
-
-    @if (exifData.GPSLatitude !== undefined && exifData.GPSLongitude !== undefined) {
-      <dt>GPS coordinates</dt>
-      <dd>{{ exifData.GPSLatitude }} {{ exifData.GPSLongitude }}</dd>
-    }
-
-    @if (exifData.Make !== undefined) {
-      <dt>Camera make</dt>
-      <dd>{{ exifData.Make }}</dd>
-    }
-
-    @if (exifData.Model !== undefined) {
-      <dt>Camera model</dt>
-      <dd>{{ exifData.Model }}</dd>
-    }
-
-    @if (exifData.LensID !== undefined) {
-      <dt>Lens</dt>
-      <dd>{{ exifData.LensID }}</dd>
-    }
-
-    @if (exifData.FocalLength !== undefined) {
-      <dt>Focal length</dt>
-      <dd>{{ exifData.FocalLength }}</dd>
-    }
-
-    @if (exifData.ApertureValue !== undefined) {
-      <dt>Aperture</dt>
-      <dd>{{ exifData.ApertureValue }}</dd>
-    }
-
-    @if (exifData.ShutterSpeedValue !== undefined) {
-      <dt>Shutter speed</dt>
-      <dd>{{ exifData.ShutterSpeedValue }}</dd>
-    }
-
-    @if (exifData.ISO !== undefined) {
-      <dt>ISO</dt>
-      <dd>{{ exifData.ISO }}</dd>
-    }
-  }
-</dl>
+  </dl>
+</section>
