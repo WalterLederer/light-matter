@@ -299,7 +299,7 @@
 
         <button class="zoom-step-button" type="button" [title]="loupeEnabled() ? 'Reduce loupe magnification (-)' : 'Zoom out (-)'" [attr.aria-label]="loupeEnabled() ? 'Reduce loupe magnification' : 'Zoom out'" (click)="adjustZoom(-1)">−</button>
         @if (loupeEnabled()) {
-          <ui-slider [formControl]="loupeSlider" [min]="1" [max]="64" />
+          <ui-slider [formControl]="loupeSlider" [min]="0.2" [max]="64" />
         } @else {
           <ui-slider [formControl]="zoomSlider"
                      [min]="zoomConfig.min"
@@ -314,7 +314,7 @@
 
         <ui-text class="no-shrink zoom-info">
           @let zoomValue = location.zoom === 'fit' ? location.fitZoom : zoomSlider.value;
-          @if (loupeEnabled()) { {{ loupePixelSize() }} px } @else { {{ zoomValue | number: '1.0-0' }}% }
+          @if (loupeEnabled()) { {{ loupePixelSize() | number: '1.1-2' }}× } @else { {{ zoomValue | number: '1.0-0' }}% }
         </ui-text>
 
         <app-vertical-divider />
