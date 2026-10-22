@@ -329,13 +329,20 @@
       </section>
 
       <section>
-        <ui-action-button title="Fit to window / reset brightness"
-                          [disabled]="loupeEnabled() || (location.zoom === 'fit' && loupeBrightness() === 1)"
+        <ui-action-button title="Fit to window"
+                          [disabled]="loupeEnabled() || location.zoom === 'fit'"
                           (pressed)="fitToWindow()">
           <ui-icon icon="scaleFit"
                    size="large"
                    [inherit]="true" />
         </ui-action-button>
+
+        <button class="zoom-step-button"
+                type="button"
+                title="Reset image brightness (↑ / ↓)"
+                aria-label="Reset image brightness"
+                [disabled]="loupeEnabled() || loupeBrightness() === 1"
+                (click)="resetImageBrightness()">↺</button>
 
         <button class="zoom-step-button" type="button" [title]="loupeEnabled() ? 'Reduce loupe magnification (-)' : 'Zoom out (-)'" [attr.aria-label]="loupeEnabled() ? 'Reduce loupe magnification' : 'Zoom out'" (click)="adjustZoom(-1)">−</button>
         @if (loupeEnabled()) {
