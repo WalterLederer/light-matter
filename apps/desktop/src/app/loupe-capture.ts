@@ -67,20 +67,34 @@ export const captureLoupeFrame = async (windowHandle: number): Promise<{ width: 
   }
 
   const request = ++captureRequest;
-  const capture = new ScreenCapture({
+  const createCapture = (drawBorder?: boolean): ScreenCapture => new ScreenCapture({
     windowHandle,
     // The package runtime supports rgba16F (verified by the FP16 prototype),
     // but its published TypeScript union omits this accepted format.
     colorFormat: 'rgba16F' as unknown as ConstructorParameters<typeof ScreenCapture>[0]['colorFormat'],
     cursorCapture: false,
-    drawBorder: false,
+    ...(drawBorder === undefined ? {} : { drawBorder }),
     minimumUpdateIntervalMs: 0
   });
 
+  // Windows 10 builds before 20348 do not support changing the WGC capture
+  // border. Retry without the option only for that specific compatibility error.
+  let capture = createCapture(false);
   let phase = 'initialize capture';
   try {
     phase = 'start capture session';
-    await capture.start();
+    try {
+      await capture.start();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.toLowerCase().includes('toggling the capture border is not supported')) {
+        throw error;
+      }
+
+      await capture.stop().catch(() => undefined);
+      capture = createCapture();
+      await capture.start();
+    }
     phase = 'wait for first frame';
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const frame = await Promise.race([
