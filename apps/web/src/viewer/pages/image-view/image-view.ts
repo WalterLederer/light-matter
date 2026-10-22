@@ -499,8 +499,8 @@ export class ImageView {
     if (lastMouse && view) {
       const viewWidth = view.innerWidth;
       const viewHeight = view.innerHeight;
-      const loupeWidth = 310;
-      const loupeHeight = this.locationInfoExpanded() ? 430 : 310;
+      const loupeWidth = this.loupeShape() === 'ruler' ? 590 : 310;
+      const loupeHeight = (this.locationInfoExpanded() ? 430 : 310) + (this.loupeShape() === 'ruler' ? -180 : 0);
       const left = lastMouse.clientX > viewWidth - loupeWidth - 24 ? lastMouse.clientX - loupeWidth - 20 : lastMouse.clientX + 20;
       const top = lastMouse.clientY > viewHeight - loupeHeight - 24 ? lastMouse.clientY - loupeHeight - 20 : lastMouse.clientY + 20;
       this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
