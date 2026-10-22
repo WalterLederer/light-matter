@@ -19,8 +19,8 @@
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
-    width: 75%;
-    max-width: 165px;
+    width: 220px;
+    max-width: calc(100% - 24px);
     height: 45px;
     display: grid;
     grid-template-rows: 27px 3px 15px;
@@ -58,7 +58,7 @@
       font-size: 7.5px;
       font-weight: 650;
       line-height: 1.1;
-      white-space: normal;
+      white-space: nowrap;
     }
   }
 

@@ -484,19 +484,30 @@ export class ImageView {
 
   protected readonly toggleLoupeShape = () => {
     const shapes = ['circular', 'circular-detail', 'rectangular', 'ruler', 'vertical-ruler'] as const;
-    const currentIndex = shapes.indexOf(this.loupeShape());
-    const value = shapes[(currentIndex + 1) % shapes.length];
 
-    this.loupeShape.set(value);
+    if (!this.loupeEnabled()) {
+      this.loupeShape.set('circular');
+      this.storeLoupeShape('circular');
+      void this.toggleLoupe(true);
+      return;
+    }
+
+    const currentIndex = shapes.indexOf(this.loupeShape());
+    if (currentIndex === shapes.length - 1) {
+      void this.toggleLoupe(false);
+      return;
+    }
+
+    this.loupeShape.set(shapes[currentIndex + 1]);
+    this.storeLoupeShape(shapes[currentIndex + 1]);
+  };
+
+  private readonly storeLoupeShape = (value: 'circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler') => {
     try {
       this.document.defaultView?.localStorage.setItem('light-matter.loupeShape', value);
       this.storeBoolean('loupeCircular', value === 'circular' || value === 'circular-detail');
     } catch {
       // The shape remains usable for the current session if storage is unavailable.
-    }
-
-    if (!this.loupeEnabled()) {
-      void this.toggleLoupe(true);
     }
   };
 
