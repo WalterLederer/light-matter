@@ -42,7 +42,7 @@
             }
           } @else {
             @for (angle of loupeLedAngles; track angle) {
-              <span class="loupe-led" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [style.transform]="'rotate(' + angle + 'deg) translateY(-' + (loupeShape() === 'small-circular' ? 64 : 132) + 'px)'"></span>
+              <span class="loupe-led" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [style.transform]="'rotate(' + angle + 'deg) translateY(-' + (loupeShape() === 'small-circular' ? 61 : 132) + 'px)'"></span>
             }
           }
         </div>

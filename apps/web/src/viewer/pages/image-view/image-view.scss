@@ -174,8 +174,8 @@
     }
 
     &.small-circular .loupe-led-ring {
-      top: 0;
-      left: 0;
+      top: 70px;
+      left: 70px;
     }
 
     .loupe-image-viewport {
@@ -362,6 +362,8 @@
     }
 
     .loupe-info-box {
+      position: relative;
+      z-index: 2;
       display: flex;
       flex-direction: column;
       gap: 7px;
