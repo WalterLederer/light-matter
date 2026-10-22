@@ -20,7 +20,7 @@
                       (pixelColorChange)="pixelColor.set($event)"
                       (pixelDebugChange)="pixelDebug.set($event)"
                       (dblclick)="toggleFullScreen()"
-                      (loadingChange)="isDecoding.set($event); loadDuration.set(null); imageDecodeDuration.set(null); conversionRequestId++; conversionDuration.set(null); imageLoadFailed.set(false)"
+                      (loadingChange)="onImageLoadingChange($event)"
                       (loadDuration)="loadDuration.set($event); loadConversionDuration(selected.path); onImageRendered()"
                       (decodeDuration)="imageDecodeDuration.set($event)"
                       (loadError)="imageLoadFailed.set(true)"
