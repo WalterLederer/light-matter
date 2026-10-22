@@ -10,6 +10,8 @@
 
 @if (selected !== null) {
   <app-image-renderer [url]="selected.url"
+                      [debugImageSwitching]="debugImageSwitching()"
+                      (debugSwitchingPhase)="onDebugSwitchingPhase($event)"
                       [displayBrightness]="loupeEnabled() ? 1 : loupeBrightness()"
                       [comparisonMode]="isHdrImage ? comparisonMode() : 'sdr'"
                       [comparisonSplit]="comparisonSplit()"
@@ -254,7 +256,9 @@
         </ui-action-button>
 
         <ui-text class="status-info">
-          @if (isDecoding()) {
+          @if (debugImageSwitching() && debugSwitchingPhase() !== null) {
+            debug switching: phase {{ debugSwitchingPhase() }}
+          } @else if (isDecoding()) {
             Decoding…
           } @else if (imageLoadFailed()) {
             Failed to load image
