@@ -291,9 +291,6 @@
               @if (imageDimensions().width > 0 && imageDimensions().height > 0) {
                 · {{ imageDimensions().width }} × {{ imageDimensions().height }}
               }
-              @if (!loupeEnabled() && loupeBrightness() !== 1) {
-                · Brightness {{ loupeBrightness() > 1 ? '+' : '' }}{{ ((loupeBrightness() - 1) * 100).toFixed(0) }}%
-              }
             </span>
 
           }
@@ -343,6 +340,11 @@
                 aria-label="Reset image brightness"
                 [disabled]="loupeEnabled() || loupeBrightness() === 1"
                 (click)="resetImageBrightness()">↺</button>
+        @if (!loupeEnabled() && loupeBrightness() !== 1) {
+          <ui-text class="no-shrink brightness-info">
+            {{ loupeBrightness() > 1 ? '+' : '' }}{{ ((loupeBrightness() - 1) * 100).toFixed(0) }}%
+          </ui-text>
+        }
 
         <button class="zoom-step-button" type="button" [title]="loupeEnabled() ? 'Reduce loupe magnification (-)' : 'Zoom out (-)'" [attr.aria-label]="loupeEnabled() ? 'Reduce loupe magnification' : 'Zoom out'" (click)="adjustZoom(-1)">−</button>
         @if (loupeEnabled()) {
