@@ -431,8 +431,10 @@ export class ImageView {
         map(image => image.path),
         distinctUntilChanged(),
         tap(() => {
-          this.imageBitDepth.set(null);
-          this.imageTags.set(null);
+          // Keep the previous image's metadata until the new image's EXIF read
+          // completes. Clearing it here can temporarily classify a gain-map JPEG
+          // as SDR, switching the renderer's comparison mode during navigation
+          // while the previous image is still on screen.
           this.pixelColor.set(null);
         }),
         tap(path => {
