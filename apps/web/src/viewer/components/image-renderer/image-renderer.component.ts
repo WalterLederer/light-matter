@@ -289,11 +289,14 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     const startedAt = performance.now();
     this.debugLoadStartedAt = startedAt;
     this.debugTargetUrl = url;
+
+    // Pause before changing loading state so we can tell whether the flicker
+    // starts in navigation/selection or only after the renderer reacts to loading.
+    await this.debugPause('preload: start (before loading state)', loadId);
+    if (loadId !== this.loadId) return;
+
     this.isLoading.set(true);
     this.loadingChange.emit(true);
-
-    await this.debugPause('preload: start', loadId);
-    if (loadId !== this.loadId) return;
 
     const image = new Image();
     // Allow pixel reads from the app's custom protocol; the protocol handler sends ACAO.
