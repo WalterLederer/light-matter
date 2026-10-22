@@ -7,6 +7,7 @@ import {
   inject,
   input,
   OnDestroy,
+  OnInit,
   output,
   signal,
   viewChild
@@ -33,7 +34,7 @@ import {
   styleUrl: './image-renderer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ImageRendererComponent implements OnDestroy {
+export class ImageRendererComponent implements OnInit, OnDestroy {
   /* DI */
   private readonly imagePositioningService = inject(ImagePositioningService);
 
@@ -195,7 +196,12 @@ export class ImageRendererComponent implements OnDestroy {
     return Math.max(1, Math.min(99, Math.round(position * 100)));
   };
 
+  ngOnInit() {
+    if (this.debugImageSwitching()) this.debugSwitchingPhase.emit('renderer lifecycle: created');
+  }
+
   ngOnDestroy() {
+    if (this.debugImageSwitching()) this.debugSwitchingPhase.emit('renderer lifecycle: destroyed');
     this.imagePositioningService.removeViewport();
   }
 
