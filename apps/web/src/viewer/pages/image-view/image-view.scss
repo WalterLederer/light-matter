@@ -124,6 +124,26 @@
         }
       }
 
+      &.vertical-ruler {
+        z-index: 1;
+        width: 100px;
+        height: 560px;
+        border: 1px solid rgb(230 235 240 / 80%);
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        clip-path: inset(0);
+
+        &::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 9px, rgb(245 245 245 / 72%) 9px, rgb(245 245 245 / 72%) 10px, transparent 10px, transparent 19px, rgb(245 245 245 / 42%) 19px, rgb(245 245 245 / 42%) 20px);
+          opacity: 0.9;
+        }
+      }
+
       &.circular {
         z-index: 1;
         border: 6px solid #858c94;
@@ -262,6 +282,14 @@
     .loupe-rgb-fill.red { background: #ff4242; }
     .loupe-rgb-fill.green { background: #36cf70; }
     .loupe-rgb-fill.blue { background: #438cff; }
+
+    .loupe-capture-error {
+      max-width: 280px;
+      color: #ffb4ab;
+      font-size: 0.75rem;
+      line-height: 1.3;
+      overflow-wrap: anywhere;
+    }
 
     .loupe-hdr-linear {
       margin-top: 5px;

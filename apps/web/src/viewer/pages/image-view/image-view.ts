@@ -127,21 +127,23 @@ export class ImageView {
 
   protected readonly loupeEnabled = signal(false);
 
-  private readonly readStoredLoupeShape = (): 'circular' | 'rectangular' | 'ruler' => {
+  private readonly readStoredLoupeShape = (): 'circular' | 'rectangular' | 'ruler' | 'vertical-ruler' => {
     try {
       const stored = this.document.defaultView?.localStorage.getItem('light-matter.loupeShape');
-      if (stored === 'circular' || stored === 'rectangular' || stored === 'ruler') return stored;
+      if (stored === 'circular' || stored === 'rectangular' || stored === 'ruler' || stored === 'vertical-ruler') return stored;
       return this.readStoredBoolean('loupeCircular', false) ? 'circular' : 'rectangular';
     } catch {
       return 'rectangular';
     }
   };
 
-  protected readonly loupeShape = signal<'circular' | 'rectangular' | 'ruler'>(this.readStoredLoupeShape());
+  protected readonly loupeShape = signal<'circular' | 'rectangular' | 'ruler' | 'vertical-ruler'>(this.readStoredLoupeShape());
 
   protected readonly locationInfoExpanded = signal(this.readStoredBoolean('locationInfoExpanded', true));
 
   protected readonly loupeCapturePending = signal(false);
+
+  protected readonly loupeCaptureError = signal<string | null>(null);
 
   protected readonly loupeSample = signal<{
     width: number; height: number; x: number; y: number; radius: number;
@@ -464,7 +466,7 @@ export class ImageView {
   };
 
   protected readonly toggleLoupeShape = () => {
-    const shapes = ['circular', 'rectangular', 'ruler'] as const;
+    const shapes = ['circular', 'rectangular', 'ruler', 'vertical-ruler'] as const;
     const currentIndex = shapes.indexOf(this.loupeShape());
     const value = shapes[(currentIndex + 1) % shapes.length];
     this.loupeShape.set(value);
@@ -485,6 +487,7 @@ export class ImageView {
   protected readonly toggleLoupe = async (enabled: boolean) => {
     this.loupeEnabled.set(enabled);
     this.loupeSample.set(null);
+    this.loupeCaptureError.set(null);
     this.loupeSampleRequest++;
     if (!enabled) {
       this.loupeCaptureRequest++;
@@ -499,8 +502,9 @@ export class ImageView {
     if (lastMouse && view) {
       const viewWidth = view.innerWidth;
       const viewHeight = view.innerHeight;
-      const loupeWidth = this.loupeShape() === 'ruler' ? 590 : 310;
-      const loupeHeight = (this.locationInfoExpanded() ? 430 : 310) + (this.loupeShape() === 'ruler' ? -180 : 0);
+      const shape = this.loupeShape();
+      const loupeWidth = shape === 'ruler' ? 590 : 310;
+      const loupeHeight = (this.locationInfoExpanded() ? 430 : 310) + (shape === 'ruler' ? -180 : shape === 'vertical-ruler' ? 280 : 0);
       const left = lastMouse.clientX > viewWidth - loupeWidth - 24 ? lastMouse.clientX - loupeWidth - 20 : lastMouse.clientX + 20;
       const top = lastMouse.clientY > viewHeight - loupeHeight - 24 ? lastMouse.clientY - loupeHeight - 20 : lastMouse.clientY + 20;
       this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
@@ -516,8 +520,9 @@ export class ImageView {
     const view = this.document.defaultView;
     const viewWidth = view?.innerWidth ?? 1280;
     const viewHeight = view?.innerHeight ?? 720;
-    const loupeWidth = this.loupeShape() === 'ruler' ? 590 : 310;
-    const loupeHeight = (this.locationInfoExpanded() ? 430 : 310) + (this.loupeShape() === 'ruler' ? -180 : 0);
+    const shape = this.loupeShape();
+    const loupeWidth = shape === 'ruler' ? 590 : 310;
+    const loupeHeight = (this.locationInfoExpanded() ? 430 : 310) + (shape === 'ruler' ? -180 : shape === 'vertical-ruler' ? 280 : 0);
     const left = event.clientX > viewWidth - loupeWidth - 24 ? event.clientX - loupeWidth - 20 : event.clientX + 20;
     const top = event.clientY > viewHeight - loupeHeight - 24 ? event.clientY - loupeHeight - 20 : event.clientY + 20;
     this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
@@ -555,9 +560,16 @@ export class ImageView {
     const radius = 5;
     this.desktop?.Loupe.sample(x, y, radius)
       .then(sample => {
-        if (request === this.loupeSampleRequest && this.loupeEnabled()) this.loupeSample.set(sample);
+        if (request === this.loupeSampleRequest && this.loupeEnabled()) {
+          this.loupeSample.set(sample);
+          this.loupeCaptureError.set(null);
+        }
       })
-      .catch(() => undefined);
+      .catch(error => {
+        if (request === this.loupeSampleRequest && this.loupeEnabled()) {
+          this.loupeCaptureError.set(error instanceof Error ? error.message : String(error));
+        }
+      });
   };
 
   protected readonly onLoupeMouseLeave = () => {
@@ -574,6 +586,7 @@ export class ImageView {
     if (!this.loupeEnabled() || !desktop) return;
     const request = ++this.loupeCaptureRequest;
     this.loupeSample.set(null);
+    this.loupeCaptureError.set(null);
     this.loupeCapturePending.set(true);
     // Let Angular update the image and hide the loupe overlay before capturing the window.
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
@@ -586,9 +599,9 @@ export class ImageView {
       this.loupeCaptureGeometry.set(geometry);
     } catch (error) {
       console.error('HDR loupe capture failed:', error);
-      this.loupeEnabled.set(false);
       this.loupeCaptureGeometry.set(null);
-      await desktop.Loupe.release().catch(() => undefined);
+      this.loupeCaptureError.set(error instanceof Error ? error.message : String(error));
+      // Keep the visual magnifier enabled; only HDR pixel sampling is unavailable.
     } finally {
       if (request === this.loupeCaptureRequest) this.loupeCapturePending.set(false);
     }
