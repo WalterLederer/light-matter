@@ -34,6 +34,13 @@
       @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
         <div class="loupe-handle" aria-hidden="true"></div>
       }
+      @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
+        <div class="loupe-led-ring" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [style.opacity]="loupeBrightnessIndicatorOpacity()" aria-hidden="true">
+          @for (angle of loupeLedAngles; track angle) {
+            <span class="loupe-led" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [style.transform]="'rotate(' + angle + 'deg) translateY(-' + (loupeShape() === 'small-circular' ? 78 : 150) + 'px)'"></span>
+          }
+        </div>
+      }
       <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'small-circular' || loupeShape() === 'circular-detail'" [class.small-circular]="loupeShape() === 'small-circular'" [class.ruler]="loupeShape() === 'ruler'" [class.vertical-ruler]="loupeShape() === 'vertical-ruler'">
         <img class="loupe-image"
              [src]="selected.url"
@@ -42,6 +49,7 @@
              [style.left.px]="(loupeShape() === 'ruler' ? 280 : loupeShape() === 'vertical-ruler' ? 50 : loupeShape() === 'small-circular' ? 70 : 140) - loupeSourcePoint().x * loupePixelSize()"
              [style.top.px]="(loupeShape() === 'ruler' ? 50 : loupeShape() === 'vertical-ruler' ? 280 : loupeShape() === 'small-circular' ? 70 : 140) - loupeSourcePoint().y * loupePixelSize()"
              [style.transform]="'scale(' + loupePixelSize() + ')'"
+             [style.filter]="'brightness(' + loupeBrightness() + ')'"
              alt=""
              aria-hidden="true"
              draggable="false" />
@@ -56,6 +64,7 @@
                [style.left.px]="52 - loupeSourcePoint().x * loupePixelSize() * 2"
                [style.top.px]="52 - loupeSourcePoint().y * loupePixelSize() * 2"
                [style.transform]="'scale(' + (loupePixelSize() * 2) + ')'"
+               [style.filter]="'brightness(' + loupeBrightness() + ')'"
                alt=""
                aria-hidden="true"
                draggable="false" />
