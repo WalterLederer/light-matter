@@ -281,6 +281,8 @@ export class ImageRendererComponent implements OnDestroy {
   private readonly preloadImage = async (url: string) => {
     const loadId = ++this.loadId;
     const startedAt = performance.now();
+    this.debugLoadStartedAt = startedAt;
+    this.debugTargetUrl = url;
     this.isLoading.set(true);
     this.loadingChange.emit(true);
 
@@ -305,6 +307,31 @@ export class ImageRendererComponent implements OnDestroy {
 
   private loadId = 0;
 
+  private debugLoadStartedAt = 0;
+
+  private debugTargetUrl = '';
+
+  private readonly debugUrlLabel = (url: string | null): string => {
+    if (url === null) return 'null';
+    // Keep the status readout compact while retaining enough of the URL to identify a file.
+    const cleanUrl = url.replace(/^atom:\/\/app\/raw\?image=/, '');
+    return cleanUrl.length > 72 ? `…${cleanUrl.slice(-69)}` : cleanUrl;
+  };
+
+  private readonly debugGeometry = (): string => {
+    const surface = this.viewportRef()?.nativeElement;
+    if (surface === undefined) return 'surface=none';
+
+    const surfaceBounds = surface.getBoundingClientRect();
+    const images = Array.from(surface.querySelectorAll<HTMLImageElement>('.comparison-image'));
+    const imageStates = images.map(image => {
+      const bounds = image.getBoundingClientRect();
+      return `${image.classList.contains('hdr-image') ? 'HDR' : 'SDR'}:${image.naturalWidth}x${image.naturalHeight},${Math.round(bounds.left)},${Math.round(bounds.top)},${Math.round(bounds.width)}x${Math.round(bounds.height)},complete=${image.complete}`;
+    }).join('|') || 'images=none';
+
+    return `surface=${Math.round(surfaceBounds.left)},${Math.round(surfaceBounds.top)},${Math.round(surfaceBounds.width)}x${Math.round(surfaceBounds.height)}; ${imageStates}`;
+  };
+
   // Several image-loading callbacks can overlap (for example, assigning src and
   // receiving the browser load event). Serialize debug pauses so each phase is
   // visible for the full interval instead of being overwritten by another callback.
@@ -315,7 +342,11 @@ export class ImageRendererComponent implements OnDestroy {
 
     const pause = this.debugPauseQueue.then(async () => {
       if (loadId !== this.loadId || !this.debugImageSwitching()) return;
-      this.debugSwitchingPhase.emit(phase);
+      const elapsedMs = Math.round(performance.now() - this.debugLoadStartedAt);
+      const displayedUrl = this.displayUrl();
+      this.debugSwitchingPhase.emit(
+        `${phase} · #${loadId} · ${elapsedMs}ms · shown=${this.debugUrlLabel(displayedUrl)} · target=${this.debugUrlLabel(this.debugTargetUrl)} · ${this.debugGeometry()}`
+      );
       await new Promise<void>(resolve => setTimeout(resolve, 1000));
     });
 
