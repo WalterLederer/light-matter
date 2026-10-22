@@ -55,6 +55,26 @@
       visibility: hidden;
     }
 
+    .loupe-handle {
+      display: none;
+    }
+
+    &.circular .loupe-handle {
+      display: block;
+      position: absolute;
+      z-index: 0;
+      top: 236px;
+      left: 218px;
+      width: 94px;
+      height: 22px;
+      border: 1px solid #33383e;
+      border-radius: 5px 12px 12px 5px;
+      background: linear-gradient(180deg, #e7e9eb 0%, #92999f 24%, #4d535a 50%, #252a30 52%, #777e85 82%, #d8dbde 100%);
+      box-shadow: 0 2px 4px rgb(0 0 0 / 65%), inset 0 1px 1px rgb(255 255 255 / 80%);
+      transform: rotate(43deg);
+      transform-origin: 10px 11px;
+    }
+
     .loupe-image-viewport {
       position: relative;
       width: 280px;
@@ -66,9 +86,24 @@
       transition: clip-path 100ms ease;
 
       &.circular {
+        z-index: 1;
         border: 0;
         background: transparent;
         clip-path: circle(50% at 50% 50%);
+
+        &::after {
+          content: "";
+          position: absolute;
+          z-index: 2;
+          inset: 2px;
+          border: 5px solid transparent;
+          border-radius: 50%;
+          background:
+            linear-gradient(transparent, transparent) padding-box,
+            linear-gradient(145deg, #f4f5f6 0%, #aeb4bb 13%, #515860 30%, #dfe2e5 46%, #777f87 63%, #f0f1f2 79%, #454b52 100%) border-box;
+          box-shadow: inset 0 0 0 1px rgb(0 0 0 / 65%), 0 1px 4px rgb(0 0 0 / 75%);
+          pointer-events: none;
+        }
       }
     }
 

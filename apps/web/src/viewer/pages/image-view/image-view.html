@@ -28,7 +28,8 @@
                       (mouseleave)="onLoupeMouseLeave()" />
 
   @if (loupeEnabled() && selected !== null) {
-    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
+    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeCircular()" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
+      <div class="loupe-handle" aria-hidden="true"></div>
       <div class="loupe-image-viewport" [class.circular]="loupeCircular()">
         <img class="loupe-image"
              [src]="selected.url"
