@@ -126,6 +126,46 @@
       transform: rotate(43deg);
     }
 
+    .loupe-led-ring {
+      position: absolute;
+      z-index: 3;
+      top: 140px;
+      left: 140px;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+
+      &.bright .loupe-led {
+        border: 1px solid rgb(20 24 30 / 70%);
+        background: #fff;
+        box-shadow: 0 0 3px rgb(255 255 255 / 90%), 0 0 5px rgb(0 0 0 / 75%);
+      }
+
+      &.dark .loupe-led {
+        border: 1px solid rgb(255 255 255 / 82%);
+        background: #000;
+        box-shadow: 0 0 3px rgb(0 0 0 / 95%), 0 0 5px rgb(255 255 255 / 55%);
+      }
+
+      .loupe-led {
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: block;
+        width: 8px;
+        height: 8px;
+        margin: -4px 0 0 -4px;
+        border: 1px solid transparent;
+        border-radius: 50%;
+        box-sizing: border-box;
+      }
+    }
+
+    &.small-circular .loupe-led-ring {
+      top: 70px;
+      left: 70px;
+    }
+
     .loupe-image-viewport {
       position: relative;
       width: 280px;
