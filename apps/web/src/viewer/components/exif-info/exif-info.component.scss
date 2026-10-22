@@ -30,3 +30,30 @@
 
   .hdr-classification, .hdr-metadata { display: grid; gap: 3px; }
 }
+
+
+.info-box {
+  > details > summary,
+  > .measurement-details > summary {
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  > details[open] > summary {
+    margin-bottom: var(--dim-small);
+  }
+
+  .measurement-details {
+    margin-top: var(--dim-medium);
+    padding-top: var(--dim-small);
+    border-top: 1px solid var(--color-content-default-low);
+
+    summary { font-weight: 600; }
+
+    p {
+      margin: var(--dim-small) 0;
+      line-height: 1.45;
+    }
+  }
+}
