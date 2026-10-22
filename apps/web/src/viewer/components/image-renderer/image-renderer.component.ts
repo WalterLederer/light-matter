@@ -297,47 +297,45 @@ export class ImageRendererComponent implements OnDestroy {
 
   private loadId = 0;
 
-  private readonly onImageLoad = async (image: HTMLImageElement, loadId: number, startedAt: number) => {
+  private readonly onImageLoad = (image: HTMLImageElement, loadId: number, startedAt: number) => {
     if (loadId !== this.loadId) {
       return;
     }
+
+    this.isLoading.set(false);
+    this.loadingChange.emit(false);
 
     const dimensions = { width: image.naturalWidth, height: image.naturalHeight };
-    const loadDuration = (performance.now() - startedAt) / 1000;
-    const decodeStartedAt = performance.now();
-    let decodeDuration: number | null = null;
-
-    // Keep the currently displayed image visible until the replacement has
-    // finished decoding. Assigning displayUrl before decode completes can make
-    // the visible <img> briefly show an empty/dark frame during image switches.
-    try {
-      await image.decode();
-      decodeDuration = (performance.now() - decodeStartedAt) / 1000;
-    } catch {
-      // Some formats/protocol combinations may reject decode() even after load.
-      // In that case, still show the successfully loaded image rather than stall.
-      decodeDuration = null;
-    }
-
-    if (loadId !== this.loadId) {
-      return;
-    }
-
     this.pixelCanvas.width = 1;
     this.pixelCanvas.height = 1;
     this.pixelContext = this.pixelCanvas.getContext('2d', { willReadFrequently: true });
     this.pixelColorChange.emit(null);
+    this.displayUrl.set(image.src);
     this.imagePositioningService.setImageDimensions(dimensions);
     this.dimensions.emit(dimensions);
-    this.displayUrl.set(image.src);
-    this.isLoading.set(false);
-    this.loadingChange.emit(false);
-    this.loadDuration.emit(loadDuration);
-    this.decodeDuration.emit(decodeDuration);
+    this.loadDuration.emit((performance.now() - startedAt) / 1000);
 
-    // Total time is elapsed wall-clock time from preloadImage() starting until
-    // decoding has settled (or failed); it is not Load + Decode + Convert.
-    this.totalDuration.emit((performance.now() - startedAt) / 1000);
+    const decodeStartedAt = performance.now();
+    image.decode()
+      .then(() => {
+        if (loadId === this.loadId) {
+          const completedAt = performance.now();
+          this.decodeDuration.emit((completedAt - decodeStartedAt) / 1000);
+          // Total time is elapsed wall-clock time from preloadImage() starting
+          // until the image.decode() promise settles. It is not Load + Decode + Convert:
+          // conversion may already be included in the load/request interval.
+          this.totalDuration.emit((completedAt - startedAt) / 1000);
+        }
+      })
+      .catch(() => {
+        if (loadId === this.loadId) {
+          const completedAt = performance.now();
+          this.decodeDuration.emit(null);
+          // If decode rejects, still report elapsed time through the settled decode
+          // attempt. The displayed Decode time remains unavailable in that case.
+          this.totalDuration.emit((completedAt - startedAt) / 1000);
+        }
+      });
   };
 
   private readonly onImageError = (loadId: number) => {
