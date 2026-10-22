@@ -34,7 +34,6 @@
       }
       <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'circular-detail'" [class.ruler]="loupeShape() === 'ruler'" [class.vertical-ruler]="loupeShape() === 'vertical-ruler'">
         <img class="loupe-image"
-             [class.sub-one]="loupePixelSize() < 1"
              [src]="selected.url"
              [width]="dimensions.width"
              [height]="dimensions.height"
@@ -49,7 +48,6 @@
       @if (loupeShape() === 'circular-detail') {
         <div class="loupe-detail-viewport" aria-label="Magnified detail, 2× main loupe">
           <img class="loupe-image loupe-detail-image"
-               [class.sub-one]="loupePixelSize() * 2 < 1"
                [src]="selected.url"
                [width]="dimensions.width"
                [height]="dimensions.height"
@@ -316,7 +314,7 @@
 
         <ui-text class="no-shrink zoom-info">
           @let zoomValue = location.zoom === 'fit' ? location.fitZoom : zoomSlider.value;
-          @if (loupeEnabled()) { {{ loupePixelSize() | number: '1.1-2' }}× } @else { {{ zoomValue | number: '1.0-0' }}% }
+          @if (loupeEnabled()) { {{ loupePixelSize() * 2 | number: '1.1-2' }}× } @else { {{ zoomValue | number: '1.0-0' }}% }
         </ui-text>
 
         <app-vertical-divider />

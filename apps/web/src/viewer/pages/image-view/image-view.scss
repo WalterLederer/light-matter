@@ -273,12 +273,6 @@
       user-select: none;
       -webkit-user-drag: none;
       pointer-events: none;
-
-      // Pixelated rendering may prevent meaningful downscaling below 1×.
-      // Use normal interpolation so the negative loupe actually shrinks.
-      &.sub-one {
-        image-rendering: auto;
-      }
     }
 
     .loupe-key-hint {
