@@ -316,12 +316,18 @@ export class ImageRendererComponent implements OnDestroy {
     image.decode()
       .then(() => {
         if (loadId === this.loadId) {
-          this.decodeDuration.emit((performance.now() - decodeStartedAt) / 1000);
+          const completedAt = performance.now();
+          this.decodeDuration.emit((completedAt - decodeStartedAt) / 1000);
+          // Total time is elapsed wall-clock time from preloadImage() starting
+          // until image.decode() succeeds. It is not Load + Decode + Convert:
+          // conversion may already be included in the load/request interval.
+          this.totalDuration.emit((completedAt - startedAt) / 1000);
         }
       })
       .catch(() => {
         if (loadId === this.loadId) {
           this.decodeDuration.emit(null);
+          this.totalDuration.emit(null);
         }
       });
   };
