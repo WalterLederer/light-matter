@@ -755,7 +755,24 @@ export class ImageView {
           return;
         }
 
-        switch (event.key) {
+        if (this.loupeEnabled()) {
+          switch (event.key.toLowerCase()) {
+            case 'c':
+              event.preventDefault();
+              this.toggleLoupeShape();
+              return;
+            case 's':
+              event.preventDefault();
+              this.toggleSdrInfo();
+              return;
+            case 'h':
+              event.preventDefault();
+              this.toggleHdrInfo();
+              return;
+          }
+        }
+
+        switch (event.key.toLowerCase()) {
           case 'i':
           case 'I':
             this.selectedImage$
@@ -763,8 +780,7 @@ export class ImageView {
               .subscribe(image => this.toggleExifInfo(image.path));
             break;
 
-          case 'h':
-          case 'H':
+          case 'g':
             this.toggleHistogram();
             break;
 

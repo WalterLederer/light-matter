@@ -98,34 +98,14 @@
       text-align: left;
     }
 
-    .loupe-shape-toggle,
-    .loupe-info-toggle {
+    .loupe-info-heading {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      border: 1px solid rgb(255 255 255 / 24%);
-      border-radius: 3px;
       color: rgb(230 230 230 / 96%);
-      background: rgb(255 255 255 / 7%);
-      font: 11px/1.2 sans-serif;
-      cursor: pointer;
-      pointer-events: auto;
-    }
-
-    .loupe-shape-toggle {
-      flex: 0 0 auto;
-      padding: 4px 6px;
-    }
-
-    .loupe-info-toggle {
-      width: 100%;
-      padding: 2px 0;
-      border: 0;
-      background: transparent;
-      font-weight: 600;
+      font: 600 11px/1.2 sans-serif;
       letter-spacing: 0.06em;
-      text-align: left;
     }
 
     .loupe-collapse-indicator {

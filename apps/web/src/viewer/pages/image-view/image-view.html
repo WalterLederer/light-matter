@@ -42,10 +42,7 @@
              draggable="false" />
       </div>
       <div class="loupe-key-hint-row">
-        <div class="loupe-key-hint"><u>M</u>: Toggle Magnifier · + / −: Zoom · Scroll wheel: Zoom</div>
-        <button class="loupe-shape-toggle" type="button" (click)="toggleLoupeShape()" [attr.aria-pressed]="loupeCircular()" [attr.title]="loupeCircular() ? 'Switch to rectangular view' : 'Switch to circular view'">
-          {{ loupeCircular() ? 'Rectangle' : 'Circle' }}
-        </button>
+        <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>C</u>: Circle · + / −: Zoom<br /><u>S</u>: Toggle SDR · <u>H</u>: Toggle HDR · <u>G</u>: Histogram</div>
       </div>
       <div class="loupe-coordinates">
         @if (loupeSample(); as sample) {
@@ -55,9 +52,7 @@
         }
       </div>
       <section class="loupe-info-box sdr-info-box" aria-label="SDR pixel information">
-        <button class="loupe-info-toggle" type="button" (click)="toggleSdrInfo()" [attr.aria-expanded]="sdrInfoExpanded()">
-          <span>SDR</span><span class="loupe-collapse-indicator">{{ sdrInfoExpanded() ? '−' : '+' }}</span>
-        </button>
+        <div class="loupe-info-heading"><u>S</u>DR <span class="loupe-collapse-indicator">{{ sdrInfoExpanded() ? '−' : '+' }}</span></div>
         @if (sdrInfoExpanded()) {
           @if (pixelColor(); as rgb) {
             <div class="loupe-rgb-summary">
@@ -83,9 +78,7 @@
         }
       </section>
       <section class="loupe-info-box hdr-info-box" aria-label="HDR pixel information">
-        <button class="loupe-info-toggle" type="button" (click)="toggleHdrInfo()" [attr.aria-expanded]="hdrInfoExpanded()">
-          <span>HDR</span><span class="loupe-collapse-indicator">{{ hdrInfoExpanded() ? '−' : '+' }}</span>
-        </button>
+        <div class="loupe-info-heading"><u>H</u>DR <span class="loupe-collapse-indicator">{{ hdrInfoExpanded() ? '−' : '+' }}</span></div>
         @if (hdrInfoExpanded()) {
           @if (loupeSample(); as sample) {
             <div class="loupe-rgb-summary">
