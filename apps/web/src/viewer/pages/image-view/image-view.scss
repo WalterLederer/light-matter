@@ -154,6 +154,36 @@
       }
     }
 
+    .loupe-crosshair {
+      position: absolute;
+      z-index: 4;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.82;
+
+      &::before,
+      &::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        filter: drop-shadow(0 0 1px rgb(0 0 0 / 90%));
+      }
+
+      &::before {
+        width: 24px;
+        height: 1px;
+        background: linear-gradient(to right, rgb(245 250 255 / 82%) 0 38%, transparent 38% 62%, rgb(245 250 255 / 82%) 62% 100%);
+      }
+
+      &::after {
+        width: 1px;
+        height: 24px;
+        background: linear-gradient(to bottom, rgb(245 250 255 / 82%) 0 38%, transparent 38% 62%, rgb(245 250 255 / 82%) 62% 100%);
+      }
+    }
+
     .loupe-image {
       position: absolute;
       max-width: none;
@@ -169,17 +199,13 @@
       pointer-events: none;
     }
 
-    .loupe-key-hint-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
     .loupe-key-hint {
-      color: rgb(205 205 205 / 90%);
-      font: 11px/1.2 sans-serif;
+      color: rgb(190 198 208 / 88%);
+      font: 10px/1.35 sans-serif;
       text-align: left;
+      letter-spacing: 0;
+      padding-bottom: 5px;
+      border-bottom: 1px solid rgb(255 255 255 / 12%);
     }
 
     .loupe-info-heading {

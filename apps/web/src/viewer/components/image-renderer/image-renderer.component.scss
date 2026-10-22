@@ -72,7 +72,7 @@
 
   .dual-side-by-side-labels {
     position: absolute;
-    z-index: 20;
+    z-index: 1000;
     left: 12px;
     right: 12px;
     top: 8px;
@@ -93,6 +93,7 @@
     width: 108px;
     height: auto;
     display: grid;
+    overflow: visible;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
     row-gap: 12px;
@@ -107,6 +108,8 @@
   }
 
   .comparison-logo {
+    position: relative;
+    z-index: 1001;
     width: 75%;
     max-width: 330px;
     height: 90px;

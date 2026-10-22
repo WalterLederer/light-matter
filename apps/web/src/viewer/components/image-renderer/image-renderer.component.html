@@ -19,20 +19,6 @@
      (pointercancel)="onSplitPointerUp($event)">
 
   @if (imageUrl !== null) {
-    @if (comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked') {
-      <div class="dual-side-by-side-labels" [class.dual-stacked-labels]="comparisonMode() === 'dual-stacked'" aria-hidden="true">
-        <div class="comparison-logo sdr-logo">
-          <div class="logo-main">SDR</div>
-          <div class="logo-accent"></div>
-          <div class="logo-caption">Standard Dynamic Range</div>
-        </div>
-        <div class="comparison-logo hdr-logo">
-          <div class="logo-main">HDR</div>
-          <div class="logo-accent"></div>
-          <div class="logo-caption">High Dynamic Range</div>
-        </div>
-      </div>
-    }
     <img alt=""
          class="comparison-image sdr-image"
          [class.pannable]="location.zoom !== 'fit' && comparisonMode() !== 'dual-side-by-side' && comparisonMode() !== 'dual-stacked'"
@@ -85,3 +71,19 @@
   }
 
 </div>
+
+
+@if (imageUrl !== null && (comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked')) {
+  <div class="dual-side-by-side-labels" [class.dual-stacked-labels]="comparisonMode() === 'dual-stacked'" aria-hidden="true">
+    <div class="comparison-logo sdr-logo">
+      <div class="logo-main">SDR</div>
+      <div class="logo-accent"></div>
+      <div class="logo-caption">Standard Dynamic Range</div>
+    </div>
+    <div class="comparison-logo hdr-logo">
+      <div class="logo-main">HDR</div>
+      <div class="logo-accent"></div>
+      <div class="logo-caption">High Dynamic Range</div>
+    </div>
+  </div>
+}
