@@ -31,6 +31,7 @@
          [style.transform]="(comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked') && location.zoom !== 'fit' ? 'scale(' + (location.zoom * 100 / location.fitZoom) + ')' : null"
          [style.transform-origin]="comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked' ? 'center center' : null"
          [style.clip-path]="sdrClip()"
+         [style.filter]="displayBrightness() === 1 ? null : 'brightness(' + displayBrightness() + ')'"
          [src]="imageUrl"
          crossorigin="anonymous"
          (mousedown)="onMouseDown($event)">
@@ -65,6 +66,7 @@
          [style.transform]="(comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked') && location.zoom !== 'fit' ? 'scale(' + (location.zoom * 100 / location.fitZoom) + ')' : null"
          [style.transform-origin]="comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked' ? 'center center' : null"
          [style.clip-path]="hdrClip()"
+         [style.filter]="displayBrightness() === 1 ? null : 'brightness(' + displayBrightness() + ')'"
          [src]="imageUrl"
          crossorigin="anonymous"
          (mousedown)="onMouseDown($event)">

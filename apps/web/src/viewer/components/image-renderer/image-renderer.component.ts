@@ -44,6 +44,9 @@ export class ImageRendererComponent implements OnDestroy {
 
   readonly comparisonSplit = input(50);
 
+  /** Display brightness for the main image; 1 leaves it unchanged. */
+  readonly displayBrightness = input(1);
+
   protected readonly sdrClip = () => {
     const mode = this.comparisonMode();
     const split = Math.max(1, Math.min(99, this.comparisonSplit()));

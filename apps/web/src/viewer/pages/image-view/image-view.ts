@@ -683,7 +683,6 @@ export class ImageView {
   };
 
   protected readonly adjustLoupeBrightness = (direction: 1 | -1) => {
-    if (!this.loupeEnabled()) return;
     const next = Math.max(0.1, Math.min(3, Number((this.loupeBrightness() + direction * 0.1).toFixed(2))));
     this.loupeBrightness.set(next);
   };
@@ -940,7 +939,7 @@ export class ImageView {
           return;
         }
 
-        if (this.loupeEnabled() && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
           event.preventDefault();
           this.adjustLoupeBrightness(event.key === 'ArrowUp' ? 1 : -1);
           return;

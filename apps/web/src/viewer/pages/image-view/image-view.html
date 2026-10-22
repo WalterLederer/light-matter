@@ -10,6 +10,7 @@
 
 @if (selected !== null) {
   <app-image-renderer [url]="selected.url"
+                      [displayBrightness]="loupeEnabled() ? 1 : loupeBrightness()"
                       [comparisonMode]="isHdrImage ? comparisonMode() : 'sdr'"
                       [comparisonSplit]="comparisonSplit()"
                       (comparisonSplitChange)="previewComparisonSplit($event)"
