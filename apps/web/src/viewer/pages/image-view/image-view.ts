@@ -828,7 +828,7 @@ export class ImageView {
         }
 
         const target = event.target;
-        if (target instanceof HTMLElement && target.matches('input, textarea, [contenteditable="true"]')) {
+        if (target instanceof HTMLElement && target.matches('input:not([type="checkbox"]), textarea, [contenteditable="true"]')) {
           return;
         }
 
