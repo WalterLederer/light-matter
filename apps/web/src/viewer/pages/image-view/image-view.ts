@@ -119,6 +119,19 @@ export class ImageView {
 
   protected readonly isDecoding = signal(false);
 
+  protected readonly debugImageSwitching = signal(this.readDebugImageSwitching());
+
+  protected readonly debugSwitchingPhase = signal<string | null>(null);
+
+  private readonly readDebugImageSwitching = (): boolean => {
+    try { return this.document.defaultView?.localStorage.getItem('light-matter.debugImageSwitching') === 'true'; }
+    catch { return false; }
+  };
+
+  protected readonly onDebugSwitchingPhase = (phase: string): void => {
+    if (this.debugImageSwitching()) this.debugSwitchingPhase.set(phase);
+  };
+
   protected readonly loadDuration = signal<number | null>(null);
 
   protected readonly imageDecodeDuration = signal<number | null>(null);
