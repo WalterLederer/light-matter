@@ -1,7 +1,6 @@
 import { Dialog, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import {
-  ActionButtonComponent,
   DialogComponent,
   TitleComponent
 } from '@light-matter/ui';
@@ -13,7 +12,6 @@ import { ByteSizePipe } from '../../../ui/pipes/byte-size/byte-size.pipe';
 @Component({
   selector: 'app-settings-dialog',
   imports: [
-    ActionButtonComponent,
     DialogComponent,
     TitleComponent,
     ByteSizePipe
