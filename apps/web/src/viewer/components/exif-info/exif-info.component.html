@@ -65,8 +65,10 @@
     <dt>Decoder</dt><dd>{{ decoderName() ?? '—' }}</dd>
     <dt>Load time</dt><dd>{{ loadDuration() === null ? '—' : (loadDuration() | number: '1.2-2') + ' s' }}</dd>
     <dt>Decode time</dt><dd>{{ decodeDuration() === null ? '—' : (decodeDuration() | number: '1.2-2') + ' s' }}</dd>
+    <dt>Total time</dt><dd>{{ totalDuration() === null ? '—' : (totalDuration() | number: '1.2-2') + ' s' }}</dd>
     @if (requiresConversion()) {
       <dt>Convert time</dt><dd>{{ conversionDuration() === null ? '—' : (conversionDuration() | number: '1.2-2') + ' s' }}</dd>
     }
   </dl>
+  <p class="performance-note">Measurement: Load time runs from the start of the image request to the browser's load event. Decode time measures the subsequent image.decode() call. Total time runs from the start of the image request until image.decode() completes successfully. These are elapsed times, not additive phases; conversion may already be included in Load/Total time. Convert time is shown separately for diagnostics and must not be added to Total time.</p>
 </section>
