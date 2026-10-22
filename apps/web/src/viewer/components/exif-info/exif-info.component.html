@@ -23,8 +23,12 @@
       <dt>Last modified</dt>
       <dd>{{ timestamp | date: 'yyyy-MM-dd HH:mm:ss' }}</dd>
     }
-    <dt>Load duration</dt>
+    <dt>Decoder</dt>
+    <dd>{{ decoderName() ?? '—' }}</dd>
+    <dt>Load time</dt>
     <dd>{{ loadDuration() === null ? '—' : (loadDuration() | number: '1.2-2') + ' s' }}</dd>
+    <dt>Decode time</dt>
+    <dd>{{ decodeDuration() === null ? '—' : (decodeDuration() | number: '1.2-2') + ' s' }}</dd>
     <dt>Format</dt>
     <dd>{{ exifData.FileType }}</dd>
     <dt>MIME type</dt>

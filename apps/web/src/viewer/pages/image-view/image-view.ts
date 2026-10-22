@@ -121,23 +121,25 @@ export class ImageView {
 
   protected readonly isDecoding = signal(false);
 
-  protected readonly decodeDuration = signal<number | null>(null);
+  protected readonly loadDuration = signal<number | null>(null);
+
+  protected readonly imageDecodeDuration = signal<number | null>(null);
 
   protected readonly imageLoadFailed = signal(false);
 
   protected readonly loupeEnabled = signal(false);
 
-  private readonly readStoredLoupeShape = (): 'circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler' => {
+  private readonly readStoredLoupeShape = (): 'circular' | 'small-circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler' => {
     try {
       const stored = this.document.defaultView?.localStorage.getItem('light-matter.loupeShape');
-      if (stored === 'circular' || stored === 'circular-detail' || stored === 'rectangular' || stored === 'ruler' || stored === 'vertical-ruler') return stored;
+      if (stored === 'circular' || stored === 'small-circular' || stored === 'circular-detail' || stored === 'rectangular' || stored === 'ruler' || stored === 'vertical-ruler') return stored;
       return this.readStoredBoolean('loupeCircular', false) ? 'circular' : 'rectangular';
     } catch {
       return 'rectangular';
     }
   };
 
-  protected readonly loupeShape = signal<'circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler'>(this.readStoredLoupeShape());
+  protected readonly loupeShape = signal<'circular' | 'small-circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler'>(this.readStoredLoupeShape());
 
   protected readonly locationInfoExpanded = signal(this.readStoredBoolean('locationInfoExpanded', true));
 
@@ -483,7 +485,7 @@ export class ImageView {
   };
 
   protected readonly toggleLoupeShape = () => {
-    const shapes = ['circular', 'circular-detail', 'rectangular', 'ruler', 'vertical-ruler'] as const;
+    const shapes = ['circular', 'small-circular', 'circular-detail', 'rectangular', 'ruler', 'vertical-ruler'] as const;
 
     if (!this.loupeEnabled()) {
       this.loupeShape.set('circular');
@@ -502,10 +504,10 @@ export class ImageView {
     this.storeLoupeShape(shapes[currentIndex + 1]);
   };
 
-  private readonly storeLoupeShape = (value: 'circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler') => {
+  private readonly storeLoupeShape = (value: 'circular' | 'small-circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler') => {
     try {
       this.document.defaultView?.localStorage.setItem('light-matter.loupeShape', value);
-      this.storeBoolean('loupeCircular', value === 'circular' || value === 'circular-detail');
+      this.storeBoolean('loupeCircular', value === 'circular' || value === 'small-circular' || value === 'circular-detail');
     } catch {
       // The shape remains usable for the current session if storage is unavailable.
     }
@@ -770,6 +772,16 @@ export class ImageView {
     }
 
     return currentZoom;
+  };
+
+  protected readonly decoderForPath = (path: string): string => {
+    const extension = path.split('.').pop()?.toLowerCase() ?? '';
+    if (extension === 'jxr') return 'jpegxr + wasm-vips';
+    if (extension === 'avif') return 'wasm-vips / libvips';
+    if (extension === 'heif' || extension === 'heic') return 'libheif-js + wasm-vips';
+    if (extension === 'exr') return 'exrs';
+    if (extension === 'hdr' || extension === 'tif' || extension === 'tiff') return 'wasm-vips / libvips';
+    return 'Chromium / Electron';
   };
 
   private readonly getBitDepth = (tags: ExifTags): string | null => {

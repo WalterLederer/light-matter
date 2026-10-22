@@ -71,6 +71,8 @@ export class ImageRendererComponent implements OnDestroy {
 
   readonly loadDuration = output<number>();
 
+  readonly decodeDuration = output<number | null>();
+
   readonly loadError = output<void>();
 
   readonly comparisonSplitChange = output<number>();
@@ -307,6 +309,11 @@ export class ImageRendererComponent implements OnDestroy {
     this.imagePositioningService.setImageDimensions(dimensions);
     this.dimensions.emit(dimensions);
     this.loadDuration.emit((performance.now() - startedAt) / 1000);
+
+    const decodeStartedAt = performance.now();
+    image.decode()
+      .then(() => this.decodeDuration.emit((performance.now() - decodeStartedAt) / 1000))
+      .catch(() => this.decodeDuration.emit(null));
   };
 
   private readonly onImageError = (loadId: number) => {

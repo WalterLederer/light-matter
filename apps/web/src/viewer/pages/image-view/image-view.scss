@@ -102,6 +102,15 @@
       left: 218px;
     }
 
+    &.small-circular .loupe-handle {
+      top: 118px;
+      left: 109px;
+      width: 47px;
+      height: 11px;
+      border-radius: 3px 6px 6px 3px;
+      transform-origin: 5px 5.5px;
+    }
+
     &.ruler .loupe-handle {
       display: none;
     }
@@ -177,6 +186,11 @@
         background: #000;
         box-shadow: inset 0 0 0 2px #dfe2e5, inset 0 0 0 4px #42484f, 0 2px 5px rgb(0 0 0 / 75%);
         clip-path: circle(50% at 50% 50%);
+      }
+
+      &.small-circular {
+        width: 140px;
+        height: 140px;
       }
     }
 

@@ -46,7 +46,9 @@
   </section>
 
   <section>
-    <div class="cache-overview">
+    <details class="cache-details">
+      <summary>Cache · {{ currentCache.entries }} files · {{ currentCache.bytes | byteSize }}</summary>
+      <div class="cache-overview">
       <strong class="setting-section-title cache-section-title">Cache</strong>
       <div class="cache-categories">
         <div class="cache-category">
@@ -118,6 +120,8 @@
     } @else if (clearError() !== null) {
       <p class="cache-status error" role="alert">Cache clearing failed: {{ clearError() }}</p>
     }
+
+    </details>
 
     <details class="format-details">
       <summary>Supported image formats</summary>

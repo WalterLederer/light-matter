@@ -24,7 +24,11 @@ export class ExifInfoComponent {
 
   readonly modifiedAt = input<number | undefined>(undefined);
 
+  readonly decoderName = input<string | null>(null);
+
   readonly loadDuration = input<number | null>(null);
+
+  readonly decodeDuration = input<number | null>(null);
 
   readonly path = input('');
 

@@ -20,25 +20,26 @@
                       (pixelColorChange)="pixelColor.set($event)"
                       (pixelDebugChange)="pixelDebug.set($event)"
                       (dblclick)="toggleFullScreen()"
-                      (loadingChange)="isDecoding.set($event); decodeDuration.set(null); imageLoadFailed.set(false)"
-                      (loadDuration)="decodeDuration.set($event); onImageRendered()"
+                      (loadingChange)="isDecoding.set($event); loadDuration.set(null); imageDecodeDuration.set(null); imageLoadFailed.set(false)"
+                      (loadDuration)="loadDuration.set($event); onImageRendered()"
+                      (decodeDuration)="imageDecodeDuration.set($event)"
                       (loadError)="imageLoadFailed.set(true)"
                       (wheel)="onMouseWheel($event)"
                       (mousemove)="onLoupeMouseMove($event)"
                       (mouseleave)="onLoupeMouseLeave()" />
 
   @if (loupeEnabled() && selected !== null) {
-    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'circular-detail'" [class.circular-detail]="loupeShape() === 'circular-detail'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
+    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'small-circular' || loupeShape() === 'circular-detail'" [class.small-circular]="loupeShape() === 'small-circular'" [class.circular-detail]="loupeShape() === 'circular-detail'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
       @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
         <div class="loupe-handle" aria-hidden="true"></div>
       }
-      <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'circular-detail'" [class.ruler]="loupeShape() === 'ruler'" [class.vertical-ruler]="loupeShape() === 'vertical-ruler'">
+      <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'small-circular' || loupeShape() === 'circular-detail'" [class.small-circular]="loupeShape() === 'small-circular'" [class.ruler]="loupeShape() === 'ruler'" [class.vertical-ruler]="loupeShape() === 'vertical-ruler'">
         <img class="loupe-image"
              [src]="selected.url"
              [width]="dimensions.width"
              [height]="dimensions.height"
-             [style.left.px]="(loupeShape() === 'ruler' ? 280 : loupeShape() === 'vertical-ruler' ? 50 : 140) - loupeSourcePoint().x * loupePixelSize()"
-             [style.top.px]="(loupeShape() === 'ruler' ? 50 : loupeShape() === 'vertical-ruler' ? 280 : 140) - loupeSourcePoint().y * loupePixelSize()"
+             [style.left.px]="(loupeShape() === 'ruler' ? 280 : loupeShape() === 'vertical-ruler' ? 50 : loupeShape() === 'small-circular' ? 70 : 140) - loupeSourcePoint().x * loupePixelSize()"
+             [style.top.px]="(loupeShape() === 'ruler' ? 50 : loupeShape() === 'vertical-ruler' ? 280 : loupeShape() === 'small-circular' ? 70 : 140) - loupeSourcePoint().y * loupePixelSize()"
              [style.transform]="'scale(' + loupePixelSize() + ')'"
              alt=""
              aria-hidden="true"
@@ -339,8 +340,10 @@
                      [fileSize]="selected.size"
                      [bitDepth]="imageBitDepth()"
                      [path]="selected.path"
+                     [decoderName]="decoderForPath(selected.path)"
                      [modifiedAt]="selected.modifiedAt"
-                     [loadDuration]="decodeDuration()" />
+                     [loadDuration]="loadDuration()"
+                     [decodeDuration]="imageDecodeDuration()" />
     </ui-info-overlay>
   }
 }
