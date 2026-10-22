@@ -31,7 +31,7 @@
 
 <section class="info-box color-info">
   <details>
-    <summary>Color information · {{ exifData === false ? 'Loading…' : rangeInfo.result }} · {{ bitDepth() ?? 'Bit depth —' }} · Subsampling {{ exifData === false ? '—' : (exifData.YCbCrSubSampling ?? exifData.ChromaFormat ?? '—') }}</summary>
+    <summary>Color information · {{ exifData === false ? 'Loading…' : rangeInfo.result }} · {{ bitDepth() ?? 'Bit depth —' }} · {{ exifData === false ? '—' : (exifData.YCbCrSubSampling ?? exifData.ChromaFormat ?? '—') }}</summary>
   <dl>
     @if (exifData !== false) {
       <dt>Dynamic range</dt>
