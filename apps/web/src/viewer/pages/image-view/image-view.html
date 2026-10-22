@@ -341,18 +341,19 @@
                 [disabled]="loupeEnabled() || loupeBrightness() === 1"
                 (click)="resetImageBrightness()">↺</button>
         @if (!loupeEnabled() && loupeBrightness() !== 1) {
-          <ui-text class="no-shrink brightness-info">
+          <ui-text class="no-shrink brightness-info" title="Image brightness adjustment: ↑ increases and ↓ decreases the brightness of the entire image. Click ↺ to restore normal brightness.">
             {{ loupeBrightness() > 1 ? '+' : '' }}{{ ((loupeBrightness() - 1) * 100).toFixed(0) }}%
           </ui-text>
         }
 
         <button class="zoom-step-button" type="button" [title]="loupeEnabled() ? 'Reduce loupe magnification (-)' : 'Zoom out (-)'" [attr.aria-label]="loupeEnabled() ? 'Reduce loupe magnification' : 'Zoom out'" (click)="adjustZoom(-1)">−</button>
         @if (loupeEnabled()) {
-          <ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64" />
+          <ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64" title="Loupe magnification: adjust how much the area around the mouse pointer is enlarged. Use + and − for smaller steps." />
         } @else {
           <ui-slider [formControl]="zoomSlider"
                      [min]="zoomConfig.min"
-                     [max]="zoomConfig.max" />
+                     [max]="zoomConfig.max"
+                     title="Image zoom: drag the slider to change the image magnification. Use Fit to Window to fit the image to the available area." />
         }
         <button class="zoom-step-button" type="button" [title]="loupeEnabled() ? 'Increase loupe magnification (+)' : 'Zoom in (+)'" [attr.aria-label]="loupeEnabled() ? 'Increase loupe magnification' : 'Zoom in'" (click)="adjustZoom(1)">+</button>
 
