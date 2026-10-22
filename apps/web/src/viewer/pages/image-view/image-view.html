@@ -47,8 +47,8 @@
       </div>
       <section class="loupe-info-box location-info-box" aria-label="Location pixel information">
         <div class="loupe-info-heading"><span><u>L</u>ocation</span><span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? '−' : '+' }}</span></div>
-        <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>C</u>: Shape · <u>L</u>: Location · + / −: Zoom · <u>H</u>: Histogram</div>
         @if (locationInfoExpanded()) {
+          <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>C</u>: Shape · <u>L</u>: Location · + / −: Zoom · <u>H</u>: Histogram</div>
         <div class="loupe-coordinates">
           @if (loupeSample(); as sample) {
             X {{ sample.x }} · Y {{ sample.y }}
@@ -102,7 +102,9 @@
 
   @if (isHdrImage && comparisonMode() === 'sdr') {
     <div class="sdr-quality-logo" aria-label="SDR display mode" title="SDR view of an HDR-capable image">
-      <span>SDR</span>
+      <div class="logo-main">SDR</div>
+      <div class="logo-accent"></div>
+      <div class="logo-caption">Standard Dynamic Range</div>
     </div>
   }
 

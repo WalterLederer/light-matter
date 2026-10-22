@@ -24,7 +24,7 @@
     &.dual-stacked-surface .comparison-image {
       z-index: 1;
       left: 0 !important;
-      width: calc(100% - 120px) !important;
+      width: calc(100% - 204px) !important;
       height: calc(50% - 18px) !important;
       border: 1px solid var(--mat-sys-outline, #9e9e9e);
       box-sizing: border-box;
@@ -90,7 +90,7 @@
     bottom: 12px;
     left: auto;
     right: 12px;
-    width: 108px;
+    width: 180px;
     height: auto;
     display: grid;
     overflow: visible;
