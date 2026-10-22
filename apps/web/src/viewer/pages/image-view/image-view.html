@@ -299,7 +299,7 @@
 
         <button class="zoom-step-button" type="button" [title]="loupeEnabled() ? 'Reduce loupe magnification (-)' : 'Zoom out (-)'" [attr.aria-label]="loupeEnabled() ? 'Reduce loupe magnification' : 'Zoom out'" (click)="adjustZoom(-1)">−</button>
         @if (loupeEnabled()) {
-          <ui-slider [formControl]="loupeSlider" [min]="0.2" [max]="64" />
+          <ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64" />
         } @else {
           <ui-slider [formControl]="zoomSlider"
                      [min]="zoomConfig.min"

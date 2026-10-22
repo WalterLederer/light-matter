@@ -295,7 +295,7 @@ export class ImageView {
   private readonly readStoredLoupeZoom = (): number => {
     try {
       const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.loupeZoom'));
-      return Number.isFinite(stored) && stored >= 0.2 && stored <= 64 ? stored : 16;
+      return Number.isFinite(stored) && stored >= 0.1 && stored <= 64 ? stored : 16;
     } catch {
       return 16;
     }
@@ -630,7 +630,7 @@ export class ImageView {
 
   protected readonly adjustZoom = (direction: 1 | -1) => {
     if (this.loupeEnabled()) {
-      this.loupeSlider.setValue(Math.max(0.2, Math.min(64, Number((this.loupeSlider.value * (direction > 0 ? 1.25 : 0.8)).toFixed(2)))));
+      this.loupeSlider.setValue(Math.max(0.1, Math.min(64, Number((this.loupeSlider.value * (direction > 0 ? 1.25 : 0.8)).toFixed(2)))));
       return;
     }
 
@@ -716,7 +716,7 @@ export class ImageView {
     event.preventDefault();
 
     if (this.loupeEnabled()) {
-      if (event.deltaY !== 0) this.loupeSlider.setValue(Math.max(0.2, Math.min(64, Number((this.loupeSlider.value * (event.deltaY < 0 ? 1.25 : 0.8)).toFixed(2)))));
+      if (event.deltaY !== 0) this.loupeSlider.setValue(Math.max(0.1, Math.min(64, Number((this.loupeSlider.value * (event.deltaY < 0 ? 1.25 : 0.8)).toFixed(2)))));
       return;
     }
 
