@@ -60,6 +60,21 @@ export class SettingsDialogComponent {
 
   protected readonly supportedFormats = supportedFileFormats;
 
+  private readonly decoderFamilyFor = (extensions: readonly string[]): string => {
+    const normalized = extensions.map(extension => extension.toLowerCase().replace(/^\\./, ''));
+    if (normalized.includes('jxr')) return 'jpegxr';
+    if (normalized.includes('avif') || normalized.includes('hdr') || normalized.includes('tif') || normalized.includes('tiff')) return 'wasm-vips/libvips';
+    if (normalized.includes('heif') || normalized.includes('heic')) return 'libheif-js + wasm-vips';
+    if (normalized.includes('exr')) return 'exrs';
+    return 'Chromium / Electron';
+  };
+
+  protected readonly formatSummary = {
+    hdr: supportedFileFormats.filter(format => format.hdr).length,
+    sdr: supportedFileFormats.filter(format => !format.hdr).length,
+    decoders: new Set(supportedFileFormats.map(format => this.decoderFamilyFor(format.extensions))).size
+  };
+
   protected readonly decoderFor = (extensions: readonly string[]): string => {
     // supportedFileFormats stores extensions without a leading dot.
     const normalized = extensions.map(extension => extension.toLowerCase().replace(/^\\./, ''));
