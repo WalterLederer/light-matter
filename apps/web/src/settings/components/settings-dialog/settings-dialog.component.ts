@@ -42,6 +42,25 @@ export class SettingsDialogComponent {
 
   protected readonly devToolsOpen = signal(false);
 
+  protected readonly debugImageSwitching = signal(this.readDebugImageSwitching());
+
+  private readonly readDebugImageSwitching = (): boolean => {
+    try {
+      return globalThis.localStorage.getItem('light-matter.debugImageSwitching') === 'true';
+    } catch {
+      return false;
+    }
+  };
+
+  protected readonly setDebugImageSwitching = (enabled: boolean) => {
+    this.debugImageSwitching.set(enabled);
+    try {
+      globalThis.localStorage.setItem('light-matter.debugImageSwitching', String(enabled));
+    } catch {
+      // The option remains active for this dialog session if storage is unavailable.
+    }
+  };
+
   protected readonly devToolsLoading = signal(true);
 
   protected readonly devToolsError = signal<string | null>(null);
