@@ -1,6 +1,6 @@
 import { appPaths } from 'internal-api';
-import { createReadStream, existsSync } from 'node:fs';
-import { extname } from 'node:path';
+import { createReadStream, existsSync, statSync } from 'node:fs';
+import { extname, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import * as url from 'node:url';
 import { Injector } from '../injector/injector';
@@ -51,6 +51,8 @@ export const streamFile = (filePath: string): GlobalResponse => {
   }
 };
 
+const fullSizeCacheStatus = new Map<string, boolean>();
+
 export const protocolHandler = async (request: GlobalRequest): Promise<GlobalResponse> => {
   const parsed = new url.URL(request.url);
 
@@ -79,7 +81,8 @@ const conversionTime = async (params: URLSearchParams): Promise<GlobalResponse> 
   try {
     const thumbManager = Injector.getInstance().inject('ThumbManager');
     const durationMs = thumbManager.fullSizeConversionDuration(fileName);
-    return new Response(JSON.stringify({ durationMs }), {
+    const fromCache = fullSizeCacheStatus.get(resolve(fileName)) ?? null;
+    return new Response(JSON.stringify({ durationMs, fromCache }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
     });
   } catch (error) {
@@ -206,14 +209,30 @@ const raw = async (params: URLSearchParams, signal?: AbortSignal): Promise<Globa
       const injector = Injector.getInstance();
       const cacheManager = injector.inject('CacheManager');
       const thumbManager = injector.inject('ThumbManager');
+      const cacheTag = `${extname(fileName).toLowerCase().slice(1)}${[ '.tif', '.tiff' ].includes(extname(fileName).toLowerCase()) ? '-full-hdr-v6' : '-full-uhdr'}`;
+      const cacheEntry = cacheManager.exists(fileName, cacheTag);
+      let wasCacheHit = false;
+      if (cacheEntry && typeof cacheEntry['target_path'] === 'string' && existsSync(cacheEntry['target_path'])) {
+        try {
+          const sourceStats = statSync(fileName);
+          wasCacheHit = cacheEntry['source_size'] === sourceStats.size
+            && cacheEntry['updated_at'] === sourceStats.mtimeMs;
+        } catch {
+          wasCacheHit = false;
+        }
+      }
+
       const result = await cacheManager.get(
         fileName,
-        `${extname(fileName).toLowerCase().slice(1)}${[ '.tif', '.tiff' ].includes(extname(fileName).toLowerCase()) ? '-full-hdr-v6' : '-full-uhdr'}`,
+        cacheTag,
         // Full-size conversions are shared with histogram requests through CacheManager.
         // Let the shared conversion finish even if this particular renderer request is aborted.
         async target => await thumbManager.generate(fileName, target, 0, 0),
         '.jpg'
       );
+      if (result !== null) {
+        fullSizeCacheStatus.set(resolve(fileName), wasCacheHit);
+      }
 
       if (signal?.aborted || result === null) {
         return notFound();
