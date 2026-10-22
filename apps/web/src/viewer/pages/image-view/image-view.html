@@ -257,7 +257,8 @@
 
         <ui-text class="status-info">
           @if (debugImageSwitching() && debugSwitchingPhase() !== null) {
-            debug switching: phase {{ debugSwitchingPhase() }}
+            <span class="debug-switching-readout">debug switching: {{ debugSwitchingPhase() }}</span>
+            <span class="debug-switching-trace">{{ debugSwitchingTrace().join('  →  ') }}</span>
           } @else if (isDecoding()) {
             Decoding…
           } @else if (imageLoadFailed()) {
