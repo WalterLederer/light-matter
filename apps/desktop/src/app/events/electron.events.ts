@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { app, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
 import { FileListing, supportedFileExtensions } from 'internal-api';
 import * as fsSync from 'node:fs';
 import * as fs from 'node:fs/promises';
@@ -95,12 +95,20 @@ ipcMain.handle('Loupe.capture', async () => {
     const windowHandle = Number(handle.readBigUInt64LE(0));
     const bounds = App.mainWindow.getBounds();
     const contentBounds = App.mainWindow.getContentBounds();
+    const displayScaleFactor = screen.getDisplayMatching(bounds).scaleFactor;
+    const expectedMarker = {
+      x: (contentBounds.x - bounds.x + contentBounds.width / 2) * displayScaleFactor,
+      y: (contentBounds.y - bounds.y + contentBounds.height / 2) * displayScaleFactor
+    };
     phase = 'capture FP16 window frame';
-    const frame = await captureLoupeFrame(windowHandle);
+    const frame = await captureLoupeFrame(windowHandle, expectedMarker);
     console.debug('[HDR loupe native geometry diagnostic]', {
       windowBoundsDip: bounds,
       contentBoundsDip: contentBounds,
       captureFramePx: { width: frame.width, height: frame.height },
+      windowsDisplayScaleFactor: displayScaleFactor,
+      expectedMarkerCapturePx: expectedMarker,
+      markerPixelDiagnostic: frame.marker,
       captureToWindowScale: {
         x: frame.width / bounds.width,
         y: frame.height / bounds.height
@@ -116,7 +124,7 @@ ipcMain.handle('Loupe.capture', async () => {
         bottom: bounds.y + bounds.height - contentBounds.y - contentBounds.height
       }
     });
-    return { ...frame, x: bounds.x, y: bounds.y, windowWidth: bounds.width, windowHeight: bounds.height };
+    return { width: frame.width, height: frame.height, x: bounds.x, y: bounds.y, windowWidth: bounds.width, windowHeight: bounds.height, scaleFactor: displayScaleFactor, marker: frame.marker };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const gpuInfo = await app.getGPUInfo('complete').catch(() => null);
