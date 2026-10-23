@@ -813,8 +813,13 @@ export class ImageView {
 
   private readonly renderHdrLoupe = async (sample: NonNullable<Awaited<ReturnType<NonNullable<Desktop>['Loupe']['sample']>>>): Promise<void> => {
     if (this.loupeShape() !== 'rectangular' || !sample) return;
-    // Use WebGPU for the rectangular loupe at every zoom and brightness,
-    // including neutral brightness and magnifications around 1×.
+    // Keep the original CSS image path at neutral brightness so it remains
+    // available as the reference for comparing WebGPU brightness adjustments.
+    if (this.loupeBrightness() === 1) {
+      this.hdrLoupeActive.set(false);
+      return;
+    }
+    // WebGPU remains available at all zoom levels, including 1× and 0.98×.
     const canvas = this.document.querySelector<HTMLCanvasElement>('.hdr-loupe-canvas');
     if (!canvas) {
       this.hdrLoupeActive.set(false);
@@ -834,7 +839,7 @@ export class ImageView {
         data: sample.data
       }, brightness, zoom);
       // The user may have switched back to neutral brightness while WebGPU was rendering.
-      if (this.loupeShape() === 'rectangular') {
+      if (this.loupeShape() === 'rectangular' && this.loupeBrightness() !== 1) {
         this.hdrLoupeActive.set(true);
       } else {
         this.hdrLoupeActive.set(false);
