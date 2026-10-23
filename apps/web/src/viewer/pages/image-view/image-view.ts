@@ -227,7 +227,7 @@ export class ImageView {
 
   protected readonly loupeSourcePoint = signal({ x: 0, y: 0 });
 
-  protected readonly loupeCaptureGeometry = signal<{ width: number; height: number; x: number; y: number; windowWidth: number; windowHeight: number; scaleFactor: number; marker: { expected: { x: number; y: number }; actual: { x: number; y: number } | null; error: { x: number; y: number } | null } | null } | null>(null);
+  protected readonly loupeCaptureGeometry = signal<{ width: number; height: number; x: number; y: number; windowWidth: number; windowHeight: number; scaleFactor: number } | null>(null);
 
   protected readonly loupePosition = signal({ x: 24, y: 80 });
 
@@ -774,25 +774,6 @@ export class ImageView {
       this.loupeCapturePending.set(false);
       return;
     }
-    const marker = this.document.createElement('div');
-    marker.setAttribute('aria-hidden', 'true');
-    Object.assign(marker.style, {
-      position: 'fixed',
-      left: '50vw',
-      top: '50vh',
-      width: '17px',
-      height: '17px',
-      marginLeft: '-8px',
-      marginTop: '-8px',
-      background: '#ff00ff',
-      border: '1px solid #000000',
-      outline: '1px solid #ffffff',
-      boxSizing: 'border-box',
-      pointerEvents: 'none',
-      zIndex: '2147483647'
-    });
-    this.document.body.appendChild(marker);
-    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     try {
       const geometry = await desktop.Loupe.capture();
       this.loupeDiagnosticCells.clear();
@@ -813,7 +794,6 @@ export class ImageView {
       this.loupeCaptureError.set(error instanceof Error ? error.message : String(error));
       // Keep the visual magnifier enabled; only HDR pixel sampling is unavailable.
     } finally {
-      marker.remove();
       if (request === this.loupeCaptureRequest) this.loupeCapturePending.set(false);
     }
   };
