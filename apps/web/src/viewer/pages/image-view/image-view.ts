@@ -671,10 +671,15 @@ export class ImageView {
     const geometry = this.loupeCaptureGeometry();
     const view = this.document.defaultView;
     if (!geometry || !view || !this.desktop || !this.loupeEnabled()) return;
-    // Diagnostic follow-up: use the measured scale independently on each axis.
-    // The rounded 1.5 factor introduced a constant leftward jump in the loupe.
-    const x = (position.screenX - geometry.x) * geometry.scaleFactor;
-    const y = (position.screenY - geometry.y) * geometry.scaleFactor;
+    // Keep the active Windows display-scale mapping unchanged while comparing it
+    // with the scale measured from the captured frame. This diagnostic does not
+    // affect sampling and performs no pixel scanning.
+    const relativeScreenX = position.screenX - geometry.x;
+    const relativeScreenY = position.screenY - geometry.y;
+    const x = relativeScreenX * geometry.scaleFactor;
+    const y = relativeScreenY * geometry.scaleFactor;
+    const measuredX = relativeScreenX * geometry.width / geometry.windowWidth;
+    const measuredY = relativeScreenY * geometry.height / geometry.windowHeight;
     const isRectangular = this.loupeShape() === 'rectangular';
     if (isRectangular) {
       const now = performance.now();
@@ -706,7 +711,13 @@ export class ImageView {
                 windowBoundsDip: { x: geometry.x, y: geometry.y, width: geometry.windowWidth, height: geometry.windowHeight },
                 captureFramePx: { width: geometry.width, height: geometry.height },
                 measuredScale: { x: geometry.width / geometry.windowWidth, y: geometry.height / geometry.windowHeight },
+                windowsScaleFactor: geometry.scaleFactor,
                 requestedFramePosition: { x, y },
+                measuredScaleCandidate: { x: measuredX, y: measuredY },
+                windowsMinusMeasuredPx: {
+                  x: x - measuredX,
+                  y: y - measuredY
+                },
                 sampledCenter: { x: sample.x, y: sample.y },
                 mappingErrorPx: { x: sample.x - x, y: sample.y - y },
                 region: { width: sample.regionWidth, height: sample.regionHeight, radius: sample.radius },
