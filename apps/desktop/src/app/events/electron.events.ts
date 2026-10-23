@@ -94,8 +94,28 @@ ipcMain.handle('Loupe.capture', async () => {
     const handle = App.mainWindow.getNativeWindowHandle();
     const windowHandle = Number(handle.readBigUInt64LE(0));
     const bounds = App.mainWindow.getBounds();
+    const contentBounds = App.mainWindow.getContentBounds();
     phase = 'capture FP16 window frame';
     const frame = await captureLoupeFrame(windowHandle);
+    console.debug('[HDR loupe native geometry diagnostic]', {
+      windowBoundsDip: bounds,
+      contentBoundsDip: contentBounds,
+      captureFramePx: { width: frame.width, height: frame.height },
+      captureToWindowScale: {
+        x: frame.width / bounds.width,
+        y: frame.height / bounds.height
+      },
+      captureToContentScale: {
+        x: frame.width / contentBounds.width,
+        y: frame.height / contentBounds.height
+      },
+      contentInsetDip: {
+        left: contentBounds.x - bounds.x,
+        top: contentBounds.y - bounds.y,
+        right: bounds.x + bounds.width - contentBounds.x - contentBounds.width,
+        bottom: bounds.y + bounds.height - contentBounds.y - contentBounds.height
+      }
+    });
     return { ...frame, x: bounds.x, y: bounds.y, windowWidth: bounds.width, windowHeight: bounds.height };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
