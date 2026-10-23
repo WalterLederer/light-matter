@@ -691,6 +691,7 @@ export class ImageView {
             console.debug('[HDR loupe coordinate diagnostic]', {
               screen: { x: position.screenX, y: position.screenY },
               client: mouse ? { x: mouse.clientX, y: mouse.clientY } : null,
+              htmlImageSourcePointPx: this.loupeSourcePoint(),
               windowBoundsDip: { x: geometry.x, y: geometry.y, width: geometry.windowWidth, height: geometry.windowHeight },
               captureFramePx: { width: geometry.width, height: geometry.height },
               mappedFramePosition: { x, y },
