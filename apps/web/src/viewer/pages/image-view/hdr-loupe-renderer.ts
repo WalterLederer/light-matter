@@ -84,12 +84,11 @@ export class HdrLoupeRenderer {
       throw new Error('Unable to create a WebGPU canvas context.');
     }
 
-    // Request extended-range sRGB output; the shader encodes captured linear scRGB values.
+    // Keep the FP16 canvas in extended-range mode. The captured rgba16F values
+    // are already linear scRGB; do not apply an additional sRGB transfer function.
     context.configure({
       device,
       format: 'rgba16float',
-      // The capture contains linear scRGB. The browser canvas uses extended sRGB,
-      // so the shader below explicitly applies the sRGB transfer function.
       colorSpace: 'srgb',
       alphaMode: 'opaque',
       toneMapping: { mode: 'extended' }
@@ -130,15 +129,11 @@ export class HdrLoupeRenderer {
             vec2<i32>(0, 0),
             dims - vec2<i32>(1, 1)
           );
-          // WGC rgba16F samples are linear scRGB values. An extended-sRGB
-          // WebGPU canvas expects sRGB-encoded values, including values > 1.
-          // Encoding here makes brightness a linear-light multiplier and avoids
-          // a transfer-function mismatch when switching from the native HDR image.
-          let linearColor = max(textureLoad(imageTexture, coords, 0).rgb * params.brightness, vec3<f32>(0.0));
-          let low = linearColor * 12.92;
-          let high = 1.055 * pow(linearColor, vec3<f32>(1.0 / 2.4)) - vec3<f32>(0.055);
-          let encoded = select(high, low, linearColor <= vec3<f32>(0.0031308));
-          return vec4<f32>(encoded, 1.0);
+          // WGC rgba16F samples are linear scRGB. Keep them linear for the
+          // rgba16float render target; multiplying here applies brightness in
+          // linear light and preserves extended-range HDR values.
+          let color = textureLoad(imageTexture, coords, 0).rgb * params.brightness;
+          return vec4<f32>(color, 1.0);
         }
       `
     });
