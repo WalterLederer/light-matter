@@ -239,6 +239,8 @@ export class ImageView {
 
   private lastLoupeSampleAt = 0;
 
+  private lastLoupeDiagnosticAt = 0;
+
   private get desktop(): Desktop | undefined {
     return (this.document.defaultView as (Window & { desktop?: Desktop }) | null)?.desktop;
   }
@@ -682,6 +684,24 @@ export class ImageView {
         if (request === this.loupeSampleRequest && this.loupeEnabled()) {
           this.loupeSample.set(sample);
           this.loupeCaptureError.set(null);
+          const diagnosticNow = performance.now();
+          if (sample && diagnosticNow - this.lastLoupeDiagnosticAt >= 250) {
+            this.lastLoupeDiagnosticAt = diagnosticNow;
+            const mouse = this.lastMousePosition();
+            console.debug('[HDR loupe coordinate diagnostic]', {
+              screen: { x: position.screenX, y: position.screenY },
+              client: mouse ? { x: mouse.clientX, y: mouse.clientY } : null,
+              windowBoundsDip: { x: geometry.x, y: geometry.y, width: geometry.windowWidth, height: geometry.windowHeight },
+              captureFramePx: { width: geometry.width, height: geometry.height },
+              mappedFramePosition: { x, y },
+              sampledCenter: { x: sample.x, y: sample.y },
+              region: { width: sample.regionWidth, height: sample.regionHeight, radius: sample.radius },
+              centerLinearScRgb: {
+                r: sample.center.r, g: sample.center.g, b: sample.center.b,
+                rHex: sample.center.rHex, gHex: sample.center.gHex, bHex: sample.center.b
+              }
+            });
+          }
           if (isRectangular && requestedRadius <= 280 && sample) {
             await this.renderHdrLoupe(sample);
           } else {
@@ -742,6 +762,14 @@ export class ImageView {
     try {
       const geometry = await desktop.Loupe.capture();
       this.loupeCaptureGeometry.set(geometry);
+      console.debug('[HDR loupe capture geometry]', {
+        windowBoundsDip: { x: geometry.x, y: geometry.y, width: geometry.windowWidth, height: geometry.windowHeight },
+        captureFramePx: { width: geometry.width, height: geometry.height },
+        scale: {
+          x: geometry.width / geometry.windowWidth,
+          y: geometry.height / geometry.windowHeight
+        }
+      });
       const lastMouse = this.lastMousePosition();
       if (lastMouse) this.sampleLoupeAtPosition(lastMouse);
     } catch (error) {
