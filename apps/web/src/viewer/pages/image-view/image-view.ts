@@ -712,7 +712,6 @@ export class ImageView {
                 htmlImageSourcePointPx: this.loupeSourcePoint(),
                 windowBoundsDip: { x: geometry.x, y: geometry.y, width: geometry.windowWidth, height: geometry.windowHeight },
                 captureFramePx: { width: geometry.width, height: geometry.height },
-                measuredScale: { x: geometry.width / geometry.windowWidth, y: geometry.height / geometry.windowHeight },
                 windowsScaleFactor: geometry.scaleFactor,
                 measuredScale: { x: measuredScaleX, y: measuredScaleY },
                 requestedFramePosition: { x, y },
