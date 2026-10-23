@@ -135,7 +135,7 @@ export const sampleLoupeRegion = (x: number, y: number, radius = 5) => {
 
   const px = Math.max(0, Math.min(frame.width - 1, Math.round(x)));
   const py = Math.max(0, Math.min(frame.height - 1, Math.round(y)));
-  const safeRadius = Math.max(1, Math.min(256, Math.round(radius)));
+  const safeRadius = Math.max(1, Math.min(280, Math.round(radius)));
   const regionWidth = safeRadius * 2 + 1;
   const regionHeight = regionWidth;
   const pixels: Array<{ x: number; y: number; color: string }> = [];

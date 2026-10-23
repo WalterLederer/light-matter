@@ -477,6 +477,11 @@ export class ImageView {
         } catch {
           // The zoom remains usable for the current session if storage is unavailable.
         }
+        // Refresh the crop immediately when zoom changes, even if the mouse is stationary.
+        const mouse = this.lastMousePosition();
+        if (this.loupeEnabled() && mouse) {
+          this.sampleLoupeAtPosition({ screenX: mouse.screenX, screenY: mouse.screenY }, true);
+        }
       });
 
     this.zoomSlider
@@ -657,7 +662,7 @@ export class ImageView {
     this.loupeSourcePoint.set({ x: sourceX, y: sourceY });
   };
 
-  private readonly sampleLoupeAtPosition = (position: { screenX: number; screenY: number }) => {
+  private readonly sampleLoupeAtPosition = (position: { screenX: number; screenY: number }, force = false) => {
     const geometry = this.loupeCaptureGeometry();
     const view = this.document.defaultView;
     if (!geometry || !view || !this.desktop || !this.loupeEnabled()) return;
@@ -666,18 +671,18 @@ export class ImageView {
     const isRectangular = this.loupeShape() === 'rectangular';
     if (isRectangular) {
       const now = performance.now();
-      if (now - this.lastLoupeSampleAt < 24) return;
+      if (!force && now - this.lastLoupeSampleAt < 24) return;
       this.lastLoupeSampleAt = now;
     }
     const request = ++this.loupeSampleRequest;
     const requestedRadius = isRectangular ? Math.ceil(140 / this.loupePixelSize()) : 5;
-    const radius = isRectangular && requestedRadius >= 3 && requestedRadius <= 64 ? requestedRadius : 5;
+    const radius = isRectangular && requestedRadius >= 3 && requestedRadius <= 280 ? requestedRadius : 5;
     this.desktop.Loupe.sample(x, y, radius)
       .then(async sample => {
         if (request === this.loupeSampleRequest && this.loupeEnabled()) {
           this.loupeSample.set(sample);
           this.loupeCaptureError.set(null);
-          if (isRectangular && requestedRadius <= 64 && sample) {
+          if (isRectangular && requestedRadius <= 280 && sample) {
             await this.renderHdrLoupe(sample);
           } else {
             this.hdrLoupeActive.set(false);
@@ -762,12 +767,19 @@ export class ImageView {
       return;
     }
     try {
+      const brightness = this.loupeBrightness();
+      const zoom = this.loupePixelSize();
       await this.hdrLoupeRenderer.render(canvas, {
         width: sample.regionWidth,
         height: sample.regionHeight,
         data: sample.data
-      }, this.loupeBrightness(), this.loupePixelSize());
-      this.hdrLoupeActive.set(true);
+      }, brightness, zoom);
+      // The user may have switched back to neutral brightness while WebGPU was rendering.
+      if (this.loupeBrightness() !== 1 && this.loupeShape() === 'rectangular') {
+        this.hdrLoupeActive.set(true);
+      } else {
+        this.hdrLoupeActive.set(false);
+      }
     } catch (error) {
       console.warn('HDR WebGPU loupe unavailable; using CSS brightness fallback:', error);
       this.hdrLoupeRenderer.dispose();
@@ -776,7 +788,7 @@ export class ImageView {
   };
 
   protected readonly adjustLoupeBrightness = (direction: 1 | -1) => {
-    const next = Math.max(0.1, Math.min(3, Number((this.loupeBrightness() + direction * 0.1).toFixed(2))));
+    const next = Math.max(0.1, Math.min(3, Number((this.loupeBrightness() + direction * 0.01).toFixed(2))));
     this.loupeBrightness.set(next);
     const sample = this.loupeSample();
     if (this.loupeShape() === 'rectangular' && sample) void this.renderHdrLoupe(sample);
