@@ -61,7 +61,7 @@ const describeCaptureError = (error: unknown, phase: string): Error => {
   return new Error(`Capture phase: ${phase}. ${message}${code}`);
 };
 
-export const captureLoupeFrame = async (windowHandle: number): Promise<{ width: number; height: number }> => {
+export const captureLoupeFrame = async (windowHandle: number, expectedMarker?: { x: number; y: number }): Promise<{ width: number; height: number; marker: { expected: { x: number; y: number }; actual: { x: number; y: number } | null; error: { x: number; y: number } | null } | null }> => {
   if (process.platform !== 'win32') {
     throw new Error('The HDR loupe capture currently requires Windows.');
   }
@@ -113,10 +113,42 @@ export const captureLoupeFrame = async (windowHandle: number): Promise<{ width: 
       throw new Error('Unexpected FP16 frame layout; refusing to sample incorrect pixels.');
     }
 
+    let marker: { expected: { x: number; y: number }; actual: { x: number; y: number } | null; error: { x: number; y: number } | null } | null = null;
+    if (expectedMarker) {
+      const searchRadius = 100;
+      const left = Math.max(0, Math.floor(expectedMarker.x - searchRadius));
+      const right = Math.min(frame.width - 1, Math.ceil(expectedMarker.x + searchRadius));
+      const top = Math.max(0, Math.floor(expectedMarker.y - searchRadius));
+      const bottom = Math.min(frame.height - 1, Math.ceil(expectedMarker.y + searchRadius));
+      let minX = frame.width, minY = frame.height, maxX = -1, maxY = -1, matches = 0;
+      for (let y = top; y <= bottom; y++) {
+        for (let x = left; x <= right; x++) {
+          const offset = (y * frame.width + x) * 8;
+          const red = halfToFloat(frame.buffer.readUInt16LE(offset));
+          const green = halfToFloat(frame.buffer.readUInt16LE(offset + 2));
+          const blue = halfToFloat(frame.buffer.readUInt16LE(offset + 4));
+          if (red > 0.75 && green < 0.12 && blue > 0.75) {
+            minX = Math.min(minX, x); minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+            matches++;
+          }
+        }
+      }
+      const actual = matches >= 20 && maxX >= minX
+        ? { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
+        : null;
+      marker = {
+        expected: expectedMarker,
+        actual,
+        error: actual ? { x: actual.x - expectedMarker.x, y: actual.y - expectedMarker.y } : null
+      };
+      console.debug('[HDR loupe marker pixel diagnostic]', { framePx: { width: frame.width, height: frame.height }, matches, marker });
+    }
+
     if (request === captureRequest) {
       capturedFrame = { buffer: Buffer.from(frame.buffer), width: frame.width, height: frame.height };
     }
-    return { width: frame.width, height: frame.height };
+    return { width: frame.width, height: frame.height, marker };
   } catch (error) {
     throw describeCaptureError(error, phase);
   } finally {
