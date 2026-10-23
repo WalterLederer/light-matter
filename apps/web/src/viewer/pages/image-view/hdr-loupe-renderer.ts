@@ -84,7 +84,7 @@ export class HdrLoupeRenderer {
       throw new Error('Unable to create a WebGPU canvas context.');
     }
 
-    // Keep linear FP16/scRGB values through the shader and request extended HDR output.
+    // Request extended-range sRGB output; the shader encodes captured linear scRGB values.
     context.configure({
       device,
       format: 'rgba16float',
