@@ -592,7 +592,12 @@ export class ImageView {
       return;
     }
 
-    const currentIndex = shapes.indexOf(this.loupeShape());
+    // Normalize legacy saved shape values before cycling through supported shapes.
+    const currentShape = this.loupeShape();
+    const normalizedShape = currentShape === 'small-circular' || currentShape === 'circular-detail'
+      ? 'circular'
+      : currentShape;
+    const currentIndex = shapes.indexOf(normalizedShape);
     if (currentIndex === shapes.length - 1) {
       void this.toggleLoupe(false);
       return;
