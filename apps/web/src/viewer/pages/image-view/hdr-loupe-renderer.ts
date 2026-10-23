@@ -100,6 +100,13 @@ export class HdrLoupeRenderer {
         @group(0) @binding(0) var imageTexture: texture_2d<f32>;
         @group(0) @binding(1) var<uniform> params: Params;
 
+        fn linearToSrgb(value: f32) -> f32 {
+          if (value <= 0.0031308) {
+            return value * 12.92;
+          }
+          return 1.055 * pow(value, 1.0 / 2.4) - 0.055;
+        }
+
         struct VertexOutput {
           @builtin(position) position: vec4<f32>,
           @location(0) uv: vec2<f32>,
@@ -130,15 +137,7 @@ export class HdrLoupeRenderer {
             dims - vec2<i32>(1, 1)
           );
           // WGC rgba16F samples are linear scRGB. Apply brightness in linear
-          // light, then encode to extended sRGB for the canvas output. The
-          // rgba16float target itself does not perform sRGB encoding.
-          fn linearToSrgb(value: f32) -> f32 {
-            if (value <= 0.0031308) {
-              return value * 12.92;
-            }
-            return 1.055 * pow(value, 1.0 / 2.4) - 0.055;
-          }
-
+          // light, then encode to extended sRGB for the canvas output.
           let linearColor = textureLoad(imageTexture, coords, 0).rgb * params.brightness;
           let encodedColor = vec3<f32>(
             linearToSrgb(linearColor.r),
