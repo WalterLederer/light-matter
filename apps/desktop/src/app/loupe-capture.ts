@@ -127,7 +127,7 @@ export const captureLoupeFrame = async (windowHandle: number, expectedMarker?: {
           const red = halfToFloat(frame.buffer.readUInt16LE(offset));
           const green = halfToFloat(frame.buffer.readUInt16LE(offset + 2));
           const blue = halfToFloat(frame.buffer.readUInt16LE(offset + 4));
-          if (red > 0.75 && green < 0.12 && blue > 0.75) {
+          if (red > 0.03 && blue > 0.03 && green < Math.min(red, blue) * 0.25 && Math.abs(red - blue) < Math.max(red, blue) * 0.4) {
             minX = Math.min(minX, x); minY = Math.min(minY, y);
             maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
             matches++;
