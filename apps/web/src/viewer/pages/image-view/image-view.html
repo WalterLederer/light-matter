@@ -362,6 +362,12 @@
         }
         <button class="zoom-step-button" type="button" [title]="loupeEnabled() ? 'Increase loupe magnification (+)' : 'Zoom in (+)'" [attr.aria-label]="loupeEnabled() ? 'Increase loupe magnification' : 'Zoom in'" (click)="adjustZoom(1)">+</button>
 
+        @if (loupeEnabled()) {
+          <button class="zoom-step-button" type="button"
+                  [class.active]="loupeRendererMode() === 'webgpu'"
+                  [title]="loupeRendererMode() === 'webgpu' ? 'Use CSS loupe rendering for comparison' : 'Use WebGPU loupe rendering for comparison'"
+                  (click)="toggleLoupeRenderer()">{{ loupeRendererMode() === 'webgpu' ? 'GPU' : 'CSS' }}</button>
+        }
         <label class="loupe-toggle" title="Toggle HDR cursor loupe (FP16 window capture)" [class.active]="loupeEnabled()">
           <input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)" />
           <span><u>M</u>agnifier</span>
