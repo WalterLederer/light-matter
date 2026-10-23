@@ -353,6 +353,7 @@
         <button class="zoom-step-button" type="button" [title]="loupeEnabled() ? 'Reduce loupe magnification (-)' : 'Zoom out (-)'" [attr.aria-label]="loupeEnabled() ? 'Reduce loupe magnification' : 'Zoom out'" (click)="adjustZoom(-1)">−</button>
         @if (loupeEnabled()) {
           <ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64" title="Loupe magnification: adjust how much the area around the mouse pointer is enlarged. Use + and − for smaller steps." />
+          <button class="zoom-step-button loupe-zoom-reset" type="button" title="Reset loupe magnification to exactly 1×" aria-label="Reset loupe magnification to 1×" (click)="resetLoupeZoom()">1×</button>
         } @else {
           <ui-slider [formControl]="zoomSlider"
                      [min]="zoomConfig.min"
