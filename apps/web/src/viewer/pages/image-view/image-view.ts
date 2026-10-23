@@ -208,6 +208,9 @@ export class ImageView {
   /** Relative display brightness for the magnified image; 1 means unchanged. */
   protected readonly loupeBrightness = signal(1);
 
+  /** Explicit renderer selection so CSS and WebGPU can be compared at identical settings. */
+  protected readonly loupeRendererMode = signal<'css' | 'webgpu'>('css');
+
   protected readonly loupeBrightnessIndicatorOpacity = computed(() =>
     Math.min(1, Math.abs(this.loupeBrightness() - 1) / 1.5)
   );
@@ -813,9 +816,9 @@ export class ImageView {
 
   private readonly renderHdrLoupe = async (sample: NonNullable<Awaited<ReturnType<NonNullable<Desktop>['Loupe']['sample']>>>): Promise<void> => {
     if (this.loupeShape() !== 'rectangular' || !sample) return;
-    // Keep the original CSS image path at neutral brightness so it remains
-    // available as the reference for comparing WebGPU brightness adjustments.
-    if (this.loupeBrightness() === 1) {
+    // Renderer selection is explicit: CSS remains the reference path unless
+    // the user chooses WebGPU. Both renderers can now be compared at 0% brightness.
+    if (this.loupeRendererMode() !== 'webgpu') {
       this.hdrLoupeActive.set(false);
       return;
     }
@@ -838,8 +841,7 @@ export class ImageView {
         height: sample.regionHeight,
         data: sample.data
       }, brightness, zoom);
-      // The user may have switched back to neutral brightness while WebGPU was rendering.
-      if (this.loupeShape() === 'rectangular' && this.loupeBrightness() !== 1) {
+      if (this.loupeShape() === 'rectangular' && this.loupeRendererMode() === 'webgpu') {
         this.hdrLoupeActive.set(true);
       } else {
         this.hdrLoupeActive.set(false);
@@ -847,6 +849,17 @@ export class ImageView {
     } catch (error) {
       console.warn('HDR WebGPU loupe unavailable; using CSS brightness fallback:', error);
       this.hdrLoupeRenderer.dispose();
+      this.hdrLoupeActive.set(false);
+    }
+  };
+
+  protected readonly toggleLoupeRenderer = () => {
+    const next = this.loupeRendererMode() === 'css' ? 'webgpu' : 'css';
+    this.loupeRendererMode.set(next);
+    const sample = this.loupeSample();
+    if (this.loupeEnabled() && this.loupeShape() === 'rectangular' && sample) {
+      void this.renderHdrLoupe(sample);
+    } else {
       this.hdrLoupeActive.set(false);
     }
   };
