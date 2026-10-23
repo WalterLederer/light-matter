@@ -788,7 +788,7 @@ export class ImageView {
   };
 
   protected readonly adjustLoupeBrightness = (direction: 1 | -1) => {
-    const next = Math.max(0.1, Math.min(3, Number((this.loupeBrightness() + direction * 0.01).toFixed(2))));
+    const next = Math.max(0.1, Math.min(3, Number((this.loupeBrightness() + direction * 0.1).toFixed(1))));
     this.loupeBrightness.set(next);
     const sample = this.loupeSample();
     if (this.loupeShape() === 'rectangular' && sample) void this.renderHdrLoupe(sample);
