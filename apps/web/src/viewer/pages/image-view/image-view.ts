@@ -181,7 +181,9 @@ export class ImageView {
   private readonly readStoredLoupeShape = (): 'circular' | 'small-circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler' => {
     try {
       const stored = this.document.defaultView?.localStorage.getItem('light-matter.loupeShape');
-      if (stored === 'circular' || stored === 'small-circular' || stored === 'circular-detail' || stored === 'rectangular' || stored === 'ruler' || stored === 'vertical-ruler') return stored;
+      // Removed legacy small-circle and double-circle modes; normalize saved settings.
+      if (stored === 'circular' || stored === 'rectangular' || stored === 'ruler' || stored === 'vertical-ruler') return stored;
+      if (stored === 'small-circular' || stored === 'circular-detail') return 'circular';
       return this.readStoredBoolean('loupeCircular', false) ? 'circular' : 'rectangular';
     } catch {
       return 'rectangular';
@@ -581,7 +583,7 @@ export class ImageView {
   };
 
   protected readonly toggleLoupeShape = () => {
-    const shapes = ['circular', 'small-circular', 'circular-detail', 'rectangular', 'ruler', 'vertical-ruler'] as const;
+    const shapes = ['circular', 'rectangular', 'ruler', 'vertical-ruler'] as const;
 
     if (!this.loupeEnabled()) {
       this.loupeShape.set('circular');
@@ -847,7 +849,7 @@ export class ImageView {
         this.hdrLoupeActive.set(false);
       }
     } catch (error) {
-      console.warn('HDR WebGPU loupe unavailable; using CSS brightness fallback:', error);
+      console.error('HDR WebGPU loupe render failed:', error);
       this.hdrLoupeRenderer.dispose();
       this.hdrLoupeActive.set(false);
     }
@@ -856,9 +858,19 @@ export class ImageView {
   protected readonly toggleLoupeRenderer = () => {
     const next = this.loupeRendererMode() === 'css' ? 'webgpu' : 'css';
     this.loupeRendererMode.set(next);
-    const sample = this.loupeSample();
-    if (this.loupeEnabled() && this.loupeShape() === 'rectangular' && sample) {
-      void this.renderHdrLoupe(sample);
+    if (next === 'css') {
+      this.hdrLoupeActive.set(false);
+      return;
+    }
+
+    // Request a fresh FP16 sample instead of reusing a possibly stale sample.
+    // The canvas is shown only after WebGPU successfully completes a render.
+    const mouse = this.lastMousePosition();
+    if (this.loupeEnabled() && this.loupeShape() === 'rectangular' && mouse) {
+      this.sampleLoupeAtPosition({
+        screenX: mouse.screenX,
+        screenY: mouse.screenY
+      }, true);
     } else {
       this.hdrLoupeActive.set(false);
     }
