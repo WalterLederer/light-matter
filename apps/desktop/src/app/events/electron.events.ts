@@ -96,19 +96,13 @@ ipcMain.handle('Loupe.capture', async () => {
     const bounds = App.mainWindow.getBounds();
     const contentBounds = App.mainWindow.getContentBounds();
     const displayScaleFactor = screen.getDisplayMatching(bounds).scaleFactor;
-    const expectedMarker = {
-      x: (contentBounds.x - bounds.x + contentBounds.width / 2) * displayScaleFactor,
-      y: (contentBounds.y - bounds.y + contentBounds.height / 2) * displayScaleFactor
-    };
     phase = 'capture FP16 window frame';
-    const frame = await captureLoupeFrame(windowHandle, expectedMarker);
+    const frame = await captureLoupeFrame(windowHandle);
     console.debug('[HDR loupe native geometry diagnostic]', {
       windowBoundsDip: bounds,
       contentBoundsDip: contentBounds,
       captureFramePx: { width: frame.width, height: frame.height },
       windowsDisplayScaleFactor: displayScaleFactor,
-      expectedMarkerCapturePx: expectedMarker,
-      markerPixelDiagnostic: frame.marker,
       captureToWindowScale: {
         x: frame.width / bounds.width,
         y: frame.height / bounds.height
@@ -124,7 +118,7 @@ ipcMain.handle('Loupe.capture', async () => {
         bottom: bounds.y + bounds.height - contentBounds.y - contentBounds.height
       }
     });
-    return { width: frame.width, height: frame.height, x: bounds.x, y: bounds.y, windowWidth: bounds.width, windowHeight: bounds.height, scaleFactor: displayScaleFactor, marker: frame.marker };
+    return { width: frame.width, height: frame.height, x: bounds.x, y: bounds.y, windowWidth: bounds.width, windowHeight: bounds.height, scaleFactor: displayScaleFactor };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const gpuInfo = await app.getGPUInfo('complete').catch(() => null);
