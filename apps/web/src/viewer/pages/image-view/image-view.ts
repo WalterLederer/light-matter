@@ -813,11 +813,8 @@ export class ImageView {
 
   private readonly renderHdrLoupe = async (sample: NonNullable<Awaited<ReturnType<NonNullable<Desktop>['Loupe']['sample']>>>): Promise<void> => {
     if (this.loupeShape() !== 'rectangular' || !sample) return;
-    // At neutral brightness, keep the original HTML image path for unchanged HDR rendering.
-    if (this.loupeBrightness() === 1) {
-      this.hdrLoupeActive.set(false);
-      return;
-    }
+    // Use WebGPU for the rectangular loupe at every zoom and brightness,
+    // including neutral brightness and magnifications around 1×.
     const canvas = this.document.querySelector<HTMLCanvasElement>('.hdr-loupe-canvas');
     if (!canvas) {
       this.hdrLoupeActive.set(false);
@@ -825,14 +822,19 @@ export class ImageView {
     }
     try {
       const brightness = this.loupeBrightness();
-      const zoom = this.loupePixelSize();
+      // The captured frame is in physical pixels while the CSS loupe zoom is
+      // expressed against image pixels in DIP. Account for the capture scale.
+      const captureScale = this.loupeCaptureGeometry()?.width
+        ? this.loupeCaptureGeometry()!.width / this.loupeCaptureGeometry()!.windowWidth
+        : 1;
+      const zoom = this.loupePixelSize() * captureScale;
       await this.hdrLoupeRenderer.render(canvas, {
         width: sample.regionWidth,
         height: sample.regionHeight,
         data: sample.data
       }, brightness, zoom);
       // The user may have switched back to neutral brightness while WebGPU was rendering.
-      if (this.loupeBrightness() !== 1 && this.loupeShape() === 'rectangular') {
+      if (this.loupeShape() === 'rectangular') {
         this.hdrLoupeActive.set(true);
       } else {
         this.hdrLoupeActive.set(false);
@@ -841,6 +843,15 @@ export class ImageView {
       console.warn('HDR WebGPU loupe unavailable; using CSS brightness fallback:', error);
       this.hdrLoupeRenderer.dispose();
       this.hdrLoupeActive.set(false);
+    }
+  };
+
+  /** Reset the loupe magnification to exactly 1× (displayed as loupePixelSize × 2). */
+  protected readonly resetLoupeZoom = () => {
+    this.loupeSlider.setValue(0.5);
+    const mouse = this.lastMousePosition();
+    if (this.loupeEnabled() && mouse) {
+      this.sampleLoupeAtPosition({ screenX: mouse.screenX, screenY: mouse.screenY }, true);
     }
   };
 
