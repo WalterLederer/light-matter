@@ -135,15 +135,28 @@ export const sampleLoupeRegion = (x: number, y: number, radius = 5) => {
 
   const px = Math.max(0, Math.min(frame.width - 1, Math.round(x)));
   const py = Math.max(0, Math.min(frame.height - 1, Math.round(y)));
-  const safeRadius = Math.max(1, Math.min(12, Math.round(radius)));
+  const safeRadius = Math.max(1, Math.min(256, Math.round(radius)));
+  const regionWidth = safeRadius * 2 + 1;
+  const regionHeight = regionWidth;
   const pixels: Array<{ x: number; y: number; color: string }> = [];
+  const data = new Uint16Array(regionWidth * regionHeight * 4);
+  let dataIndex = 0;
 
   for (let dy = -safeRadius; dy <= safeRadius; dy++) {
     for (let dx = -safeRadius; dx <= safeRadius; dx++) {
       const sx = Math.max(0, Math.min(frame.width - 1, px + dx));
       const sy = Math.max(0, Math.min(frame.height - 1, py + dy));
-      const pixel = readPixel(frame, sx, sy);
-      pixels.push({ x: dx, y: dy, color: pixel.color });
+      const pixelOffset = (sy * frame.width + sx) * 8;
+      // The small pixel-color grid is only used by the location inspector. Avoid
+      // building thousands of CSS color strings for larger GPU-only loupe crops.
+      if (safeRadius <= 12) {
+        const pixel = readPixel(frame, sx, sy);
+        pixels.push({ x: dx, y: dy, color: pixel.color });
+      }
+      // Preserve original FP16 scRGB channel bit patterns in a compact typed array.
+      for (let channel = 0; channel < 4; channel++) {
+        data[dataIndex++] = frame.buffer.readUInt16LE(pixelOffset + channel * 2);
+      }
     }
   }
 
@@ -152,8 +165,11 @@ export const sampleLoupeRegion = (x: number, y: number, radius = 5) => {
     height: frame.height,
     x: px,
     y: py,
-    center: readPixel(frame, px, py),
     radius: safeRadius,
+    regionWidth,
+    regionHeight,
+    data,
+    center: readPixel(frame, px, py),
     pixels
   };
 };

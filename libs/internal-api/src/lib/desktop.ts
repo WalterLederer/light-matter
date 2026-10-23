@@ -62,6 +62,7 @@ export interface DesktopLoupe {
   readonly capture: () => Promise<{ width: number; height: number; x: number; y: number; windowWidth: number; windowHeight: number }>;
   readonly sample: (x: number, y: number, radius?: number) => Promise<{
     width: number; height: number; x: number; y: number; radius: number;
+    regionWidth: number; regionHeight: number; data: Uint16Array;
     center: { r: number; g: number; b: number; rHex: string; gHex: string; bHex: string; color: string };
     pixels: Array<{ x: number; y: number; color: string }>;
   } | null>;

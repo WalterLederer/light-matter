@@ -24,6 +24,7 @@ import { Configuration } from '../../../system/services/configuration/configurat
 import { Keyboard } from '../../../system/services/keyboard/keyboard';
 import { ExifInfoComponent } from '../../components/exif-info/exif-info.component';
 import { ImageRendererComponent } from '../../components/image-renderer/image-renderer.component';
+import { HdrLoupeRenderer } from './hdr-loupe-renderer';
 import { imageDynamicRange } from '../../utils/image-dynamic-range';
 import { ImagePositioningService } from '../../services/image-positioning/image-positioning.service';
 import {
@@ -172,6 +173,11 @@ export class ImageView {
 
   protected readonly loupeEnabled = signal(false);
 
+  /** True only while the FP16 capture is successfully rendered through WebGPU. */
+  protected readonly hdrLoupeActive = signal(false);
+
+  private readonly hdrLoupeRenderer = new HdrLoupeRenderer();
+
   private readonly readStoredLoupeShape = (): 'circular' | 'small-circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler' => {
     try {
       const stored = this.document.defaultView?.localStorage.getItem('light-matter.loupeShape');
@@ -192,6 +198,7 @@ export class ImageView {
 
   protected readonly loupeSample = signal<{
     width: number; height: number; x: number; y: number; radius: number;
+    regionWidth: number; regionHeight: number; data: Uint16Array;
     center: { r: number; g: number; b: number; rHex: string; gHex: string; bHex: string; color: string };
     pixels: Array<{ x: number; y: number; color: string }>;
   } | null>(null);
@@ -229,6 +236,8 @@ export class ImageView {
   private loupeCaptureRequest = 0;
 
   private loupeSampleRequest = 0;
+
+  private lastLoupeSampleAt = 0;
 
   private get desktop(): Desktop | undefined {
     return (this.document.defaultView as (Window & { desktop?: Desktop }) | null)?.desktop;
@@ -420,6 +429,7 @@ export class ImageView {
     this.destroyRef.onDestroy(() => {
       this.loupeCaptureRequest++;
       this.loupeSampleRequest++;
+      this.hdrLoupeRenderer.dispose();
       this.desktop?.Loupe.release().catch(() => undefined);
     });
 
@@ -574,6 +584,8 @@ export class ImageView {
     }
 
     this.loupeShape.set(shapes[currentIndex + 1]);
+    this.hdrLoupeActive.set(false);
+    this.hdrLoupeRenderer.dispose();
     this.storeLoupeShape(shapes[currentIndex + 1]);
   };
 
@@ -598,6 +610,8 @@ export class ImageView {
     this.loupeCaptureError.set(null);
     this.loupeSampleRequest++;
     if (!enabled) {
+      this.hdrLoupeActive.set(false);
+      this.hdrLoupeRenderer.dispose();
       this.loupeCaptureRequest++;
       this.loupeCapturePending.set(false);
       this.loupeCaptureGeometry.set(null);
@@ -647,18 +661,32 @@ export class ImageView {
     const geometry = this.loupeCaptureGeometry();
     const view = this.document.defaultView;
     if (!geometry || !view || !this.desktop || !this.loupeEnabled()) return;
-    const request = ++this.loupeSampleRequest;
     const x = (position.screenX - geometry.x) * geometry.width / geometry.windowWidth;
     const y = (position.screenY - geometry.y) * geometry.height / geometry.windowHeight;
-    this.desktop.Loupe.sample(x, y, 5)
-      .then(sample => {
+    const isRectangular = this.loupeShape() === 'rectangular';
+    if (isRectangular) {
+      const now = performance.now();
+      if (now - this.lastLoupeSampleAt < 24) return;
+      this.lastLoupeSampleAt = now;
+    }
+    const request = ++this.loupeSampleRequest;
+    const requestedRadius = isRectangular ? Math.ceil(140 / this.loupePixelSize()) : 5;
+    const radius = isRectangular && requestedRadius >= 3 && requestedRadius <= 64 ? requestedRadius : 5;
+    this.desktop.Loupe.sample(x, y, radius)
+      .then(async sample => {
         if (request === this.loupeSampleRequest && this.loupeEnabled()) {
           this.loupeSample.set(sample);
           this.loupeCaptureError.set(null);
+          if (isRectangular && requestedRadius <= 64 && sample) {
+            await this.renderHdrLoupe(sample);
+          } else {
+            this.hdrLoupeActive.set(false);
+          }
         }
       })
       .catch(error => {
         if (request === this.loupeSampleRequest && this.loupeEnabled()) {
+          this.hdrLoupeActive.set(false);
           this.loupeCaptureError.set(error instanceof Error ? error.message : String(error));
         }
       });
@@ -697,6 +725,8 @@ export class ImageView {
     const request = ++this.loupeCaptureRequest;
     this.loupeSample.set(null);
     this.loupeCaptureError.set(null);
+    this.hdrLoupeActive.set(false);
+    this.hdrLoupeRenderer.dispose();
     this.loupeCapturePending.set(true);
     // Let Angular update the image and hide the loupe overlay before capturing the window.
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
@@ -719,9 +749,37 @@ export class ImageView {
     }
   };
 
+  private readonly renderHdrLoupe = async (sample: NonNullable<Awaited<ReturnType<NonNullable<Desktop>['Loupe']['sample']>>>): Promise<void> => {
+    if (this.loupeShape() !== 'rectangular' || !sample) return;
+    // At neutral brightness, keep the original HTML image path for unchanged HDR rendering.
+    if (this.loupeBrightness() === 1) {
+      this.hdrLoupeActive.set(false);
+      return;
+    }
+    const canvas = this.document.querySelector<HTMLCanvasElement>('.hdr-loupe-canvas');
+    if (!canvas) {
+      this.hdrLoupeActive.set(false);
+      return;
+    }
+    try {
+      await this.hdrLoupeRenderer.render(canvas, {
+        width: sample.regionWidth,
+        height: sample.regionHeight,
+        data: sample.data
+      }, this.loupeBrightness(), this.loupePixelSize());
+      this.hdrLoupeActive.set(true);
+    } catch (error) {
+      console.warn('HDR WebGPU loupe unavailable; using CSS brightness fallback:', error);
+      this.hdrLoupeRenderer.dispose();
+      this.hdrLoupeActive.set(false);
+    }
+  };
+
   protected readonly adjustLoupeBrightness = (direction: 1 | -1) => {
     const next = Math.max(0.1, Math.min(3, Number((this.loupeBrightness() + direction * 0.1).toFixed(2))));
     this.loupeBrightness.set(next);
+    const sample = this.loupeSample();
+    if (this.loupeShape() === 'rectangular' && sample) void this.renderHdrLoupe(sample);
   };
 
   protected readonly adjustZoom = (direction: 1 | -1) => {

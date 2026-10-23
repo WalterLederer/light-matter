@@ -257,6 +257,13 @@
       clip-path: circle(50% at 50% 50%);
     }
 
+    .hdr-loupe-canvas {
+      top: 0;
+      left: 0;
+      width: 280px;
+      height: 280px;
+    }
+
     .loupe-detail-image {
       image-rendering: pixelated;
       image-rendering: crisp-edges;
