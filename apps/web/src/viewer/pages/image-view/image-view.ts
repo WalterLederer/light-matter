@@ -668,12 +668,10 @@ export class ImageView {
     const geometry = this.loupeCaptureGeometry();
     const view = this.document.defaultView;
     if (!geometry || !view || !this.desktop || !this.loupeEnabled()) return;
-    // TEMPORARY DIAGNOSTIC: round the measured ~1.492 capture scale to 1.5
-    // to check whether the cursor-dependent horizontal/vertical offset changes.
-    // Revert this fixed scale after the alignment test.
-    const captureScale = 1.5;
-    const x = (position.screenX - geometry.x) * captureScale;
-    const y = (position.screenY - geometry.y) * captureScale;
+    // Diagnostic follow-up: use the measured scale independently on each axis.
+    // The rounded 1.5 factor introduced a constant leftward jump in the loupe.
+    const x = (position.screenX - geometry.x) * geometry.width / geometry.windowWidth;
+    const y = (position.screenY - geometry.y) * geometry.height / geometry.windowHeight;
     const isRectangular = this.loupeShape() === 'rectangular';
     if (isRectangular) {
       const now = performance.now();
