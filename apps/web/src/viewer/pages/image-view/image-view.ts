@@ -211,7 +211,7 @@ export class ImageView {
   protected readonly loupeBrightness = signal(1);
 
   /** Explicit renderer selection so CSS and WebGPU can be compared at identical settings. */
-  protected readonly loupeRendererMode = signal<'css' | 'webgpu'>('css');
+  protected readonly loupeRendererMode = signal<'css' | 'webgpu'>('webgpu');
 
   protected readonly loupeBrightnessIndicatorOpacity = computed(() =>
     Math.min(1, Math.abs(this.loupeBrightness() - 1) / 1.5)
