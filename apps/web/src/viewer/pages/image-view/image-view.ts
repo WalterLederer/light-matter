@@ -671,15 +671,17 @@ export class ImageView {
     const geometry = this.loupeCaptureGeometry();
     const view = this.document.defaultView;
     if (!geometry || !view || !this.desktop || !this.loupeEnabled()) return;
-    // Keep the active Windows display-scale mapping unchanged while comparing it
-    // with the scale measured from the captured frame. This diagnostic does not
-    // affect sampling and performs no pixel scanning.
+    // Map DIP coordinates using the actual captured-frame dimensions. The
+    // Windows display scale (usually 1.5) differs measurably from the capture/window
+    // ratios, and the difference grows across the window.
     const relativeScreenX = position.screenX - geometry.x;
     const relativeScreenY = position.screenY - geometry.y;
-    const x = relativeScreenX * geometry.scaleFactor;
-    const y = relativeScreenY * geometry.scaleFactor;
-    const measuredX = relativeScreenX * geometry.width / geometry.windowWidth;
-    const measuredY = relativeScreenY * geometry.height / geometry.windowHeight;
+    const measuredScaleX = geometry.width / geometry.windowWidth;
+    const measuredScaleY = geometry.height / geometry.windowHeight;
+    const x = relativeScreenX * measuredScaleX;
+    const y = relativeScreenY * measuredScaleY;
+    const windowsScaleX = relativeScreenX * geometry.scaleFactor;
+    const windowsScaleY = relativeScreenY * geometry.scaleFactor;
     const isRectangular = this.loupeShape() === 'rectangular';
     if (isRectangular) {
       const now = performance.now();
@@ -712,11 +714,12 @@ export class ImageView {
                 captureFramePx: { width: geometry.width, height: geometry.height },
                 measuredScale: { x: geometry.width / geometry.windowWidth, y: geometry.height / geometry.windowHeight },
                 windowsScaleFactor: geometry.scaleFactor,
+                measuredScale: { x: measuredScaleX, y: measuredScaleY },
                 requestedFramePosition: { x, y },
-                measuredScaleCandidate: { x: measuredX, y: measuredY },
-                windowsMinusMeasuredPx: {
-                  x: x - measuredX,
-                  y: y - measuredY
+                windowsScaleCandidate: { x: windowsScaleX, y: windowsScaleY },
+                measuredMinusWindowsPx: {
+                  x: x - windowsScaleX,
+                  y: y - windowsScaleY
                 },
                 sampledCenter: { x: sample.x, y: sample.y },
                 mappingErrorPx: { x: sample.x - x, y: sample.y - y },
