@@ -57,6 +57,100 @@
     }
   }
 
+  .capture-test-pattern {
+    position: absolute;
+    z-index: 9;
+    top: 13%;
+    left: 4%;
+    width: 92%;
+    height: 58%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-sizing: border-box;
+    pointer-events: none;
+    user-select: none;
+    color: #111;
+    font-family: Consolas, "Courier New", monospace;
+    text-shadow: none;
+
+    .capture-test-caption,
+    .capture-test-footer {
+      flex: 0 0 auto;
+      padding: 6px 10px;
+      border: 1px solid rgb(255 255 255 / 55%);
+      border-radius: 3px;
+      background: rgb(12 16 22 / 92%);
+      color: #fff;
+      font-size: 12px;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .capture-test-patches {
+      display: flex;
+      flex: 1 1 auto;
+      min-height: 0;
+      gap: 8px;
+    }
+
+    .capture-test-patch {
+      position: relative;
+      display: flex;
+      flex: 1 1 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 5px;
+      min-width: 0;
+      padding: 12px 8px;
+      box-sizing: border-box;
+      border: 2px solid rgb(255 255 255 / 85%);
+      box-shadow: 0 1px 8px rgb(0 0 0 / 35%);
+      font-size: clamp(10px, 1vw, 15px);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .capture-test-white {
+      background: #fff;
+      color: #111;
+      border-color: #6f7780;
+    }
+
+    .capture-test-gray {
+      background: #808080;
+      color: #fff;
+    }
+
+    .capture-test-red {
+      background: #ff0000;
+      color: #fff;
+    }
+
+    .capture-test-label,
+    .capture-test-expected {
+      display: block;
+      padding: 4px 6px;
+      border-radius: 2px;
+      background: rgb(0 0 0 / 68%);
+      color: #fff;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .capture-test-white .capture-test-label,
+    .capture-test-white .capture-test-expected {
+      background: rgb(255 255 255 / 88%);
+      color: #111;
+      border: 1px solid rgb(0 0 0 / 18%);
+    }
+
+    .capture-test-footer {
+      font-size: 11px;
+    }
+  }
+
   .hdr-loupe-overlay {
     position: fixed;
     z-index: 30;

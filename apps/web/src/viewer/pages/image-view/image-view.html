@@ -30,6 +30,27 @@
                       (mousemove)="onLoupeMouseMove($event)"
                       (mouseleave)="onLoupeMouseLeave()" />
 
+  @if (loupeEnabled()) {
+    <section class="capture-test-pattern" aria-label="FP16 screen capture test pattern">
+      <div class="capture-test-caption">WGC / FP16 TEST · Expected scRGB assumes SDR white = 240 cd/m² (3.0 × scRGB reference white)</div>
+      <div class="capture-test-patches">
+        <div class="capture-test-patch capture-test-white">
+          <span class="capture-test-label">1 · SDR WHITE #FFFFFF</span>
+          <span class="capture-test-expected">Expected: 3.000, 3.000, 3.000</span>
+        </div>
+        <div class="capture-test-patch capture-test-gray">
+          <span class="capture-test-label">2 · SDR GRAY #808080</span>
+          <span class="capture-test-expected">Expected: 0.648, 0.648, 0.648</span>
+        </div>
+        <div class="capture-test-patch capture-test-red">
+          <span class="capture-test-label">3 · SDR RED #FF0000</span>
+          <span class="capture-test-expected">Expected: 3.000, 0.000, 0.000</span>
+        </div>
+      </div>
+      <div class="capture-test-footer">Move the cursor to the center of each patch and compare with HDR scRGB / FP16 hex below. Values are reference estimates; adjust for the current Windows SDR white setting.</div>
+    </section>
+  }
+
   @if (loupeEnabled() && selected !== null) {
     <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'small-circular' || loupeShape() === 'circular-detail'" [class.small-circular]="loupeShape() === 'small-circular'" [class.circular-detail]="loupeShape() === 'circular-detail'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
       @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
