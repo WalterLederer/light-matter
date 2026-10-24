@@ -63,7 +63,7 @@
       const pipeline = device.createRenderPipeline({
         layout: 'auto',
         vertex: { module, entryPoint: 'vs' },
-        fragment: { module, entryPoint: 'fs' },
+        fragment: { module, entryPoint: 'fs', targets: [{ format: 'rgba16float' }] },
         primitive: { topology: 'triangle-list' }
       });
       const uniform = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
