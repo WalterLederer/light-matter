@@ -836,8 +836,9 @@ export class ImageView {
       return;
     }
     try {
-      // Keep brightness adjustable while calibrating the loupe scale.
-      const brightness = this.loupeBrightness();
+      // The WebGPU loupe needs a 0.4 baseline to match normal image brightness.
+      // Keep the correction control active by applying its relative value on top.
+      const brightness = this.loupeBrightness() * 0.4;
       // The captured frame is in physical pixels while the CSS loupe zoom is
       // expressed against image pixels in DIP. Account for the capture scale.
       const captureScale = this.loupeCaptureGeometry()?.width
