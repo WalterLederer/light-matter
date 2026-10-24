@@ -193,7 +193,7 @@ int wmain(int argc, wchar_t** argv)
         if (!winrt::Windows::Graphics::Capture::GraphicsCaptureSession::IsSupported())
             throw std::runtime_error("Windows.Graphics.Capture is not supported on this system.");
 
-        // Match the earlier prototype: choose the display whose desktop origin is (0, 0).
+        // With --hwnd, select the display containing that window; otherwise use the display at (0, 0).
         ComPtr<IDXGIFactory1> factory;
         CheckHr(CreateDXGIFactory1(IID_PPV_ARGS(&factory)), "CreateDXGIFactory1");
 
@@ -215,9 +215,13 @@ int wmain(int argc, wchar_t** argv)
 
                 DXGI_OUTPUT_DESC desc{};
                 CheckHr(output->GetDesc(&desc), "IDXGIOutput::GetDesc");
-                if (desc.AttachedToDesktop &&
-                    desc.DesktopCoordinates.left == 0 &&
-                    desc.DesktopCoordinates.top == 0)
+                const HMONITOR requestedMonitor = targetWindow != nullptr
+                    ? MonitorFromWindow(targetWindow, MONITOR_DEFAULTTONEAREST)
+                    : nullptr;
+                const bool isRequestedOutput = targetWindow != nullptr
+                    ? desc.Monitor == requestedMonitor
+                    : desc.DesktopCoordinates.left == 0 && desc.DesktopCoordinates.top == 0;
+                if (desc.AttachedToDesktop && isRequestedOutput)
                 {
                     selectedAdapter = adapter;
                     selectedOutput = output;
