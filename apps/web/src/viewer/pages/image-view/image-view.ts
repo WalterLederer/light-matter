@@ -836,15 +836,16 @@ export class ImageView {
       return;
     }
     try {
-      // Temporary visual test: fixed 40% linear-light brightness, independent of the slider.
-      const brightness = 0.4;
+      // Keep brightness adjustable while calibrating the loupe scale.
+      const brightness = this.loupeBrightness();
       // The captured frame is in physical pixels while the CSS loupe zoom is
       // expressed against image pixels in DIP. Account for the capture scale.
       const captureScale = this.loupeCaptureGeometry()?.width
         ? this.loupeCaptureGeometry()!.width / this.loupeCaptureGeometry()!.windowWidth
         : 1;
-      // Temporary scale test: reduce the current magnification by exactly 1.5×.
-      const zoom = this.loupePixelSize() * captureScale / 1.5;
+      // Temporary scale test: interpolate between the previously oversized ~1.49×
+      // scale and the slightly undersized 1.5× scale.
+      const zoom = this.loupePixelSize() * captureScale / 1.495;
       await this.hdrLoupeRenderer.render(canvas, {
         width: sample.regionWidth,
         height: sample.regionHeight,
