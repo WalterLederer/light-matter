@@ -26,6 +26,7 @@
 #include <iostream>
 #include <limits>
 #include <mutex>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -46,6 +47,65 @@ static void CheckHr(HRESULT hr, const char* what)
                   << static_cast<unsigned long>(hr) << std::dec << "\n";
         throw std::runtime_error(what);
     }
+}
+
+// Read the Windows SDR reference-white setting for a GDI display name such as `\\.\\DISPLAY1`.
+// DISPLAYCONFIG_SDR_WHITE_LEVEL is in thousandths of the 80-nit reference:
+// 1000 => 80 cd/m², 2000 => 160 cd/m². Diagnostic only: do not apply this blindly
+// to captured scRGB pixels, whose values may already be correctly scaled.
+static std::optional<ULONG> QuerySdrWhiteLevel(const std::wstring& gdiDeviceName)
+{
+    UINT32 pathCount = 0;
+    UINT32 modeCount = 0;
+    LONG status = GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &pathCount, &modeCount);
+    if (status != ERROR_SUCCESS)
+    {
+        std::cerr << "GetDisplayConfigBufferSizes failed: " << status << "\n";
+        return std::nullopt;
+    }
+
+    std::vector<DISPLAYCONFIG_PATH_INFO> paths(pathCount);
+    std::vector<DISPLAYCONFIG_MODE_INFO> modes(modeCount);
+    status = QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &pathCount, paths.data(),
+                                &modeCount, modes.data(), nullptr);
+    if (status != ERROR_SUCCESS)
+    {
+        std::cerr << "QueryDisplayConfig failed: " << status << "\n";
+        return std::nullopt;
+    }
+
+    for (UINT32 i = 0; i < pathCount; ++i)
+    {
+        DISPLAYCONFIG_SOURCE_DEVICE_NAME sourceName{};
+        sourceName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
+        sourceName.header.size = sizeof(sourceName);
+        sourceName.header.adapterId = paths[i].sourceInfo.adapterId;
+        sourceName.header.id = paths[i].sourceInfo.id;
+
+        status = DisplayConfigGetDeviceInfo(&sourceName.header);
+        if (status != ERROR_SUCCESS || gdiDeviceName != sourceName.viewGdiDeviceName)
+            continue;
+
+        DISPLAYCONFIG_SDR_WHITE_LEVEL sdrWhiteLevel{};
+        sdrWhiteLevel.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SDR_WHITE_LEVEL;
+        sdrWhiteLevel.header.size = sizeof(sdrWhiteLevel);
+        sdrWhiteLevel.header.adapterId = paths[i].targetInfo.adapterId;
+        sdrWhiteLevel.header.id = paths[i].targetInfo.id;
+
+        status = DisplayConfigGetDeviceInfo(&sdrWhiteLevel.header);
+        if (status != ERROR_SUCCESS)
+        {
+            std::cerr << "DisplayConfigGetDeviceInfo(SDR white level) failed: "
+                      << status << "\n";
+            return std::nullopt;
+        }
+        return sdrWhiteLevel.SDRWhiteLevel;
+    }
+
+    std::cerr << "No active DisplayConfig path matched "
+              << std::string(gdiDeviceName.begin(), gdiDeviceName.end())
+              << "; SDR white level unavailable.\n";
+    return std::nullopt;
 }
 
 static ComPtr<ID3D11Device> CreateDeviceForAdapter(
@@ -185,6 +245,17 @@ int wmain(int argc, wchar_t** argv)
         auto winrtDevice = inspectableDevice.as<IDirect3DDevice>();
 
         const HMONITOR monitor = outputDesc.Monitor;
+
+        // Log the configured SDR reference white for the selected output. This is
+        // diagnostic data only and is deliberately not applied to captured pixels.
+        if (const auto sdrWhiteLevel = QuerySdrWhiteLevel(outputDesc.DeviceName))
+        {
+            const double sdrWhiteNits = static_cast<double>(*sdrWhiteLevel) * 80.0 / 1000.0;
+            std::cout << "Windows SDR white level: " << *sdrWhiteLevel
+                      << " (x0.001 of 80 nits), approximately "
+                      << sdrWhiteNits << " cd/m^2\n";
+        }
+
         const GraphicsCaptureItem item = targetWindow != nullptr
             ? CreateCaptureItemForWindow(targetWindow)
             : CreateCaptureItemForMonitor(monitor);
