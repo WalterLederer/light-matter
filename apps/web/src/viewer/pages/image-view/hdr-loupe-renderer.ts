@@ -8,6 +8,7 @@ export interface HdrLoupeRegion {
 }
 
 export class HdrLoupeRenderer {
+  private static brightnessReadbackTestDone = false;
   private device: GPUDevice | null = null;
   private pipeline: GPURenderPipeline | null = null;
   private sourceTexture: GPUTexture | null = null;
@@ -178,6 +179,117 @@ export class HdrLoupeRenderer {
     });
     this.canvasContext = context;
     this.configuredCanvas = canvas;
+
+    // Run once per renderer class lifetime. This reads back the actual FP16
+    // fragment-shader output for a fixed sample at brightness 1.0 and 0.4.
+    // It verifies shader math/output encoding, not Windows' final display output.
+    if (!HdrLoupeRenderer.brightnessReadbackTestDone) {
+      HdrLoupeRenderer.brightnessReadbackTestDone = true;
+      await this.runBrightnessReadbackTest();
+    }
+  }
+
+  private async runBrightnessReadbackTest(): Promise<void> {
+    const device = this.device;
+    const pipeline = this.pipeline;
+    if (!device || !pipeline || !this.uniformBuffer) return;
+
+    const inputLinear = [0.65771484375, 0.55712890625, 0.5078125];
+    const packedInput = new Uint16Array([0x3943, 0x3875, 0x3810, 0x3c00]);
+    const source = device.createTexture({
+      size: { width: 1, height: 1 },
+      format: 'rgba16float',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+    const output = device.createTexture({
+      size: { width: 1, height: 1 },
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+    });
+    const readback = device.createBuffer({
+      size: 256,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+    });
+
+    try {
+      device.queue.writeTexture(
+        { texture: source },
+        packedInput,
+        { bytesPerRow: 8, rowsPerImage: 1 },
+        { width: 1, height: 1, depthOrArrayLayers: 1 }
+      );
+      const bindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: source.createView() },
+          { binding: 1, resource: { buffer: this.uniformBuffer } }
+        ]
+      });
+
+      const results: Array<Record<string, unknown>> = [];
+      for (const brightness of [1.0, 0.4]) {
+        device.queue.writeBuffer(this.uniformBuffer, 0, new Float32Array([brightness, 1, 0, 0]));
+        const encoder = device.createCommandEncoder();
+        const pass = encoder.beginRenderPass({
+          colorAttachments: [{
+            view: output.createView(),
+            clearValue: { r: 0, g: 0, b: 0, a: 1 },
+            loadOp: 'clear',
+            storeOp: 'store'
+          }]
+        });
+        pass.setPipeline(pipeline);
+        pass.setBindGroup(0, bindGroup);
+        pass.draw(3);
+        pass.end();
+        encoder.copyTextureToBuffer(
+          { texture: output },
+          { buffer: readback, bytesPerRow: 256, rowsPerImage: 1 },
+          { width: 1, height: 1, depthOrArrayLayers: 1 }
+        );
+        device.queue.submit([encoder.finish()]);
+        await readback.mapAsync(GPUMapMode.READ);
+        const words = new Uint16Array(readback.getMappedRange().slice(0, 8));
+        const actual = Array.from(words.slice(0, 3), HdrLoupeRenderer.halfToFloat);
+        readback.unmap();
+
+        const expected = inputLinear.map(value => HdrLoupeRenderer.linearToExtendedSrgbCpu(value * brightness));
+        results.push({
+          brightness,
+          actualFp16Hex: Array.from(words.slice(0, 3), value => '0x' + value.toString(16).padStart(4, '0')).join(' '),
+          actualEncodedSrgb: actual,
+          expectedEncodedSrgb: expected,
+          maxAbsoluteError: Math.max(...actual.map((value, index) => Math.abs(value - expected[index])))
+        });
+      }
+      console.info('[HDR loupe GPU brightness readback test]', {
+        sourceLinearScRgb: inputLinear,
+        results,
+        interpretation: 'Compares actual FP16 fragment output against CPU extended-sRGB encoding; does not measure final Windows/compositor/display output.'
+      });
+    } catch (error) {
+      console.warn('[HDR loupe GPU brightness readback test] failed', error);
+    } finally {
+      if (readback.mapState === 'mapped') readback.unmap();
+      source.destroy();
+      output.destroy();
+      readback.destroy();
+    }
+  }
+
+  private static linearToExtendedSrgbCpu(value: number): number {
+    return value <= 0.0031308
+      ? value * 12.92
+      : 1.055 * Math.pow(value, 1 / 2.4) - 0.055;
+  }
+
+  private static halfToFloat(value: number): number {
+    const sign = (value & 0x8000) ? -1 : 1;
+    const exponent = (value >>> 10) & 0x1f;
+    const fraction = value & 0x03ff;
+    if (exponent === 0) return sign * Math.pow(2, -14) * (fraction / 1024);
+    if (exponent === 0x1f) return fraction === 0 ? sign * Infinity : NaN;
+    return sign * Math.pow(2, exponent - 15) * (1 + fraction / 1024);
   }
 
   dispose(): void {
