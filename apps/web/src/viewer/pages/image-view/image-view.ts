@@ -717,15 +717,12 @@ export class ImageView {
     const y = relativeScreenY * geometry.scaleFactor;
     const windowsScaleX = x;
     const windowsScaleY = y;
-    const isRectangular = this.loupeShape() === 'rectangular';
-    if (isRectangular) {
-      const now = performance.now();
-      if (!force && now - this.lastLoupeSampleAt < 24) return;
-      this.lastLoupeSampleAt = now;
-    }
+    const now = performance.now();
+    if (!force && now - this.lastLoupeSampleAt < 24) return;
+    this.lastLoupeSampleAt = now;
     const request = ++this.loupeSampleRequest;
-    const requestedRadius = isRectangular ? Math.ceil(140 / this.loupePixelSize()) : 5;
-    const radius = isRectangular && requestedRadius >= 3 && requestedRadius <= 280 ? requestedRadius : 5;
+    const requestedRadius = Math.ceil(140 / this.loupePixelSize());
+    const radius = Math.max(3, Math.min(280, requestedRadius));
     this.desktop.Loupe.sample(x, y, radius)
       .then(async sample => {
         if (request === this.loupeSampleRequest && this.loupeEnabled()) {
@@ -759,7 +756,7 @@ export class ImageView {
               });
             }
           }
-          if (isRectangular && requestedRadius <= 280 && sample) {
+          if (sample) {
             await this.renderHdrLoupe(sample);
           } else {
             this.hdrLoupeActive.set(false);
@@ -842,7 +839,7 @@ export class ImageView {
   };
 
   private readonly renderHdrLoupe = async (sample: NonNullable<Awaited<ReturnType<NonNullable<Desktop>['Loupe']['sample']>>>): Promise<void> => {
-    if (this.loupeShape() !== 'rectangular' || !sample) return;
+    if (!sample) return;
     // Renderer selection is explicit: CSS remains the reference path unless
     // the user chooses WebGPU. Both renderers can now be compared at 0% brightness.
     if (this.loupeRendererMode() !== 'webgpu') {
@@ -867,11 +864,7 @@ export class ImageView {
         height: sample.regionHeight,
         data: sample.data
       }, brightness, zoom);
-      if (this.loupeShape() === 'rectangular' && this.loupeRendererMode() === 'webgpu') {
-        this.hdrLoupeActive.set(true);
-      } else {
-        this.hdrLoupeActive.set(false);
-      }
+      this.hdrLoupeActive.set(this.loupeRendererMode() === 'webgpu');
     } catch (error) {
       console.error('HDR WebGPU loupe render failed:', error);
       this.hdrLoupeRenderer.dispose();
@@ -890,7 +883,7 @@ export class ImageView {
     // Request a fresh FP16 sample instead of reusing a possibly stale sample.
     // The canvas is shown only after WebGPU successfully completes a render.
     const mouse = this.lastMousePosition();
-    if (this.loupeEnabled() && this.loupeShape() === 'rectangular' && mouse) {
+    if (this.loupeEnabled() && mouse) {
       this.sampleLoupeAtPosition({
         screenX: mouse.screenX,
         screenY: mouse.screenY
@@ -914,7 +907,7 @@ export class ImageView {
     const next = Math.max(0.03, Math.min(9, Number((this.loupeBrightness() + direction * 0.1).toFixed(2))));
     this.loupeBrightness.set(next);
     const sample = this.loupeSample();
-    if (this.loupeShape() === 'rectangular' && sample) void this.renderHdrLoupe(sample);
+    if (sample) void this.renderHdrLoupe(sample);
   };
 
   protected readonly adjustLoupeSize = (direction: 1 | -1) => {
