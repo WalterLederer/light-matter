@@ -170,11 +170,14 @@ export class ImageView {
   protected readonly imageLoadFailed = signal(false);
 
   protected readonly loupeEnabled = signal(false);
+  protected readonly loupeFullImageView = signal(false);
+  protected readonly loupeFullImageBounds = signal({ left: 0, top: 0, width: 0, height: 0 });
 
   /** True only while the FP16 capture is successfully rendered through WebGPU. */
   protected readonly hdrLoupeActive = signal(false);
 
   private readonly hdrLoupeRenderer = new HdrLoupeRenderer();
+  private readonly hdrFullImageRenderer = new HdrLoupeRenderer();
 
   private readonly readStoredLoupeShape = (): 'circular' | 'small-circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler' => {
     try {
@@ -654,12 +657,15 @@ export class ImageView {
 
   protected readonly toggleLoupe = async (enabled: boolean) => {
     this.loupeEnabled.set(enabled);
+    this.loupeFullImageView.set(false);
+    this.hdrFullImageRenderer.dispose();
     this.loupeSample.set(null);
     this.loupeCaptureError.set(null);
     this.loupeSampleRequest++;
     if (!enabled) {
       this.hdrLoupeActive.set(false);
       this.hdrLoupeRenderer.dispose();
+      this.hdrFullImageRenderer.dispose();
       this.loupeCaptureRequest++;
       this.loupeCapturePending.set(false);
       this.loupeCaptureGeometry.set(null);
@@ -838,8 +844,12 @@ export class ImageView {
           y: geometry.height / geometry.windowHeight
         }
       });
-      const lastMouse = this.lastMousePosition();
-      if (lastMouse) this.sampleLoupeAtPosition(lastMouse);
+      if (this.loupeFullImageView()) {
+        await this.renderLoupeFullImage();
+      } else {
+        const lastMouse = this.lastMousePosition();
+        if (lastMouse) this.sampleLoupeAtPosition(lastMouse);
+      }
     } catch (error) {
       console.error('HDR loupe capture failed:', error);
       this.loupeCaptureGeometry.set(null);
@@ -890,6 +900,7 @@ export class ImageView {
     const next = this.loupeRendererMode() === 'css' ? 'webgpu' : 'css';
     this.loupeRendererMode.set(next);
     if (next === 'css') {
+      if (this.loupeFullImageView()) { this.loupeFullImageView.set(false); this.hdrFullImageRenderer.dispose(); }
       this.hdrLoupeActive.set(false);
       return;
     }
@@ -929,6 +940,15 @@ export class ImageView {
   };
 
   protected readonly adjustLoupeSize = (direction: 1 | -1) => {
+    if (direction > 0 && this.loupeSizeScale() >= 1.2) {
+      if (this.loupeRendererMode() !== 'webgpu') {
+        this.loupeCaptureError.set('Full-image FP16 view requires GPU/WebGPU mode.');
+        return;
+      }
+      this.loupeFullImageView.set(true);
+      void this.renderLoupeFullImage();
+      return;
+    }
     const next = Math.max(0.5, Math.min(2, Number((this.loupeSizeScale() + direction * 0.1).toFixed(1))));
     this.loupeSizeScale.set(next);
     const mouse = this.lastMousePosition();
@@ -939,6 +959,33 @@ export class ImageView {
         screenX: mouse.screenX,
         screenY: mouse.screenY
       }));
+    }
+  };
+
+  private readonly renderLoupeFullImage = async (): Promise<void> => {
+    const desktop = this.desktop;
+    const geometry = this.loupeCaptureGeometry();
+    const image = Array.from(this.document.querySelectorAll<HTMLImageElement>('.comparison-image:not(.hidden-variant)'))
+      .find(candidate => candidate.naturalWidth > 0 && candidate.naturalHeight > 0);
+    if (!desktop || !geometry || !image || !this.loupeEnabled() || !this.loupeFullImageView()) return;
+    if (this.loupeRendererMode() !== 'webgpu') { this.loupeCaptureError.set('Full-image FP16 view requires GPU/WebGPU mode.'); return; }
+    const bounds = image.getBoundingClientRect();
+    if (bounds.width < 1 || bounds.height < 1) return;
+    this.loupeFullImageBounds.set({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height });
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+    const canvas = this.document.querySelector<HTMLCanvasElement>('.hdr-loupe-full-frame-canvas');
+    if (!canvas || !this.loupeFullImageView() || !this.loupeEnabled()) return;
+    try {
+      const scale = geometry.scaleFactor;
+      const region = await desktop.Loupe.region(bounds.left * scale, bounds.top * scale, bounds.width * scale, bounds.height * scale);
+      if (!region || !this.loupeFullImageView() || !this.loupeEnabled()) return;
+      const zoom = Math.max(0.01, canvas.clientWidth / region.regionWidth);
+      await this.hdrFullImageRenderer.render(canvas, { width: region.regionWidth, height: region.regionHeight, centerX: region.regionWidth / 2, centerY: region.regionHeight / 2, data: region.data }, this.loupeBrightness() * 0.4, zoom);
+      this.hdrLoupeActive.set(true); this.loupeCaptureError.set(null);
+    } catch (error) {
+      console.error('HDR full-image loupe render failed:', error);
+      this.hdrLoupeActive.set(false);
+      this.loupeCaptureError.set(error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -1178,7 +1225,11 @@ export class ImageView {
 
         if (this.loupeEnabled() && (event.key === 'PageUp' || event.key === 'PageDown')) {
           event.preventDefault();
-          this.adjustLoupeSize(event.key === 'PageUp' ? 1 : -1);
+          if (this.loupeFullImageView() && event.key === 'PageDown') {
+            this.loupeFullImageView.set(false); this.hdrFullImageRenderer.dispose(); this.hdrLoupeActive.set(false);
+            const mouse = this.lastMousePosition(); if (mouse) this.sampleLoupeAtPosition(mouse, true);
+          } else if (this.loupeFullImageView()) { void this.renderLoupeFullImage(); }
+          else { this.adjustLoupeSize(event.key === 'PageUp' ? 1 : -1); }
           return;
         }
 

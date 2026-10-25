@@ -57,6 +57,12 @@
     }
   }
 
+  .hdr-loupe-full-frame {
+    position: fixed; z-index: 29; overflow: hidden; pointer-events: none; background: #000;
+    &.capture-pending { display: none; }
+    .hdr-loupe-full-frame-canvas { display: block; width: 100%; height: 100%; }
+  }
+
   .hdr-loupe-overlay {
     position: fixed;
     z-index: 30;
