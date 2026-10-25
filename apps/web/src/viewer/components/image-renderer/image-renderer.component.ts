@@ -130,6 +130,31 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
 
     effect(() => this.preloadImage(this.url()));
 
+    // Keep the source image visible until the GPU canvas has completed a frame.
+    // The canvas remains in the compositor tree (visibility/opacity, not display:none)
+    // so its WebGPU surface is initialized before it replaces the source image.
+    effect(() => {
+      const url = this.displayUrl();
+      const brightness = this.displayBrightness();
+      const mode = this.brightnessRendererMode();
+      const comparison = this.comparisonMode();
+      const request = ++this.gpuRenderRequest;
+      this.gpuBrightnessReady.set(false);
+      this.gpuBrightnessFailed.set(false);
+      this.gpuHdrBrightnessReady.set(false);
+      this.gpuHdrBrightnessFailed.set(false);
+
+      if (url === null || brightness === 1 || mode !== 'webgpu') return;
+
+      const renderSdr = comparison !== 'hdr';
+      const renderHdr = comparison !== 'sdr';
+      queueMicrotask(() => {
+        if (request !== this.gpuRenderRequest) return;
+        if (renderSdr) void this.renderMainImageBrightness(request, url, brightness);
+        if (renderHdr) void this.renderMainHdrBrightness(request, url, brightness);
+      });
+    });
+
   }
 
   /* Events */
