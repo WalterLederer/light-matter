@@ -1,4 +1,5 @@
 import { app, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
+import { enumerateMonitors } from '@screen-capture/node';
 import { FileListing, supportedFileExtensions } from 'internal-api';
 import * as fsSync from 'node:fs';
 import * as fs from 'node:fs/promises';
@@ -86,39 +87,60 @@ ipcMain.handle('openFileFromArgs', async (_: IpcMainInvokeEvent, fileName: strin
 });
 
 ipcMain.handle('Loupe.capture', async () => {
-  let phase = 'prepare application window';
+  let phase = 'prepare display capture';
   try {
     if (process.platform !== 'win32' || !App.mainWindow || App.mainWindow.isDestroyed()) {
       throw new Error('HDR loupe capture is unavailable: a live Windows application window is required.');
     }
-    const handle = App.mainWindow.getNativeWindowHandle();
-    const windowHandle = Number(handle.readBigUInt64LE(0));
-    const bounds = App.mainWindow.getBounds();
-    const contentBounds = App.mainWindow.getContentBounds();
-    const displayScaleFactor = screen.getDisplayMatching(bounds).scaleFactor;
-    phase = 'capture FP16 window frame';
-    const frame = await captureLoupeFrame(windowHandle);
+
+    // Capture the whole monitor containing the application, not the application
+    // window. This avoids window-frame/Chromium-area rounding differences.
+    const windowBounds = App.mainWindow.getBounds();
+    const display = screen.getDisplayMatching(windowBounds);
+    const displays = screen.getAllDisplays();
+    const displayPosition = displays.findIndex(candidate => candidate.id === display.id);
+    const monitors = enumerateMonitors();
+    const expectedWidth = Math.round(display.bounds.width * display.scaleFactor);
+    const expectedHeight = Math.round(display.bounds.height * display.scaleFactor);
+
+    // Electron and WGC normally enumerate displays in the same order. If the
+    // dimensions show they do not, use the closest physical-size match instead.
+    let monitorIndex = displayPosition >= 0 ? displayPosition + 1 : 1;
+    const indexedMonitor = monitors[monitorIndex - 1];
+    if (!indexedMonitor ||
+        Math.abs(indexedMonitor.width - expectedWidth) > 2 ||
+        Math.abs(indexedMonitor.height - expectedHeight) > 2) {
+      const closest = monitors
+        .map(monitor => ({
+          index: monitor.index,
+          score: Math.abs(monitor.width - expectedWidth) + Math.abs(monitor.height - expectedHeight)
+        }))
+        .sort((a, b) => a.score - b.score)[0];
+      if (closest) monitorIndex = closest.index;
+    }
+
+    phase = 'capture FP16 monitor frame';
+    const frame = await captureLoupeFrame(monitorIndex);
     console.debug('[HDR loupe native geometry diagnostic]', {
-      windowBoundsDip: bounds,
-      contentBoundsDip: contentBounds,
+      displayBoundsDip: display.bounds,
       captureFramePx: { width: frame.width, height: frame.height },
-      windowsDisplayScaleFactor: displayScaleFactor,
-      captureToWindowScale: {
-        x: frame.width / bounds.width,
-        y: frame.height / bounds.height
-      },
-      captureToContentScale: {
-        x: frame.width / contentBounds.width,
-        y: frame.height / contentBounds.height
-      },
-      contentInsetDip: {
-        left: contentBounds.x - bounds.x,
-        top: contentBounds.y - bounds.y,
-        right: bounds.x + bounds.width - contentBounds.x - contentBounds.width,
-        bottom: bounds.y + bounds.height - contentBounds.y - contentBounds.height
+      windowsDisplayScaleFactor: display.scaleFactor,
+      monitorIndex,
+      expectedFramePx: { width: expectedWidth, height: expectedHeight },
+      captureToDisplayScale: {
+        x: frame.width / display.bounds.width,
+        y: frame.height / display.bounds.height
       }
     });
-    return { width: frame.width, height: frame.height, x: bounds.x, y: bounds.y, windowWidth: bounds.width, windowHeight: bounds.height, scaleFactor: displayScaleFactor };
+    return {
+      width: frame.width,
+      height: frame.height,
+      x: display.bounds.x,
+      y: display.bounds.y,
+      windowWidth: display.bounds.width,
+      windowHeight: display.bounds.height,
+      scaleFactor: display.scaleFactor
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const gpuInfo = await app.getGPUInfo('complete').catch(() => null);
