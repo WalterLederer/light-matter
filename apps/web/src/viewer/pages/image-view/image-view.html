@@ -369,7 +369,7 @@
           <span class="status-group-label">BRIGHTNESS</span>
           <button class="zoom-step-button renderer-mode-button" type="button"
                   [class.active]="loupeRendererMode() === 'webgpu'"
-                  title="GPU uses WebGPU for the HDR cursor loupe. Main-image brightness currently uses the CSS filter because the WebGPU canvas output is not reliable. CSS mode uses the CSS filter for both."
+                  title="GPU uses WebGPU for main-image brightness and the HDR cursor loupe. CSS uses the CSS brightness filter for both views."
                   (click)="toggleLoupeRenderer()">{{ loupeRendererMode() === 'webgpu' ? 'GPU' : 'CSS' }}</button>
           <button class="zoom-step-button brightness-reset-button" type="button"
                   title="Reset active brightness (↑ / ↓)"
