@@ -363,6 +363,10 @@
 
         <div class="status-control-group brightness-group" aria-label="Brightness">
           <span class="status-group-label">HELLIGKEIT</span>
+          <button class="zoom-step-button renderer-mode-button" type="button"
+                  [class.active]="loupeRendererMode() === 'webgpu'"
+                  title="Brightness renderer. GPU uses WebGPU for SDR/HDR main-image brightness and FP16 Windows Graphics Capture for the cursor loupe; CSS uses the CSS brightness filter for the main image and loupe."
+                  (click)="toggleLoupeRenderer()">{{ loupeRendererMode() === 'webgpu' ? 'GPU' : 'CSS' }}</button>
           <button class="zoom-step-button brightness-reset-button" type="button"
                   title="Reset active brightness (↑ / ↓)"
                   aria-label="Reset active brightness"
@@ -381,10 +385,6 @@
 
         <div class="status-control-group other-group" aria-label="Other">
           <span class="status-group-label">SONSTIGES</span>
-          <button class="zoom-step-button renderer-mode-button" type="button"
-                  [class.active]="loupeRendererMode() === 'webgpu'"
-                  title="Brightness renderer. GPU uses WebGPU for SDR main-image brightness and FP16 Windows Graphics Capture for the cursor loupe; CSS uses the CSS brightness filter for the main image and loupe."
-                  (click)="toggleLoupeRenderer()">{{ loupeRendererMode() === 'webgpu' ? 'GPU' : 'CSS' }}</button>
           <label class="loupe-toggle" title="Toggle HDR cursor loupe (FP16 window capture)" [class.active]="loupeEnabled()">
             <input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)" />
             <span><u>M</u>agnifier</span>
