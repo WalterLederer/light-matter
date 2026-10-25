@@ -983,9 +983,12 @@ export class ImageView {
       const scale = geometry.scaleFactor;
       const view = this.document.defaultView;
       if (!view) return;
-      // DOM bounds are window-client coordinates; the FP16 frame is monitor-relative.
-      const captureLeft = (view.screenX + bounds.left - geometry.x) * scale;
-      const captureTop = (view.screenY + bounds.top - geometry.y) * scale;
+      // DOM bounds are window-client coordinates. Convert them to desktop screen
+      // coordinates before mapping to physical capture pixels. geometry.x/y are
+      // the application window origin, not the monitor-frame origin; subtracting
+      // them here shifts the crop toward the window's top-left corner.
+      const captureLeft = (view.screenX + bounds.left) * scale;
+      const captureTop = (view.screenY + bounds.top) * scale;
       const region = await desktop.Loupe.region(captureLeft, captureTop, bounds.width * scale, bounds.height * scale);
       if (!region || !this.loupeFullImageView() || !this.loupeEnabled()) return;
       const zoom = Math.max(0.01, canvas.clientWidth / region.regionWidth);
