@@ -47,7 +47,7 @@ export class MainImageBrightnessRenderer {
         this.texture = device.createTexture({
           size: { width, height },
           format: textureFormat,
-          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
         });
         this.width = width;
         this.height = height;
