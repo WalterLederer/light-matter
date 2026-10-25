@@ -81,7 +81,7 @@
              [style.top.px]="(loupeShape() === 'ruler' ? 50 : loupeShape() === 'vertical-ruler' ? 280 : loupeShape() === 'small-circular' ? 70 : 140) - loupeSourcePoint().y * loupePixelSize()"
              [style.transform]="'scale(' + loupePixelSize() + ')'"
              [style.display]="loupeShape() === 'rectangular' && (hdrLoupeActive() || loupeRendererMode() === 'webgpu') ? 'none' : null"
-             [style.filter]="loupeRendererMode() === 'css' && loupeBrightness() !== 1 ? 'brightness(' + loupeBrightness() + ')' : null"
+             [style.filter]="(loupeShape() !== 'rectangular' || loupeRendererMode() === 'css') && loupeBrightness() !== 1 ? 'brightness(' + loupeBrightness() + ')' : null"
              alt=""
              aria-hidden="true"
              draggable="false" />
