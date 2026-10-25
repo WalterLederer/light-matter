@@ -135,7 +135,10 @@ export const sampleLoupeRegion = (x: number, y: number, radius = 5) => {
 
   const px = Math.max(0, Math.min(frame.width - 1, Math.round(x)));
   const py = Math.max(0, Math.min(frame.height - 1, Math.round(y)));
-  const safeRadius = Math.max(1, Math.min(280, Math.round(radius)));
+  // Low loupe magnification needs a wider source region. A 280px radius
+  // was too small below ~0.5× and caused the WebGPU shader to clamp samples
+  // to the crop edges, visibly stretching edge pixels into streaks.
+  const safeRadius = Math.max(1, Math.min(1536, Math.round(radius)));
   const regionWidth = safeRadius * 2 + 1;
   const regionHeight = regionWidth;
   const pixels: Array<{ x: number; y: number; color: string }> = [];
