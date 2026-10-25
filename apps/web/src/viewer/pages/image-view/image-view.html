@@ -49,9 +49,7 @@
         </div>
       }
       <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'small-circular' || loupeShape() === 'circular-detail'" [class.small-circular]="loupeShape() === 'small-circular'" [class.ruler]="loupeShape() === 'ruler'" [class.vertical-ruler]="loupeShape() === 'vertical-ruler'">
-        @if (loupeShape() === 'rectangular') {
-          <canvas class="loupe-image hdr-loupe-canvas" [style.display]="loupeRendererMode() === 'webgpu' && hdrLoupeActive() ? 'block' : 'none'" aria-hidden="true"></canvas>
-        }
+        <canvas class="loupe-image hdr-loupe-canvas" [style.display]="loupeRendererMode() === 'webgpu' ? 'block' : 'none'" aria-hidden="true"></canvas>
         <img class="loupe-image"
              [src]="selected.url"
              [width]="dimensions.width"
@@ -59,7 +57,7 @@
              [style.left.px]="(loupeShape() === 'ruler' ? 280 : loupeShape() === 'vertical-ruler' ? 50 : loupeShape() === 'small-circular' ? 70 : 140) - loupeSourcePoint().x * loupePixelSize()"
              [style.top.px]="(loupeShape() === 'ruler' ? 50 : loupeShape() === 'vertical-ruler' ? 280 : loupeShape() === 'small-circular' ? 70 : 140) - loupeSourcePoint().y * loupePixelSize()"
              [style.transform]="'scale(' + loupePixelSize() + ')'"
-             [style.display]="loupeRendererMode() === 'webgpu' && hdrLoupeActive() ? 'none' : null"
+             [style.display]="loupeRendererMode() === 'webgpu' ? 'none' : null"
              [style.filter]="loupeRendererMode() === 'css' && loupeBrightness() !== 1 ? 'brightness(' + loupeBrightness() + ')' : null"
              alt=""
              aria-hidden="true"
@@ -362,12 +360,10 @@
         }
         <button class="zoom-step-button" type="button" [title]="loupeEnabled() ? 'Increase loupe magnification (+)' : 'Zoom in (+)'" [attr.aria-label]="loupeEnabled() ? 'Increase loupe magnification' : 'Zoom in'" (click)="adjustZoom(1)">+</button>
 
-        @if (loupeEnabled()) {
-          <button class="zoom-step-button" type="button"
-                  [class.active]="loupeRendererMode() === 'webgpu'"
-                  [title]="loupeRendererMode() === 'webgpu' ? 'Use CSS loupe rendering for comparison' : 'Use WebGPU loupe rendering for comparison'"
-                  (click)="toggleLoupeRenderer()">{{ loupeRendererMode() === 'webgpu' ? 'GPU' : 'CSS' }}</button>
-        }
+        <button class="zoom-step-button" type="button"
+                [class.active]="loupeRendererMode() === 'webgpu'"
+                title="Brightness renderer (CSS/GPU). CSS: filter brightness() on the decoded/displayed image; simple SDR-style adjustment and HDR highlights may clip. GPU: Windows Graphics Capture FP16/scRGB frame via Desktop.Loupe.sample(), then HdrLoupeRenderer.render() multiplies linear RGB by loupeBrightness() × 0.4 and encodes extended sRGB for the HDR canvas. GPU preserves values above 1.0 when the display/compositor supports HDR; CSS and GPU brightness values are therefore not numerically equivalent. GPU internals: sampleLoupeAtPosition() → Desktop.Loupe.sample() → HdrLoupeRenderer.render() / WGSL fs()."
+                (click)="toggleLoupeRenderer()">{{ loupeRendererMode() === 'webgpu' ? 'GPU' : 'CSS' }}</button>
         <label class="loupe-toggle" title="Toggle HDR cursor loupe (FP16 window capture)" [class.active]="loupeEnabled()">
           <input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)" />
           <span><u>M</u>agnifier</span>
