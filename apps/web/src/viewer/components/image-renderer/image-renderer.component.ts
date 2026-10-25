@@ -15,7 +15,7 @@ import {
 import { IconComponent } from '@light-matter/ui';
 import { fromEvent, take } from 'rxjs';
 import { DefaultPipe } from '../../../system/pipes/default/default.pipe';
-import { MainImageBrightnessRenderer } from './main-image-brightness-renderer';
+import { MainImageBrightnessRenderer, WebGpuDiagnosticPatternRenderer } from './main-image-brightness-renderer';
 import { PxPipe } from '../../../system/pipes/px/px-pipe';
 import { ImagePositioningService } from '../../services/image-positioning/image-positioning.service';
 import {
@@ -103,7 +103,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
   private readonly mainImageBrightnessRenderer = new MainImageBrightnessRenderer('sdr');
   private readonly mainHdrBrightnessRenderer = new MainImageBrightnessRenderer('hdr');
   // Independent diagnostic renderer: keeps the test overlay isolated from the main canvas.
-  private readonly hdrDiagnosticRenderer = new MainImageBrightnessRenderer('hdr', false);
+  private readonly hdrDiagnosticRenderer = new MainImageBrightnessRenderer('hdr', false);\n  private readonly hdrPatternRenderer = new WebGpuDiagnosticPatternRenderer();\n  protected readonly hdrPatternError = signal<string | null>(null);
   protected readonly hdrDiagnosticError = signal<string | null>(null);
   private gpuRenderRequest = 0;
   protected readonly gpuBrightnessReady = signal(false);
@@ -157,7 +157,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
         if (renderHdr) {
           // The diagnostic must run at normal brightness too; it is independent
           // of the optional brightness-adjustment pass.
-          void this.renderHdrDiagnostic(request, url);
+          void this.renderHdrPattern(request);\n          void this.renderHdrDiagnostic(request, url);
           if (brightness !== 1) void this.renderMainHdrBrightness(request, url, brightness);
         }
       });
@@ -251,7 +251,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     this.gpuRenderRequest++;
     this.mainImageBrightnessRenderer.dispose();
     this.mainHdrBrightnessRenderer.dispose();
-    this.hdrDiagnosticRenderer.dispose();
+    this.hdrDiagnosticRenderer.dispose();\n    this.hdrPatternRenderer.dispose();
     this.imagePositioningService.removeViewport();
   }
 
@@ -272,6 +272,23 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Main-image SDR WebGPU brightness render failed:', error);
       if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuBrightnessFailed.set(true);
+    }
+  };
+
+  private readonly renderHdrPattern = async (request: number, attempt = 0): Promise<void> => {
+    if (request !== this.gpuRenderRequest) return;
+    const canvas = this.viewportRef()?.nativeElement.querySelector<HTMLCanvasElement>('canvas.hdr-copy-diagnostic-pattern');
+    if (!canvas) {
+      if (attempt < 30) requestAnimationFrame(() => void this.renderHdrPattern(request, attempt + 1));
+      return;
+    }
+    try {
+      await this.hdrPatternRenderer.render(canvas);
+      if (request === this.gpuRenderRequest) this.hdrPatternError.set(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.hdrPatternError.set(message);
+      console.error('HDR diagnostic GPU test pattern failed:', error);
     }
   };
 
