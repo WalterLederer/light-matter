@@ -96,6 +96,7 @@ ipcMain.handle('Loupe.capture', async () => {
     // Capture the whole monitor containing the application, not the application
     // window. This avoids window-frame/Chromium-area rounding differences.
     const windowBounds = App.mainWindow.getBounds();
+    const contentBounds = App.mainWindow.getContentBounds();
     const display = screen.getDisplayMatching(windowBounds);
     const displays = screen.getAllDisplays();
     const displayPosition = displays.findIndex(candidate => candidate.id === display.id);
@@ -137,6 +138,8 @@ ipcMain.handle('Loupe.capture', async () => {
       height: frame.height,
       x: display.bounds.x,
       y: display.bounds.y,
+      contentX: contentBounds.x,
+      contentY: contentBounds.y,
       windowWidth: display.bounds.width,
       windowHeight: display.bounds.height,
       scaleFactor: display.scaleFactor
