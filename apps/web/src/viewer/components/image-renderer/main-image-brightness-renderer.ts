@@ -300,11 +300,15 @@ export class WebGpuHdrDiagnosticPatternRenderer {
       'var p=array<vec2<f32>,3>(vec2<f32>(-1.0,-1.0),vec2<f32>(3.0,-1.0),vec2<f32>(-1.0,3.0));',
       'return vec4<f32>(p[i],0.0,1.0);}',
       '@fragment fn fs(@builtin(position) p:vec4<f32>)->@location(0) vec4<f32>{',
-      'let band=u32(p.x / 160.0);',
-      'var v=0.25;',
-      'if (band == 1u) { v=1.0; }',
-      'if (band == 2u) { v=2.0; }',
-      'if (band >= 3u) { v=4.0; }',
+      // Six equal-width neutral fields span SDR white through increasingly high
+      // linear-light values. Keep the inputs explicit to make output clipping visible.
+      'let band=min(u32(p.x / (640.0 / 6.0)), 5u);',
+      'var v=1.0;',
+      'if (band == 1u) { v=1.25; }',
+      'if (band == 2u) { v=1.5; }',
+      'if (band == 3u) { v=2.0; }',
+      'if (band == 4u) { v=3.0; }',
+      'if (band == 5u) { v=4.0; }',
       'return vec4<f32>(v,v,v,1.0);}'
     ].join('\n') });
     this.pipeline = device.createRenderPipeline({
