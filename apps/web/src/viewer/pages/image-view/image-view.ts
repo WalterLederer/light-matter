@@ -1238,8 +1238,19 @@ export class ImageView {
         if (this.loupeEnabled() && (event.key === 'PageUp' || event.key === 'PageDown')) {
           event.preventDefault();
           if (this.loupeFullImageView() && event.key === 'PageDown') {
-            this.loupeFullImageView.set(false); this.hdrFullImageRenderer.dispose(); this.hdrLoupeActive.set(false);
-            const mouse = this.lastMousePosition(); if (mouse) this.sampleLoupeAtPosition(mouse, true);
+            this.loupeFullImageView.set(false);
+            this.hdrFullImageRenderer.dispose();
+            this.hdrLoupeActive.set(false);
+            // Angular recreates the regular loupe canvas after the full-image
+            // branch is removed. Wait until that canvas exists before sampling
+            // and rendering; otherwise renderHdrLoupe sees no canvas and leaves
+            // the loupe black until the mouse moves again.
+            void new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+              .then(() => {
+                if (!this.loupeEnabled() || this.loupeFullImageView()) return;
+                const mouse = this.lastMousePosition();
+                if (mouse) this.sampleLoupeAtPosition(mouse, true);
+              });
           } else if (this.loupeFullImageView()) { void this.renderLoupeFullImage(); }
           else { this.adjustLoupeSize(event.key === 'PageUp' ? 1 : -1); }
           return;
