@@ -101,9 +101,13 @@
          [style.transform-origin]="comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked' ? 'center center' : null"
          [style.clip-path]="hdrClip()" style="pointer-events: none; dynamic-range-limit: no-limit" aria-hidden="true"></canvas>
       <div class="hdr-copy-diagnostic" aria-label="HDR copyExternalImageToTexture test overlay">
-        <div class="hdr-copy-diagnostic-title">HDR GPU texture · copyExternalImageToTexture</div>
+        <div class="hdr-copy-diagnostic-title">GPU-Ausgabe-Test (ohne Bildimport)</div>
+        <canvas class="hdr-copy-diagnostic-pattern" width="640" height="80"></canvas>
+        @if (hdrPatternError(); as patternError) {
+          <div class="hdr-copy-diagnostic-error">GPU-Test: {{ patternError }}</div>
+        }
+        <div class="hdr-copy-diagnostic-note">Darunter: Bildimport über copyExternalImageToTexture</div>
         <canvas class="hdr-copy-diagnostic-canvas" width="640" height="360"></canvas>
-        <div class="hdr-copy-diagnostic-note">FP16 texture copy · standard canvas output</div>
         @if (hdrDiagnosticError(); as diagnosticError) {
           <div class="hdr-copy-diagnostic-error">{{ diagnosticError }}</div>
         }
