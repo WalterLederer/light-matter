@@ -705,17 +705,15 @@ export class ImageView {
     const geometry = this.loupeCaptureGeometry();
     const view = this.document.defaultView;
     if (!geometry || !view || !this.desktop || !this.loupeEnabled()) return;
-    // Map DIP coordinates using the actual captured-frame dimensions. The
-    // Windows display scale (usually 1.5) differs measurably from the capture/window
-    // ratios, and the difference grows across the window.
+    // Convert Electron screen coordinates (DIP) to physical capture pixels
+    // using the official Windows display scale factor, not a ratio affected by
+    // rounded monitor/capture dimensions.
     const relativeScreenX = position.screenX - geometry.x;
     const relativeScreenY = position.screenY - geometry.y;
-    const measuredScaleX = geometry.width / geometry.windowWidth;
-    const measuredScaleY = geometry.height / geometry.windowHeight;
-    const x = relativeScreenX * measuredScaleX;
-    const y = relativeScreenY * measuredScaleY;
-    const windowsScaleX = relativeScreenX * geometry.scaleFactor;
-    const windowsScaleY = relativeScreenY * geometry.scaleFactor;
+    const x = relativeScreenX * geometry.scaleFactor;
+    const y = relativeScreenY * geometry.scaleFactor;
+    const windowsScaleX = x;
+    const windowsScaleY = y;
     const isRectangular = this.loupeShape() === 'rectangular';
     if (isRectangular) {
       const now = performance.now();
@@ -863,14 +861,9 @@ export class ImageView {
       // The WebGPU loupe needs a 0.4 baseline to match normal image brightness.
       // Keep the correction control active by applying its relative value on top.
       const brightness = this.loupeBrightness() * 0.4;
-      // The captured frame is in physical pixels while the CSS loupe zoom is
-      // expressed against image pixels in DIP. Account for the capture scale.
-      const captureScale = this.loupeCaptureGeometry()?.width
-        ? this.loupeCaptureGeometry()!.width / this.loupeCaptureGeometry()!.windowWidth
-        : 1;
-      // Temporary scale test: interpolate between the previously oversized ~1.49×
-      // scale and the slightly undersized 1.5× scale.
-      const zoom = this.loupePixelSize() * captureScale / 1.495;
+      // Convert CSS/DIP loupe size to physical capture pixels using the official
+      // Windows display scale factor (1.5 at 150% scaling in the current setup).
+      const zoom = this.loupePixelSize() * (this.loupeCaptureGeometry()?.scaleFactor ?? 1);
       await this.hdrLoupeRenderer.render(canvas, {
         width: sample.regionWidth,
         height: sample.regionHeight,
