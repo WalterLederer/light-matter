@@ -61,14 +61,14 @@ const describeCaptureError = (error: unknown, phase: string): Error => {
   return new Error(`Capture phase: ${phase}. ${message}${code}`);
 };
 
-export const captureLoupeFrame = async (windowHandle: number): Promise<{ width: number; height: number }> => {
+export const captureLoupeFrame = async (monitorIndex: number): Promise<{ width: number; height: number }> => {
   if (process.platform !== 'win32') {
     throw new Error('The HDR loupe capture currently requires Windows.');
   }
 
   const request = ++captureRequest;
   const createCapture = (drawBorder?: boolean): ScreenCapture => new ScreenCapture({
-    windowHandle,
+    monitorIndex,
     // The package runtime supports rgba16F (verified by the FP16 prototype),
     // but its published TypeScript union omits this accepted format.
     colorFormat: 'rgba16F' as unknown as ConstructorParameters<typeof ScreenCapture>[0]['colorFormat'],
@@ -100,14 +100,14 @@ export const captureLoupeFrame = async (windowHandle: number): Promise<{ width: 
     const frame = await Promise.race([
       capture.nextFrame(),
       new Promise<never>((_, reject) => {
-        timeout = setTimeout(() => reject(new Error('HDR window capture timed out.')), 10000);
+        timeout = setTimeout(() => reject(new Error('HDR monitor capture timed out.')), 10000);
       })
     ]).finally(() => {
       if (timeout !== undefined) clearTimeout(timeout);
     });
 
     phase = 'validate captured frame';
-    if (!frame) throw new Error('HDR window capture returned no frame.');
+    if (!frame) throw new Error('HDR monitor capture returned no frame.');
     if (frame.colorFormat !== 'rgba16F') throw new Error(`Expected rgba16F but received ${String(frame.colorFormat)}.`);
     if (frame.rowPitch !== frame.width * 8 || frame.buffer.byteLength !== frame.width * frame.height * 8) {
       throw new Error('Unexpected FP16 frame layout; refusing to sample incorrect pixels.');
