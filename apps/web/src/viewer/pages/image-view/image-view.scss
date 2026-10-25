@@ -712,6 +712,43 @@
   }
 
   ui-tool-menu {
+    .status-control-groups {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      min-width: 0;
+    }
+
+    .status-control-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      padding: 0 12px;
+      border-left: 2px solid var(--color-content-default-low);
+      white-space: nowrap;
+    }
+
+    .status-group-label {
+      align-self: center;
+      color: var(--color-content-default-low);
+      font-size: 0.62rem;
+      font-weight: 750;
+      letter-spacing: 0.09em;
+      white-space: nowrap;
+    }
+
+    .brightness-group .brightness-info {
+      min-width: 34px;
+      margin: 0 2px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .renderer-mode-button {
+      min-width: 38px;
+      font-weight: 700;
+    }
     ui-action-button.raised-panel-button {
       border: 1px solid var(--color-content-default-low);
       border-radius: var(--border-radius-medium);
