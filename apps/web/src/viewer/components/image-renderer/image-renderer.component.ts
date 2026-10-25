@@ -103,7 +103,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
   private readonly mainImageBrightnessRenderer = new MainImageBrightnessRenderer('sdr');
   private readonly mainHdrBrightnessRenderer = new MainImageBrightnessRenderer('hdr');
   // Independent diagnostic renderer: keeps the test overlay isolated from the main canvas.
-  private readonly hdrDiagnosticRenderer = new MainImageBrightnessRenderer('hdr');
+  private readonly hdrDiagnosticRenderer = new MainImageBrightnessRenderer('hdr', false);
   protected readonly hdrDiagnosticError = signal<string | null>(null);
   private gpuRenderRequest = 0;
   protected readonly gpuBrightnessReady = signal(false);
