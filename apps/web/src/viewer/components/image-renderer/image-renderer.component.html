@@ -106,8 +106,10 @@
         @if (hdrPatternError(); as patternError) {
           <div class="hdr-copy-diagnostic-error">GPU-Test: {{ patternError }}</div>
         }
-        <div class="hdr-copy-diagnostic-note">Darunter: Bildimport über copyExternalImageToTexture</div>
-        <canvas class="hdr-copy-diagnostic-canvas" width="640" height="360"></canvas>
+        <div class="hdr-copy-diagnostic-note">Test 1: Bildimport in SDR-Textur (rgba8unorm)</div>
+        <canvas class="hdr-copy-diagnostic-sdr-canvas" width="640" height="180"></canvas>
+        <div class="hdr-copy-diagnostic-note">Test 2: Bildimport in FP16-Textur (rgba16float)</div>
+        <canvas class="hdr-copy-diagnostic-canvas" width="640" height="180"></canvas>
         @if (hdrDiagnosticError(); as diagnosticError) {
           <div class="hdr-copy-diagnostic-error">{{ diagnosticError }}</div>
         }
