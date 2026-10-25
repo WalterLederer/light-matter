@@ -105,6 +105,8 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
   // Independent diagnostic renderer: keeps the test overlay isolated from the main canvas.
   private readonly sdrDiagnosticRenderer = new MainImageBrightnessRenderer('sdr', false);
   private readonly hdrDiagnosticRenderer = new MainImageBrightnessRenderer('hdr', true);
+  private readonly hdrLinearImageDiagnosticRenderer = new MainImageBrightnessRenderer('hdr', true, 'srgb-linear');
+  protected readonly hdrLinearImageDiagnosticError = signal<string | null>(null);
   private readonly hdrPatternRenderer = new WebGpuDiagnosticPatternRenderer();
   private readonly hdrOutputPatternRenderer = new WebGpuHdrDiagnosticPatternRenderer('srgb');
   private readonly hdrLinearOutputPatternRenderer = new WebGpuHdrDiagnosticPatternRenderer('srgb-linear');
@@ -169,6 +171,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
           void this.renderHdrLinearOutputPattern(request);
           void this.renderSdrDiagnostic(request, url);
           void this.renderHdrDiagnostic(request, url);
+          void this.renderHdrLinearImageDiagnostic(request, url);
           if (brightness !== 1) void this.renderMainHdrBrightness(request, url, brightness);
         }
       });
@@ -264,6 +267,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     this.mainHdrBrightnessRenderer.dispose();
     this.sdrDiagnosticRenderer.dispose();
     this.hdrDiagnosticRenderer.dispose();
+    this.hdrLinearImageDiagnosticRenderer.dispose();
     this.hdrPatternRenderer.dispose();
     this.hdrOutputPatternRenderer.dispose();
     this.hdrLinearOutputPatternRenderer.dispose();
@@ -380,6 +384,27 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
       const message = error instanceof Error ? error.message : String(error);
       this.hdrDiagnosticError.set(message);
       console.error('HDR copy diagnostic render failed:', error);
+    }
+  };
+
+  private readonly renderHdrLinearImageDiagnostic = async (request: number, url: string, attempt = 0): Promise<void> => {
+    if (request !== this.gpuRenderRequest || this.displayUrl() !== url) return;
+    const surface = this.viewportRef()?.nativeElement;
+    const image = surface?.querySelector<HTMLImageElement>('img.hdr-image');
+    const canvas = surface?.querySelector<HTMLCanvasElement>('canvas.hdr-linear-image-diagnostic-canvas');
+    if (!image || !canvas || !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+      if (attempt < 30) requestAnimationFrame(() => {
+        void this.renderHdrLinearImageDiagnostic(request, url, attempt + 1);
+      });
+      return;
+    }
+    try {
+      await this.hdrLinearImageDiagnosticRenderer.render(canvas, image, 1);
+      if (request === this.gpuRenderRequest && this.displayUrl() === url) this.hdrLinearImageDiagnosticError.set(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.hdrLinearImageDiagnosticError.set(message);
+      console.error('HDR image srgb-linear diagnostic render failed:', error);
     }
   };
 
