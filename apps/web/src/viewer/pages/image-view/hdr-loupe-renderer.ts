@@ -144,8 +144,13 @@ export class HdrLoupeRenderer {
           let dims = vec2<i32>(textureDimensions(imageTexture));
           // Preserve the loupe slider's exact magnification while sampling a small
           // region around the cursor from the FP16 desktop capture.
+          // Sample a zoom-dependent fraction of the actual source region.
+          // The crop size varies with loupe magnification and display scaling;
+          // using a hard-coded 280 source pixels caused only a few pixels to
+          // be visible at high zoom.
+          let sourceSpan = vec2<f32>(dims) / max(params.zoom, 0.01);
           let sourcePosition = vec2<f32>(dims) * 0.5
-            + (input.uv - vec2<f32>(0.5)) * (280.0 / params.zoom);
+            + (input.uv - vec2<f32>(0.5)) * sourceSpan;
           let coords = clamp(
             vec2<i32>(floor(sourcePosition)),
             vec2<i32>(0, 0),
