@@ -76,6 +76,7 @@
          [class.hidden-variant]="comparisonMode() === 'sdr'"
          [class.pannable]="location.zoom !== 'fit' && comparisonMode() !== 'dual-side-by-side' && comparisonMode() !== 'dual-stacked'"
          [class.dual-side-by-side]="comparisonMode() === 'dual-side-by-side'"
+         [style.opacity]="brightnessRendererMode() === 'webgpu' && displayBrightness() !== 1 && gpuHdrBrightnessReady() ? 0 : 1"
          [width]="location.width"
          [height]="location.height"
          [style.left]="comparisonMode() === 'dual-side-by-side' ? '50%' : comparisonMode() === 'dual-stacked' ? '0%' : (location.x | px)"
@@ -87,6 +88,16 @@
          [src]="imageUrl"
          crossorigin="anonymous"
          (mousedown)="onMouseDown($event)">
+      <canvas class="comparison-image hdr-image hdr-gpu-image"
+         [class.hidden-variant]="comparisonMode() === 'sdr' || brightnessRendererMode() !== 'webgpu' || displayBrightness() === 1 || !gpuHdrBrightnessReady()"
+         [class.dual-side-by-side]="comparisonMode() === 'dual-side-by-side'"
+         [width]="location.width" [height]="location.height"
+         [style.width.px]="location.width" [style.height.px]="location.height"
+         [style.left]="comparisonMode() === 'dual-side-by-side' ? '50%' : comparisonMode() === 'dual-stacked' ? '0%' : (location.x | px)"
+         [style.top]="comparisonMode() === 'dual-side-by-side' ? '0%' : comparisonMode() === 'dual-stacked' ? '50%' : (location.y | px)"
+         [style.transform]="(comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked') && location.zoom !== 'fit' ? 'scale(' + (location.zoom * 100 / location.fitZoom) + ')' : null"
+         [style.transform-origin]="comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked' ? 'center center' : null"
+         [style.clip-path]="hdrClip()" style="pointer-events: none; dynamic-range-limit: no-limit" aria-hidden="true"></canvas>
     }
   }
 
