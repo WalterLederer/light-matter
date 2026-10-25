@@ -132,12 +132,19 @@ export class MainImageBrightnessRenderer {
       context.configure({
         device,
         format,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
         colorSpace: 'srgb',
         alphaMode: 'opaque',
         toneMapping: { mode: 'extended' }
       });
     } else {
-      context.configure({ device, format, colorSpace: 'srgb', alphaMode: 'opaque' });
+      context.configure({
+        device,
+        format,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        colorSpace: 'srgb',
+        alphaMode: 'opaque'
+      });
     }
 
     const shader = hdr ? [
