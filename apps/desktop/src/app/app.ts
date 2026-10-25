@@ -112,7 +112,8 @@ export default class App {
     // });
 
     App.mainWindow.on('close', () => {
-      App.startupConfig.saveBounds(App.mainWindow.getBounds());
+      // Persist the last normal window rectangle, not temporary fullscreen or maximized bounds.
+      App.startupConfig.saveBounds(App.mainWindow.getNormalBounds());
     });
 
     // Emitted when the window is closed.
