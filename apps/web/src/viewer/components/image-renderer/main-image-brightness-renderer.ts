@@ -14,7 +14,12 @@ export class MainImageBrightnessRenderer {
   private queue: Promise<void> = Promise.resolve();
   private version = 0;
 
-  constructor(private readonly dynamicRange: MainImageDynamicRange = 'sdr') {}
+  constructor(
+    private readonly dynamicRange: MainImageDynamicRange = 'sdr',
+    // Diagnostic canvases use the broadly supported SDR presentation format,
+    // while retaining the FP16 intermediate texture used by the HDR copy test.
+    private readonly useHdrCanvasFormat = true
+  ) {}
 
   render(canvas: HTMLCanvasElement, image: HTMLImageElement, brightness: number): Promise<void> {
     const version = ++this.version;
@@ -90,8 +95,8 @@ export class MainImageBrightnessRenderer {
     }
 
     const hdr = this.dynamicRange === 'hdr';
-    const format = hdr ? 'rgba16float' : navigator.gpu.getPreferredCanvasFormat();
-    if (hdr) {
+    const format = hdr && this.useHdrCanvasFormat ? 'rgba16float' : navigator.gpu.getPreferredCanvasFormat();
+    if (hdr && this.useHdrCanvasFormat) {
       context.configure({
         device,
         format,
