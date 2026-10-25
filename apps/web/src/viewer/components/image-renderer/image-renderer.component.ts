@@ -235,11 +235,19 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     this.imagePositioningService.removeViewport();
   }
 
-  private readonly renderMainImageBrightness = async (request: number, url: string, brightness: number): Promise<void> => {
+  private readonly renderMainImageBrightness = async (request: number, url: string, brightness: number, attempt = 0): Promise<void> => {
+    if (request !== this.gpuRenderRequest || this.displayUrl() !== url) return;
     const surface = this.viewportRef()?.nativeElement;
-    const image = surface?.querySelector<HTMLImageElement>('.sdr-image');
-    const canvas = surface?.querySelector<HTMLCanvasElement>('.sdr-gpu-image');
-    if (!image || !canvas || !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
+    const image = surface?.querySelector<HTMLImageElement>('img.sdr-image');
+    const canvas = surface?.querySelector<HTMLCanvasElement>('canvas.sdr-gpu-image');
+    if (!image || !canvas || !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+      // The signal/effect can run before Angular has inserted the canvas into the DOM.
+      // Retry on the next paint instead of silently leaving the SDR image unprocessed.
+      if (attempt < 30) requestAnimationFrame(() => {
+        void this.renderMainImageBrightness(request, url, brightness, attempt + 1);
+      });
+      return;
+    }
     try {
       await this.mainImageBrightnessRenderer.render(canvas, image, brightness);
       if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuBrightnessReady.set(true);
