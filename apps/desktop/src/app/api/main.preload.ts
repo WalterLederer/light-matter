@@ -52,6 +52,7 @@ const api: Desktop = {
   Loupe: {
     capture: () => ipcRenderer.invoke('Loupe.capture'),
     sample: (x: number, y: number, radius?: number) => ipcRenderer.invoke('Loupe.sample', x, y, radius),
+    region: (x: number, y: number, width: number, height: number) => ipcRenderer.invoke('Loupe.region', x, y, width, height),
     release: () => ipcRenderer.invoke('Loupe.release')
   },
 

@@ -186,3 +186,46 @@ export const sampleLoupeRegion = (x: number, y: number, radius = 5) => {
     pixels
   };
 };
+
+
+/**
+ * Copies a rectangular crop from the existing monitor FP16 frame.
+ * Coordinates and dimensions are in physical capture pixels. The returned
+ * buffer is tightly packed RGBA16F and safe to pass across Electron IPC.
+ */
+export const sampleLoupeRectangle = (x: number, y: number, width: number, height: number) => {
+  const frame = capturedFrame;
+  if (!frame) return null;
+  if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) {
+    throw new RangeError('FP16 capture rectangle must have finite coordinates and positive dimensions.');
+  }
+
+  const left = Math.max(0, Math.min(frame.width, Math.floor(x)));
+  const top = Math.max(0, Math.min(frame.height, Math.floor(y)));
+  const right = Math.max(left, Math.min(frame.width, Math.ceil(x + width)));
+  const bottom = Math.max(top, Math.min(frame.height, Math.ceil(y + height)));
+  const regionWidth = right - left;
+  const regionHeight = bottom - top;
+  if (regionWidth === 0 || regionHeight === 0) return null;
+
+  const data = new Uint16Array(regionWidth * regionHeight * 4);
+  for (let row = 0; row < regionHeight; row++) {
+    const sourceStart = ((top + row) * frame.width + left) * 8;
+    const targetStart = row * regionWidth * 4;
+    for (let column = 0; column < regionWidth * 4; column++) {
+      data[targetStart + column] = frame.buffer.readUInt16LE(sourceStart + column * 2);
+    }
+  }
+
+  return {
+    width: frame.width,
+    height: frame.height,
+    x: left,
+    y: top,
+    regionWidth,
+    regionHeight,
+    centerX: Math.max(0, Math.min(regionWidth - 1, Math.round(x - left))),
+    centerY: Math.max(0, Math.min(regionHeight - 1, Math.round(y - top))),
+    data
+  };
+};

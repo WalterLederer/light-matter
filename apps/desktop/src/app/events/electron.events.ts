@@ -7,7 +7,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { Injector } from '../../injector/injector';
 import { IpcRegistry } from '../decorators/ipc-registry';
-import { captureLoupeFrame, releaseLoupeFrame, sampleLoupeRegion } from '../loupe-capture';
+import { captureLoupeFrame, releaseLoupeFrame, sampleLoupeRegion, sampleLoupeRectangle } from '../loupe-capture';
 import App from '../app';
 
 export default class ElectronEvents {
@@ -153,6 +153,7 @@ ipcMain.handle('Loupe.capture', async () => {
 });
 
 ipcMain.handle('Loupe.sample', (_event, x: number, y: number, radius?: number) => sampleLoupeRegion(x, y, radius));
+ipcMain.handle('Loupe.region', (_event, x: number, y: number, width: number, height: number) => sampleLoupeRectangle(x, y, width, height));
 ipcMain.handle('Loupe.release', () => releaseLoupeFrame());
 
 ipcMain.on('quit', (_, code) => app.exit(code));

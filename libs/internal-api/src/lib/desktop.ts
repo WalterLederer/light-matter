@@ -60,6 +60,10 @@ export interface CacheInfo extends CacheClearResult {
 
 export interface DesktopLoupe {
   readonly capture: () => Promise<{ width: number; height: number; x: number; y: number; windowWidth: number; windowHeight: number; scaleFactor: number }>;
+  readonly region: (x: number, y: number, width: number, height: number) => Promise<{
+    width: number; height: number; x: number; y: number;
+    regionWidth: number; regionHeight: number; centerX: number; centerY: number; data: Uint16Array;
+  } | null>;
   readonly sample: (x: number, y: number, radius?: number) => Promise<{
     width: number; height: number; x: number; y: number; radius: number;
     regionWidth: number; regionHeight: number; centerX: number; centerY: number; data: Uint16Array;
