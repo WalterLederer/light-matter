@@ -154,3 +154,71 @@ export class MainImageBrightnessRenderer {
     this.height = 0;
   }
 }
+
+
+/** Minimal independent GPU output test: no source image or sampled texture involved. */
+export class WebGpuDiagnosticPatternRenderer {
+  private device: GPUDevice | null = null;
+  private context: GPUCanvasContext | null = null;
+  private canvas: HTMLCanvasElement | null = null;
+  private pipeline: GPURenderPipeline | null = null;
+
+  async render(canvas: HTMLCanvasElement): Promise<void> {
+    if (this.device && this.canvas === canvas) {
+      this.draw();
+      await this.device.queue.onSubmittedWorkDone();
+      return;
+    }
+    if (!navigator.gpu) throw new Error('WebGPU is unavailable.');
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) throw new Error('No WebGPU adapter is available.');
+    const device = await adapter.requestDevice();
+    const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
+    if (!context) {
+      device.destroy();
+      throw new Error('Unable to create the WebGPU test-pattern canvas context.');
+    }
+    const format = navigator.gpu.getPreferredCanvasFormat();
+    context.configure({ device, format, alphaMode: 'opaque' });
+    // Keep the shader deliberately simple and deterministic: a solid green frame
+    // proves the adapter, pipeline, render pass and canvas presentation work.
+    const fixedModule = device.createShaderModule({ code: [
+      '@vertex fn vs(@builtin(vertex_index) i:u32)->@builtin(position) vec4<f32>{',
+      'var p=array<vec2<f32>,3>(vec2<f32>(-1.0,-1.0),vec2<f32>(3.0,-1.0),vec2<f32>(-1.0,3.0));',
+      'return vec4<f32>(p[i],0.0,1.0);}',
+      '@fragment fn fs()->@location(0) vec4<f32>{return vec4<f32>(0.0,0.85,0.15,1.0);}'
+    ].join('\n') });
+    this.pipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: { module: fixedModule, entryPoint: 'vs' },
+      fragment: { module: fixedModule, entryPoint: 'fs', targets: [{ format }] },
+      primitive: { topology: 'triangle-list' }
+    });
+    this.device = device;
+    this.context = context;
+    this.canvas = canvas;
+    this.draw();
+    await device.queue.onSubmittedWorkDone();
+  }
+
+  private draw(): void {
+    const encoder = this.device!.createCommandEncoder();
+    const pass = encoder.beginRenderPass({ colorAttachments: [{
+      view: this.context!.getCurrentTexture().createView(),
+      loadOp: 'clear', storeOp: 'store',
+      clearValue: { r: 0.05, g: 0.05, b: 0.05, a: 1 }
+    }] });
+    pass.setPipeline(this.pipeline!);
+    pass.draw(3);
+    pass.end();
+    this.device!.queue.submit([encoder.finish()]);
+  }
+
+  dispose(): void {
+    this.device?.destroy();
+    this.device = null;
+    this.context = null;
+    this.canvas = null;
+    this.pipeline = null;
+  }
+}
