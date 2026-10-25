@@ -977,7 +977,12 @@ export class ImageView {
     if (!canvas || !this.loupeFullImageView() || !this.loupeEnabled()) return;
     try {
       const scale = geometry.scaleFactor;
-      const region = await desktop.Loupe.region(bounds.left * scale, bounds.top * scale, bounds.width * scale, bounds.height * scale);
+      const view = this.document.defaultView;
+      if (!view) return;
+      // DOM bounds are window-client coordinates; the FP16 frame is monitor-relative.
+      const captureLeft = (view.screenX + bounds.left - geometry.x) * scale;
+      const captureTop = (view.screenY + bounds.top - geometry.y) * scale;
+      const region = await desktop.Loupe.region(captureLeft, captureTop, bounds.width * scale, bounds.height * scale);
       if (!region || !this.loupeFullImageView() || !this.loupeEnabled()) return;
       const zoom = Math.max(0.01, canvas.clientWidth / region.regionWidth);
       await this.hdrFullImageRenderer.render(canvas, { width: region.regionWidth, height: region.regionHeight, centerX: region.regionWidth / 2, centerY: region.regionHeight / 2, data: region.data }, this.loupeBrightness() * 0.4, zoom);
