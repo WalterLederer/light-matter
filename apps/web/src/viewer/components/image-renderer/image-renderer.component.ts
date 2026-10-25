@@ -103,7 +103,9 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
   private readonly mainImageBrightnessRenderer = new MainImageBrightnessRenderer('sdr');
   private readonly mainHdrBrightnessRenderer = new MainImageBrightnessRenderer('hdr');
   // Independent diagnostic renderer: keeps the test overlay isolated from the main canvas.
-  private readonly hdrDiagnosticRenderer = new MainImageBrightnessRenderer('hdr', false);\n  private readonly hdrPatternRenderer = new WebGpuDiagnosticPatternRenderer();\n  protected readonly hdrPatternError = signal<string | null>(null);
+  private readonly hdrDiagnosticRenderer = new MainImageBrightnessRenderer('hdr', false);
+  private readonly hdrPatternRenderer = new WebGpuDiagnosticPatternRenderer();
+  protected readonly hdrPatternError = signal<string | null>(null);
   protected readonly hdrDiagnosticError = signal<string | null>(null);
   private gpuRenderRequest = 0;
   protected readonly gpuBrightnessReady = signal(false);
@@ -252,7 +254,8 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     this.gpuRenderRequest++;
     this.mainImageBrightnessRenderer.dispose();
     this.mainHdrBrightnessRenderer.dispose();
-    this.hdrDiagnosticRenderer.dispose();\n    this.hdrPatternRenderer.dispose();
+    this.hdrDiagnosticRenderer.dispose();
+    this.hdrPatternRenderer.dispose();
     this.imagePositioningService.removeViewport();
   }
 
