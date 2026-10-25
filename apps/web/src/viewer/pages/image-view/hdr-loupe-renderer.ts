@@ -73,7 +73,7 @@ export class HdrLoupeRenderer {
 
   private async initialize(canvas: HTMLCanvasElement): Promise<void> {
     if (this.device && this.configuredCanvas === canvas) return;
-    if (!navigator.gpu) throw new Error('WebGPU is unavailable; using CSS brightness fallback.');
+    if (!navigator.gpu) throw new Error('WebGPU is unavailable. CSS mode must be selected explicitly.');
     const adapter = await navigator.gpu.requestAdapter();
     if (!adapter) throw new Error('No WebGPU adapter is available.');
     const device = await adapter.requestDevice();
@@ -142,13 +142,12 @@ export class HdrLoupeRenderer {
 
         @fragment fn fs(input: VertexOutput) -> @location(0) vec4<f32> {
           let dims = vec2<i32>(textureDimensions(imageTexture));
-          // Preserve the loupe slider's exact magnification while sampling a small
-          // region around the cursor from the FP16 desktop capture.
-          // Sample a zoom-dependent fraction of the actual source region.
-          // The crop size varies with loupe magnification and display scaling;
-          // using a hard-coded 280 source pixels caused only a few pixels to
-          // be visible at high zoom.
-          let sourceSpan = vec2<f32>(dims) / max(params.zoom, 0.01);
+          // The visible canvas is 280×280. Select the source span needed for
+          // that output size at the requested magnification, independent of how
+          // much extra safety margin was copied around the cursor. The capture
+          // crop is deliberately enlarged at low zoom so this span stays inside
+          // the texture and edge pixels are not stretched by coordinate clamping.
+          let sourceSpan = vec2<f32>(280.0) / max(params.zoom, 0.01);
           let sourcePosition = vec2<f32>(dims) * 0.5
             + (input.uv - vec2<f32>(0.5)) * sourceSpan;
           let coords = clamp(
