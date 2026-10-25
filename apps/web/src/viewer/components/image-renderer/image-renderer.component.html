@@ -32,10 +32,23 @@
          [style.transform]="(comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked') && location.zoom !== 'fit' ? 'scale(' + (location.zoom * 100 / location.fitZoom) + ')' : null"
          [style.transform-origin]="comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked' ? 'center center' : null"
          [style.clip-path]="sdrClip()"
-         [style.filter]="displayBrightness() === 1 ? null : 'brightness(' + displayBrightness() + ')'"
+         [style.filter]="brightnessRendererMode() === 'css' && displayBrightness() !== 1 ? 'brightness(' + displayBrightness() + ')' : null"
          [src]="imageUrl"
          crossorigin="anonymous"
          (mousedown)="onMouseDown($event)">
+    }
+    @if (comparisonMode() !== 'hdr') {
+      <canvas class="comparison-image sdr-image sdr-gpu-image"
+         [class.pannable]="location.zoom !== 'fit' && comparisonMode() !== 'dual-side-by-side' && comparisonMode() !== 'dual-stacked'"
+         [class.dual-side-by-side]="comparisonMode() === 'dual-side-by-side'"
+         [class.hidden-variant]="comparisonMode() === 'hdr' || brightnessRendererMode() !== 'webgpu' || displayBrightness() === 1"
+         [width]="location.width" [height]="location.height"
+         [style.width.px]="location.width" [style.height.px]="location.height"
+         [style.left]="comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked' ? '0%' : (location.x | px)"
+         [style.top]="comparisonMode() === 'dual-side-by-side' ? '0%' : comparisonMode() === 'dual-stacked' ? '0%' : (location.y | px)"
+         [style.transform]="(comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked') && location.zoom !== 'fit' ? 'scale(' + (location.zoom * 100 / location.fitZoom) + ')' : null"
+         [style.transform-origin]="comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked' ? 'center center' : null"
+         [style.clip-path]="sdrClip()" aria-hidden="true"></canvas>
     }
     @if (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked') {
       <div class="comparison-split-handle"
