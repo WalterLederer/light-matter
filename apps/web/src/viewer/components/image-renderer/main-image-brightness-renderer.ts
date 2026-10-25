@@ -261,3 +261,83 @@ export class WebGpuDiagnosticPatternRenderer {
     this.pipeline = null;
   }
 }
+
+
+/** HDR output test using known shader values above SDR white (1.0). */
+export class WebGpuHdrDiagnosticPatternRenderer {
+  private device: GPUDevice | null = null;
+  private context: GPUCanvasContext | null = null;
+  private canvas: HTMLCanvasElement | null = null;
+  private pipeline: GPURenderPipeline | null = null;
+
+  async render(canvas: HTMLCanvasElement): Promise<void> {
+    if (this.device && this.canvas === canvas) {
+      this.draw();
+      await this.device.queue.onSubmittedWorkDone();
+      return;
+    }
+    if (!navigator.gpu) throw new Error('WebGPU is unavailable.');
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) throw new Error('No WebGPU adapter is available.');
+    const device = await adapter.requestDevice();
+    const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
+    if (!context) {
+      device.destroy();
+      throw new Error('Unable to create the WebGPU HDR test-pattern canvas context.');
+    }
+
+    context.configure({
+      device,
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST,
+      colorSpace: 'srgb',
+      alphaMode: 'opaque',
+      toneMapping: { mode: 'extended' }
+    });
+
+    const module = device.createShaderModule({ code: [
+      '@vertex fn vs(@builtin(vertex_index) i:u32)->@builtin(position) vec4<f32>{',
+      'var p=array<vec2<f32>,3>(vec2<f32>(-1.0,-1.0),vec2<f32>(3.0,-1.0),vec2<f32>(-1.0,3.0));',
+      'return vec4<f32>(p[i],0.0,1.0);}',
+      '@fragment fn fs(@builtin(position) p:vec4<f32>)->@location(0) vec4<f32>{',
+      'let band=u32(p.x / 160.0);',
+      'var v=0.25;',
+      'if (band == 1u) { v=1.0; }',
+      'if (band == 2u) { v=2.0; }',
+      'if (band >= 3u) { v=4.0; }',
+      'return vec4<f32>(v,v,v,1.0);}'
+    ].join('\\n') });
+    this.pipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: { module, entryPoint: 'vs' },
+      fragment: { module, entryPoint: 'fs', targets: [{ format: 'rgba16float' }] },
+      primitive: { topology: 'triangle-list' }
+    });
+    this.device = device;
+    this.context = context;
+    this.canvas = canvas;
+    this.draw();
+    await device.queue.onSubmittedWorkDone();
+  }
+
+  private draw(): void {
+    const encoder = this.device!.createCommandEncoder();
+    const pass = encoder.beginRenderPass({ colorAttachments: [{
+      view: this.context!.getCurrentTexture().createView(),
+      loadOp: 'clear', storeOp: 'store',
+      clearValue: { r: 0, g: 0, b: 0, a: 1 }
+    }] });
+    pass.setPipeline(this.pipeline!);
+    pass.draw(3);
+    pass.end();
+    this.device!.queue.submit([encoder.finish()]);
+  }
+
+  dispose(): void {
+    this.device?.destroy();
+    this.device = null;
+    this.context = null;
+    this.canvas = null;
+    this.pipeline = null;
+  }
+}
