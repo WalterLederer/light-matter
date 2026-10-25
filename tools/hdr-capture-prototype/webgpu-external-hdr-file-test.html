@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WebGPU – HDR-Datei als externe Quelle</title>
+<style>
+body{font:16px/1.5 system-ui,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem}
+button,input{margin:.5rem 0}pre{background:#f2f2f2;color:#111;padding:1rem;white-space:pre-wrap;overflow-wrap:anywhere}
+.note{border-left:4px solid #888;padding-left:1rem}
+</style>
+</head>
+<body>
+<h1>WebGPU: externe Bilddatei → FP16-Textur</h1>
+<p>Wähle eine HDR-Bilddatei, vorzugsweise HDR-AVIF oder ein anderes HDR-Format, das dein Browser dekodieren kann. Das Testprogramm kopiert das dekodierte Bild mit <code>copyExternalImageToTexture</code> in eine <code>rgba16float</code>-Textur und liest ausgewählte Pixel zurück.</p>
+<p class="note"><strong>Einschränkung:</strong> <code>createImageBitmap</code> kann je nach Browser und Format HDR-Metadaten oder Werte in SDR umwandeln. Daher protokolliert dieser Test die tatsächlich im Ziel ankommenden Werte; ein Ergebnis ≤ 1.0 beweist allein nicht, dass der Kopierer HDR abschneidet. Ein positiver Wert über 1.0 ist hingegen ein Hinweis, dass Werte oberhalb SDR erhalten blieben.</p>
+<label for="file">HDR-Bilddatei auswählen:</label><br>
+<input id="file" type="file" accept="image/*,.avif,.jxl,.exr"><br>
+<button id="run" disabled>Ausgewählte Datei testen</button>
+<pre id="output">Bitte zuerst eine Bilddatei auswählen.</pre>
+<script type="module">
+const fileInput=document.querySelector('#file');
+const runButton=document.querySelector('#run');
+const output=document.querySelector('#output');
+let selectedFile=null;
+const log=s=>output.textContent=s;
+function halfToFloat(h){
+ const sign=(h&0x8000)?-1:1, exp=(h>>10)&31, frac=h&1023;
+ if(exp===0)return sign*Math.pow(2,-14)*(frac/1024);
+ if(exp===31)return frac?NaN:sign*Infinity;
+ return sign*Math.pow(2,exp-15)*(1+frac/1024);
+}
+function readPixel(view,offset){return [0,1,2,3].map(i=>halfToFloat(view.getUint16(offset+i*2,true)));}
+fileInput.addEventListener('change',()=>{
+ selectedFile=fileInput.files?.[0]??null;
+ runButton.disabled=!selectedFile;
+ log(selectedFile?('Ausgewählt: '+selectedFile.name+' ('+selectedFile.size+' Bytes)\nKlicke auf „Ausgewählte Datei testen“.'):'Bitte zuerst eine Bilddatei auswählen.');
+});
+runButton.addEventListener('click',async()=>{
+ runButton.disabled=true;
+ let bitmap=null,device=null,texture=null,readBuffer=null;
+ try{
+  if(!selectedFile)throw new Error('Keine Datei ausgewählt.');
+  if(!navigator.gpu)throw new Error('WebGPU nicht verfügbar. Öffne die Seite in einem WebGPU-fähigen Browser über localhost oder HTTPS.');
+  const adapter=await navigator.gpu.requestAdapter();
+  if(!adapter)throw new Error('Kein WebGPU-Adapter verfügbar.');
+  device=await adapter.requestDevice();
+  bitmap=await createImageBitmap(selectedFile);
+  const width=bitmap.width,height=bitmap.height;
+  texture=device.createTexture({size:[width,height],format:'rgba16float',usage:GPUTextureUsage.COPY_DST|GPUTextureUsage.COPY_SRC});
+  device.queue.copyExternalImageToTexture({source:bitmap},{texture, colorSpace:'srgb',premultipliedAlpha:false},[width,height,1]);
+  const bytesPerRow=Math.ceil(width*8/256)*256;
+  const bufferSize=bytesPerRow*height;
+  readBuffer=device.createBuffer({size:bufferSize,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
+  const encoder=device.createCommandEncoder();
+  encoder.copyTextureToBuffer({texture},{buffer:readBuffer,bytesPerRow,rowsPerImage:height},[width,height,1]);
+  device.queue.submit([encoder.finish()]);
+  await readBuffer.mapAsync(GPUMapMode.READ);
+  const view=new DataView(readBuffer.getMappedRange());
+  const coords=[[Math.floor(width/2),Math.floor(height/2)],[Math.floor(width/4),Math.floor(height/4)],[Math.floor(width*3/4),Math.floor(height/4)],[Math.floor(width/4),Math.floor(height*3/4)],[Math.floor(width*3/4),Math.floor(height*3/4)]];
+  const samples=coords.map(([x,y])=>{
+   const offset=y*bytesPerRow+x*8;
+   return '  ('+x+','+y+'): '+readPixel(view,offset).map(v=>Number.isFinite(v)?v.toFixed(6):String(v)).join(', ');
+  });
+  const positive=coords.some(([x,y])=>readPixel(view,y*bytesPerRow+x*8).slice(0,3).some(v=>v>1.0001));
+  readBuffer.unmap();
+  log('Datei: '+selectedFile.name+'\nDekodierte Bitmap: '+width+' × '+height+'\nZielformat: rgba16float\n\nStichproben (RGBA):\n'+samples.join('\n')+'\n\nRGB-Wert > 1.0 in Stichproben: '+(positive?'JA':'NEIN')+'\n\n'+(positive?'Es wurden Werte über 1.0 in der Zieltextur gefunden. Das ist ein positiver Hinweis auf erhaltene Extended-Range-Werte.':'In diesen Stichproben wurde kein RGB-Wert über 1.0 gefunden. Das beweist nicht, dass die Originaldatei SDR ist oder der Kopierer HDR abschneidet: die Dekodierung kann bereits SDR geliefert haben, und HDR-Spitzen könnten außerhalb der Stichproben liegen.')+'\n\nHinweis: Die API stellt hier keinen verlässlichen Rohpixel-Readback der dekodierten Quelle vor dem Kopieren bereit. Für einen belastbaren Negativbefund müssen Format, Transferfunktion und Decoder separat verifiziert werden.');
+ }catch(e){log('TEST FEHLGESCHLAGEN\n'+(e?.stack||e));}
+ finally{try{bitmap?.close();}catch{}try{texture?.destroy();}catch{}try{readBuffer?.destroy();}catch{}try{device?.destroy();}catch{}runButton.disabled=!selectedFile;}
+});
+</script>
+</body>
+</html>
