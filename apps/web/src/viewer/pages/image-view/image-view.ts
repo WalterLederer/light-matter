@@ -865,7 +865,7 @@ export class ImageView {
       const brightness = this.loupeBrightness() * 0.4;
       // Convert CSS/DIP loupe size to physical capture pixels using the official
       // Windows display scale factor (1.5 at 150% scaling in the current setup).
-      const zoom = this.loupePixelSize() * (this.loupeCaptureGeometry()?.scaleFactor ?? 1);
+      const zoom = this.loupePixelSize() * (this.loupeCaptureGeometry()?.scaleFactor ?? 1) / this.loupeSizeScale();
       await this.hdrLoupeRenderer.render(canvas, {
         width: sample.regionWidth,
         height: sample.regionHeight,
