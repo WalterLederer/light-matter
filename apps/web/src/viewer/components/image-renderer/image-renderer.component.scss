@@ -70,6 +70,50 @@
     }
   }
 
+  .hdr-copy-diagnostic {
+    position: absolute;
+    z-index: 20;
+    top: 16px;
+    left: 16px;
+    width: min(360px, calc(100% - 32px));
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid rgb(125 180 255 / 75%);
+    border-radius: 6px;
+    background: rgb(5 16 30 / 94%);
+    color: #e8f3ff;
+    box-shadow: 0 4px 18px rgb(0 0 0 / 45%);
+    font: 12px/1.35 sans-serif;
+    pointer-events: none;
+
+    .hdr-copy-diagnostic-title {
+      margin-bottom: 6px;
+      color: #8ec5ff;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .hdr-copy-diagnostic-canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 180px;
+      object-fit: contain;
+      background: #111;
+    }
+
+    .hdr-copy-diagnostic-note {
+      margin-top: 6px;
+      color: #c6d7e8;
+    }
+
+    .hdr-copy-diagnostic-error {
+      margin-top: 5px;
+      color: #ff9696;
+      overflow-wrap: anywhere;
+    }
+  }
+
   .dual-side-by-side-labels {
     position: absolute;
     z-index: 1000;
