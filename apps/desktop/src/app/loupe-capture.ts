@@ -139,24 +139,28 @@ export const sampleLoupeRegion = (x: number, y: number, radius = 5) => {
   // Keep the native crop limit aligned with the renderer's request limit so the
   // shader can sample the full visible area without stretching edge pixels.
   const safeRadius = Math.max(1, Math.min(2048, Math.round(radius)));
-  const regionWidth = safeRadius * 2 + 1;
-  const regionHeight = regionWidth;
+  // Clip the crop to the real monitor frame instead of repeating edge pixels.
+  // The shader treats coordinates outside this cropped texture as empty, so a
+  // low zoom never stretches the monitor's border pixels across the ruler.
+  const left = Math.max(0, px - safeRadius);
+  const right = Math.min(frame.width - 1, px + safeRadius);
+  const top = Math.max(0, py - safeRadius);
+  const bottom = Math.min(frame.height - 1, py + safeRadius);
+  const regionWidth = right - left + 1;
+  const regionHeight = bottom - top + 1;
+  const centerX = px - left;
+  const centerY = py - top;
   const pixels: Array<{ x: number; y: number; color: string }> = [];
   const data = new Uint16Array(regionWidth * regionHeight * 4);
   let dataIndex = 0;
 
-  for (let dy = -safeRadius; dy <= safeRadius; dy++) {
-    for (let dx = -safeRadius; dx <= safeRadius; dx++) {
-      const sx = Math.max(0, Math.min(frame.width - 1, px + dx));
-      const sy = Math.max(0, Math.min(frame.height - 1, py + dy));
+  for (let sy = top; sy <= bottom; sy++) {
+    for (let sx = left; sx <= right; sx++) {
       const pixelOffset = (sy * frame.width + sx) * 8;
-      // The small pixel-color grid is only used by the location inspector. Avoid
-      // building thousands of CSS color strings for larger GPU-only loupe crops.
       if (safeRadius <= 12) {
         const pixel = readPixel(frame, sx, sy);
-        pixels.push({ x: dx, y: dy, color: pixel.color });
+        pixels.push({ x: sx - px, y: sy - py, color: pixel.color });
       }
-      // Preserve original FP16 scRGB channel bit patterns in a compact typed array.
       for (let channel = 0; channel < 4; channel++) {
         data[dataIndex++] = frame.buffer.readUInt16LE(pixelOffset + channel * 2);
       }
@@ -171,6 +175,8 @@ export const sampleLoupeRegion = (x: number, y: number, radius = 5) => {
     radius: safeRadius,
     regionWidth,
     regionHeight,
+    centerX,
+    centerY,
     data,
     center: readPixel(frame, px, py),
     pixels
