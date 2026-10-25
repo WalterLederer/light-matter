@@ -120,6 +120,11 @@
         <canvas class="hdr-copy-diagnostic-sdr-canvas" width="640" height="180"></canvas>
         <div class="hdr-copy-diagnostic-note">Test 2: Bildimport in FP16-Textur (rgba16float)</div>
         <canvas class="hdr-copy-diagnostic-canvas" width="640" height="180"></canvas>
+        <div class="hdr-copy-diagnostic-note">Test 3: Dasselbe HDR-Bild über srgb-linear (FP16, Helligkeitsfaktor 1,0)</div>
+        <canvas class="hdr-linear-image-diagnostic-canvas" width="640" height="180"></canvas>
+        @if (hdrLinearImageDiagnosticError(); as hdrLinearImageError) {
+          <div class="hdr-copy-diagnostic-error">HDR-Bild srgb-linear-Test: {{ hdrLinearImageError }}</div>
+        }
         @if (hdrDiagnosticError(); as diagnosticError) {
           <div class="hdr-copy-diagnostic-error">{{ diagnosticError }}</div>
         }
