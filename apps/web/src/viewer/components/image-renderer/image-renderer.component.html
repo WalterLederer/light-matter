@@ -33,7 +33,7 @@
          [style.transform]="(comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked') && location.zoom !== 'fit' ? 'scale(' + (location.zoom * 100 / location.fitZoom) + ')' : null"
          [style.transform-origin]="comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked' ? 'center center' : null"
          [style.clip-path]="sdrClip()"
-         [style.filter]="(brightnessRendererMode() === 'css' || gpuBrightnessFailed()) && displayBrightness() !== 1 ? 'brightness(' + displayBrightness() + ')' : null"
+         [style.filter]="brightnessRendererMode() === 'css' && displayBrightness() !== 1 ? 'brightness(' + displayBrightness() + ')' : null"
          [src]="imageUrl"
          crossorigin="anonymous"
          (mousedown)="onMouseDown($event)">
@@ -83,7 +83,7 @@
          [style.transform]="(comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked') && location.zoom !== 'fit' ? 'scale(' + (location.zoom * 100 / location.fitZoom) + ')' : null"
          [style.transform-origin]="comparisonMode() === 'dual-side-by-side' || comparisonMode() === 'dual-stacked' ? 'center center' : null"
          [style.clip-path]="hdrClip()"
-         [style.filter]="displayBrightness() === 1 ? null : 'brightness(' + displayBrightness() + ')'"
+         [style.filter]="brightnessRendererMode() === 'css' && displayBrightness() !== 1 ? 'brightness(' + displayBrightness() + ')' : null"
          [src]="imageUrl"
          crossorigin="anonymous"
          (mousedown)="onMouseDown($event)">
