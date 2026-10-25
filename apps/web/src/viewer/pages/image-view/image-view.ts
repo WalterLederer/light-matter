@@ -200,7 +200,7 @@ export class ImageView {
 
   protected readonly loupeSample = signal<{
     width: number; height: number; x: number; y: number; radius: number;
-    regionWidth: number; regionHeight: number; data: Uint16Array;
+    regionWidth: number; regionHeight: number; centerX: number; centerY: number; data: Uint16Array;
     center: { r: number; g: number; b: number; rHex: string; gHex: string; bHex: string; color: string };
     pixels: Array<{ x: number; y: number; color: string }>;
   } | null>(null);
@@ -876,6 +876,8 @@ export class ImageView {
       await this.hdrLoupeRenderer.render(canvas, {
         width: sample.regionWidth,
         height: sample.regionHeight,
+        centerX: sample.centerX,
+        centerY: sample.centerY,
         data: sample.data
       }, brightness, zoom);
       this.hdrLoupeActive.set(this.loupeRendererMode() === 'webgpu');
