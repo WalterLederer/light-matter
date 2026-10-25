@@ -26,6 +26,11 @@ export class HdrLoupeRenderer {
   }
 
   private async renderInternal(canvas: HTMLCanvasElement, region: HdrLoupeRegion, brightness: number, zoom: number): Promise<void> {
+    const viewport = canvas.parentElement;
+    const outputWidth = Math.max(1, Math.round(viewport?.clientWidth ?? canvas.clientWidth ?? 280));
+    const outputHeight = Math.max(1, Math.round(viewport?.clientHeight ?? canvas.clientHeight ?? 280));
+    if (canvas.width !== outputWidth) canvas.width = outputWidth;
+    if (canvas.height !== outputHeight) canvas.height = outputHeight;
     await this.initialize(canvas);
     const device = this.device!;
     if (!this.sourceTexture || this.sourceWidth !== region.width || this.sourceHeight !== region.height) {
@@ -47,7 +52,7 @@ export class HdrLoupeRenderer {
       { width: region.width, height: region.height, depthOrArrayLayers: 1 }
     );
 
-    device.queue.writeBuffer(this.uniformBuffer!, 0, new Float32Array([brightness, zoom, 0, 0]));
+    device.queue.writeBuffer(this.uniformBuffer!, 0, new Float32Array([brightness, zoom, outputWidth, outputHeight]));
     const bindGroup = device.createBindGroup({
       layout: this.pipeline!.getBindGroupLayout(0),
       entries: [
@@ -77,8 +82,6 @@ export class HdrLoupeRenderer {
     const adapter = await navigator.gpu.requestAdapter();
     if (!adapter) throw new Error('No WebGPU adapter is available.');
     const device = await adapter.requestDevice();
-    canvas.width = 280;
-    canvas.height = 280;
     const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
     if (!context) {
       device.destroy();
@@ -108,7 +111,7 @@ export class HdrLoupeRenderer {
 
     const module = device.createShaderModule({
       code: `
-        struct Params { brightness: f32, zoom: f32, _pad0: f32, _pad1: f32 };
+        struct Params { brightness: f32, zoom: f32, outputWidth: f32, outputHeight: f32 };
         @group(0) @binding(0) var imageTexture: texture_2d<f32>;
         @group(0) @binding(1) var<uniform> params: Params;
 
@@ -142,12 +145,12 @@ export class HdrLoupeRenderer {
 
         @fragment fn fs(input: VertexOutput) -> @location(0) vec4<f32> {
           let dims = vec2<i32>(textureDimensions(imageTexture));
-          // The visible canvas is 280×280. Select the source span needed for
-          // that output size at the requested magnification, independent of how
+          // Select the source span needed for the actual viewport dimensions
+          // at the requested magnification, independent of how
           // much extra safety margin was copied around the cursor. The capture
           // crop is deliberately enlarged at low zoom so this span stays inside
           // the texture and edge pixels are not stretched by coordinate clamping.
-          let sourceSpan = vec2<f32>(280.0) / max(params.zoom, 0.01);
+          let sourceSpan = vec2<f32>(params.outputWidth, params.outputHeight) / max(params.zoom, 0.01);
           let sourcePosition = vec2<f32>(dims) * 0.5
             + (input.uv - vec2<f32>(0.5)) * sourceSpan;
           let coords = clamp(
