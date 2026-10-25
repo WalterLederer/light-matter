@@ -240,6 +240,10 @@ export class ImageView {
 
   private loupeCaptureRequest = 0;
 
+  private loupeResizeObserver: ResizeObserver | null = null;
+
+  private loupeResizeTimer: ReturnType<typeof setTimeout> | null = null;
+
   private loupeSampleRequest = 0;
 
   private lastLoupeSampleAt = 0;
@@ -399,6 +403,22 @@ export class ImageView {
 
   /* Constructor */
   constructor() {
+    // A full-monitor capture must be refreshed when the Chromium content area
+    // changes size; otherwise its coordinate mapping describes stale geometry.
+    if (typeof ResizeObserver !== 'undefined') {
+      this.loupeResizeObserver = new ResizeObserver(() => {
+        if (!this.loupeEnabled()) return;
+        if (this.loupeResizeTimer !== null) clearTimeout(this.loupeResizeTimer);
+        this.loupeResizeTimer = setTimeout(() => {
+          this.loupeResizeTimer = null;
+          if (this.loupeEnabled() && !this.isDecoding()) {
+            void this.captureLoupeAfterRender();
+          }
+        }, 180);
+      });
+      this.loupeResizeObserver.observe(this.document.documentElement);
+    }
+
     this.processManager.getAppVersion()
       .then(version => {
         this.appTitleSuffix = version;
@@ -437,6 +457,10 @@ export class ImageView {
       });
 
     this.destroyRef.onDestroy(() => {
+      this.loupeResizeObserver?.disconnect();
+      this.loupeResizeObserver = null;
+      if (this.loupeResizeTimer !== null) clearTimeout(this.loupeResizeTimer);
+      this.loupeResizeTimer = null;
       this.loupeCaptureRequest++;
       this.loupeSampleRequest++;
       this.hdrLoupeRenderer.dispose();
