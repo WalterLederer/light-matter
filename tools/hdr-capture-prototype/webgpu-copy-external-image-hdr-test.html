@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WebGPU – copyExternalImageToTexture HDR-Test</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+  button { padding: .6rem 1rem; margin: .5rem 0; }
+  pre { background: #f2f2f2; color: #111; padding: 1rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .note { border-left: 4px solid #888; padding-left: 1rem; }
+</style>
+</head>
+<body>
+<h1>WebGPU: copyExternalImageToTexture</h1>
+<p>Vergleicht einen direkt per Shader erzeugten FP16-Wert <code>3.0</code> mit einem SDR-Canvas, das per <code>copyExternalImageToTexture</code> in eine <code>rgba16float</code>-Textur kopiert wird. Beide Zieltexturen werden per GPU-Readback numerisch ausgelesen.</p>
+<p class="note"><strong>Wichtig:</strong> Der Canvas-Pfad ist absichtlich SDR. Der Test prüft den Kopierpfad und den Readback, beweist aber nicht, dass ein echter HDR-Quellwert über 1.0 übernommen wird.</p>
+<button id="run">Test erneut ausführen</button>
+<pre id="output">WebGPU-Test wird vorbereitet …</pre>
+<canvas id="source" width="1" height="1" hidden></canvas>
+<script type="module">
+const output = document.querySelector('#output');
+const button = document.querySelector('#run');
+const log = value => { output.textContent = value; };
+function halfToFloat(h) {
+  const sign = (h & 0x8000) ? -1 : 1;
+  const exp = (h >> 10) & 0x1f;
+  const frac = h & 0x03ff;
+  if (exp === 0) return sign * Math.pow(2, -14) * (frac / 1024);
+  if (exp === 31) return frac ? NaN : sign * Infinity;
+  return sign * Math.pow(2, exp - 15) * (1 + frac / 1024);
+}
+function readHalfPixel(buffer) {
+  const v = new DataView(buffer);
+  return [0, 1, 2, 3].map(i => halfToFloat(v.getUint16(i * 2, true)));
+}
+async function run() {
+  button.disabled = true;
+  try {
+    if (!navigator.gpu) throw new Error('navigator.gpu ist nicht verfügbar. Seite in einem WebGPU-fähigen Browser über localhost oder HTTPS öffnen.');
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) throw new Error('Kein WebGPU-Adapter verfügbar.');
+    const device = await adapter.requestDevice();
+    const shader = device.createShaderModule({code: `
+      @vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
+        var p = array<vec2f, 3>(vec2f(-1.0,-1.0), vec2f(3.0,-1.0), vec2f(-1.0,3.0));
+        return vec4f(p[i], 0.0, 1.0);
+      }
+      @fragment fn fs() -> @location(0) vec4f { return vec4f(3.0, 0.4, 1.0, 1.0); }
+    `});
+    const pipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {module: shader, entryPoint: 'vs'},
+      fragment: {module: shader, entryPoint: 'fs', targets: [{format: 'rgba16float'}},
+      primitive: {topology: 'triangle-list'}
+    });
+    const direct = device.createTexture({size: [1,1], format: 'rgba16float', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC});
+    const copied = device.createTexture({size: [1,1], format: 'rgba16float', usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.COPY_SRC});
+    const encoder = device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({colorAttachments: [{view: direct.createView(), clearValue: {r:0,g:0,b:0,a:1}, loadOp:'clear', storeOp:'store'}]});
+    pass.setPipeline(pipeline); pass.draw(3); pass.end();
+
+    const canvas = document.querySelector('#source');
+    const ctx = canvas.getContext('2d', {colorSpace: 'srgb'});
+    ctx.fillStyle = 'rgb(128, 128, 128)'; ctx.fillRect(0,0,1,1);
+    device.queue.copyExternalImageToTexture({source: canvas}, {texture: copied}, [1,1,1]);
+
+    const bytesPerRow = 256;
+    const directRead = device.createBuffer({size: bytesPerRow, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ});
+    const copiedRead = device.createBuffer({size: bytesPerRow, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ});
+    encoder.copyTextureToBuffer({texture: direct}, {buffer: directRead, bytesPerRow, rowsPerImage: 1}, [1,1,1]);
+    encoder.copyTextureToBuffer({texture: copied}, {buffer: copiedRead, bytesPerRow, rowsPerImage: 1}, [1,1,1]);
+    device.queue.submit([encoder.finish()]);
+    await Promise.all([directRead.mapAsync(GPUMapMode.READ), copiedRead.mapAsync(GPUMapMode.READ)]);
+    const directValues = readHalfPixel(directRead.getMappedRange().slice(0,8));
+    const copiedValues = readHalfPixel(copiedRead.getMappedRange().slice(0,8));
+    directRead.unmap(); copiedRead.unmap();
+    log(
+      'Ergebnis (RGBA, FP16-Readback)\n\n' +
+      'Direkter Shader → rgba16float: ' + directValues.map(v => v.toFixed(6)).join(', ') + '\n' +
+      'SDR-Canvas → copyExternalImageToTexture → rgba16float: ' + copiedValues.map(v => v.toFixed(6)).join(', ') + '\n\n' +
+      'Erwartung: Direktes R ≈ 3.0; Canvas-R liegt im SDR-Bereich.\n' +
+      'Das Ergebnis betrifft diesen Browser, Adapter und Treiber. Es ist kein Nachweis für HDR-Quelltransfer, weil die externe Quelle ein SDR-Canvas ist.'
+    );
+    direct.destroy(); copied.destroy(); directRead.destroy(); copiedRead.destroy(); device.destroy();
+  } catch (e) {
+    log('TEST FEHLGESCHLAGEN\n' + (e?.stack || e));
+  } finally {
+    button.disabled = false;
+  }
+}
+button.addEventListener('click', run);
+run();
+</script>
+</body>
+</html>
