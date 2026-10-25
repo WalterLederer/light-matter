@@ -18,7 +18,6 @@ import { catchError, distinctUntilChanged, filter, from, fromEvent, map, of, sta
 import { ExifService } from '../../../ipc/exif';
 import { HistogramService } from '../../../ipc/histogram';
 import { ProcessManager } from '../../../ipc/process-manager';
-import { VerticalDivider } from '../../../system/components/vertical-divider/vertical-divider';
 import { DefaultPipe } from '../../../system/pipes/default/default.pipe';
 import { Configuration } from '../../../system/services/configuration/configuration';
 import { Keyboard } from '../../../system/services/keyboard/keyboard';
@@ -41,7 +40,6 @@ import { ViewNavigator } from '../../services/view-navigator/view-navigator';
     ToolMenuComponent,
     ActionButtonComponent,
     IconComponent,
-    VerticalDivider,
     TextComponent,
     DefaultPipe,
     SliderComponent,
