@@ -949,6 +949,9 @@ export class ImageView {
         this.loupeCaptureError.set('Full-image FP16 view requires GPU/WebGPU mode.');
         return;
       }
+      // The normal loupe canvas is removed by the full-image template branch.
+      // Dispose its renderer now; PageDown will create a new canvas and renderer.
+      this.hdrLoupeRenderer.dispose();
       this.loupeFullImageView.set(true);
       void this.renderLoupeFullImage();
       return;
@@ -1238,6 +1241,10 @@ export class ImageView {
         if (this.loupeEnabled() && (event.key === 'PageUp' || event.key === 'PageDown')) {
           event.preventDefault();
           if (this.loupeFullImageView() && event.key === 'PageDown') {
+            // The regular loupe canvas was destroyed when Angular switched to
+            // the full-image branch. Release its WebGPU device/context so the
+            // newly-created canvas gets a fresh context on the next render.
+            this.hdrLoupeRenderer.dispose();
             this.loupeFullImageView.set(false);
             this.hdrFullImageRenderer.dispose();
             this.hdrLoupeActive.set(false);
