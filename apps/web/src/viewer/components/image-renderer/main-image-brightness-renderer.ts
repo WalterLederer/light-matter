@@ -306,7 +306,7 @@ export class WebGpuHdrDiagnosticPatternRenderer {
       'if (band == 2u) { v=2.0; }',
       'if (band >= 3u) { v=4.0; }',
       'return vec4<f32>(v,v,v,1.0);}'
-    ].join('\\n') });
+    ].join('\n') });
     this.pipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: { module, entryPoint: 'vs' },
