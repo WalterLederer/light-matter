@@ -15,6 +15,7 @@ import {
 import { IconComponent } from '@light-matter/ui';
 import { fromEvent, take } from 'rxjs';
 import { DefaultPipe } from '../../../system/pipes/default/default.pipe';
+import { MainImageBrightnessRenderer } from './main-image-brightness-renderer';
 import { PxPipe } from '../../../system/pipes/px/px-pipe';
 import { ImagePositioningService } from '../../services/image-positioning/image-positioning.service';
 import {
@@ -49,6 +50,9 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
 
   /** Display brightness for the main image; 1 leaves it unchanged. */
   readonly displayBrightness = input(1);
+
+  /** Rendering path for brightness changes to the SDR main image. */
+  readonly brightnessRendererMode = input<'css' | 'webgpu'>('webgpu');
 
   protected readonly sdrClip = () => {
     const mode = this.comparisonMode();
@@ -96,6 +100,11 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
 
   private readonly pixelCanvas = document.createElement('canvas');
 
+  private readonly mainImageBrightnessRenderer = new MainImageBrightnessRenderer();
+  private gpuRenderRequest = 0;
+  protected readonly gpuBrightnessReady = signal(false);
+  protected readonly gpuBrightnessFailed = signal(false);
+
   private pixelContext: CanvasRenderingContext2D | null = null;
 
   protected readonly viewportRef = viewChild<unknown, ElementRef<HTMLDivElement>>('surface', { read: ElementRef });
@@ -117,6 +126,25 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     });
 
     effect(() => this.preloadImage(this.url()));
+
+    effect(() => {
+      const url = this.displayUrl();
+      const brightness = this.displayBrightness();
+      const mode = this.brightnessRendererMode();
+      const comparison = this.comparisonMode();
+      if (url === null || brightness === 1 || mode !== 'webgpu' || comparison !== 'sdr') {
+        this.gpuRenderRequest++;
+        this.gpuBrightnessReady.set(false);
+        this.gpuBrightnessFailed.set(false);
+        return;
+      }
+      const request = ++this.gpuRenderRequest;
+      this.gpuBrightnessReady.set(false);
+      this.gpuBrightnessFailed.set(false);
+      queueMicrotask(() => {
+        if (request === this.gpuRenderRequest) void this.renderMainImageBrightness(request, url, brightness);
+      });
+    });
   }
 
   /* Events */
@@ -202,8 +230,24 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.debugImageSwitching()) this.debugSwitchingPhase.emit('renderer lifecycle: destroyed');
+    this.gpuRenderRequest++;
+    this.mainImageBrightnessRenderer.dispose();
     this.imagePositioningService.removeViewport();
   }
+
+  private readonly renderMainImageBrightness = async (request: number, url: string, brightness: number): Promise<void> => {
+    const surface = this.viewportRef()?.nativeElement;
+    const image = surface?.querySelector<HTMLImageElement>('.sdr-image');
+    const canvas = surface?.querySelector<HTMLCanvasElement>('.sdr-gpu-image');
+    if (!image || !canvas || !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
+    try {
+      await this.mainImageBrightnessRenderer.render(canvas, image, brightness);
+      if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuBrightnessReady.set(true);
+    } catch (error) {
+      console.error('Main-image WebGPU brightness render failed:', error);
+      if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuBrightnessFailed.set(true);
+    }
+  };
 
   protected readonly onMouseDown = (event: MouseEvent) => this.imagePositioningService.startPanning(event);
 
