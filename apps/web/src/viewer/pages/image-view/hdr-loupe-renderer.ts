@@ -3,6 +3,9 @@
 export interface HdrLoupeRegion {
   width: number;
   height: number;
+  /** Cursor position within the clipped source region. */
+  centerX: number;
+  centerY: number;
   /** Packed RGBA half-float channel bit patterns, row-major. */
   data: Uint16Array;
 }
@@ -52,7 +55,7 @@ export class HdrLoupeRenderer {
       { width: region.width, height: region.height, depthOrArrayLayers: 1 }
     );
 
-    device.queue.writeBuffer(this.uniformBuffer!, 0, new Float32Array([brightness, zoom, outputWidth, outputHeight]));
+    device.queue.writeBuffer(this.uniformBuffer!, 0, new Float32Array([brightness, zoom, outputWidth, outputHeight, region.centerX, region.centerY, 0, 0]));
     const bindGroup = device.createBindGroup({
       layout: this.pipeline!.getBindGroupLayout(0),
       entries: [
@@ -111,7 +114,7 @@ export class HdrLoupeRenderer {
 
     const module = device.createShaderModule({
       code: `
-        struct Params { brightness: f32, zoom: f32, outputWidth: f32, outputHeight: f32 };
+        struct Params { brightness: f32, zoom: f32, outputWidth: f32, outputHeight: f32, centerX: f32, centerY: f32, _pad0: f32, _pad1: f32 };
         @group(0) @binding(0) var imageTexture: texture_2d<f32>;
         @group(0) @binding(1) var<uniform> params: Params;
 
@@ -151,13 +154,15 @@ export class HdrLoupeRenderer {
           // crop is deliberately enlarged at low zoom so this span stays inside
           // the texture and edge pixels are not stretched by coordinate clamping.
           let sourceSpan = vec2<f32>(params.outputWidth, params.outputHeight) / max(params.zoom, 0.01);
-          let sourcePosition = vec2<f32>(dims) * 0.5
+          let sourcePosition = vec2<f32>(params.centerX, params.centerY)
             + (input.uv - vec2<f32>(0.5)) * sourceSpan;
-          let coords = clamp(
-            vec2<i32>(floor(sourcePosition)),
-            vec2<i32>(0, 0),
-            dims - vec2<i32>(1, 1)
-          );
+          // Never clamp out-of-crop coordinates to the nearest edge pixel:
+          // that creates visible streaks along ruler edges at low magnification.
+          if (sourcePosition.x < 0.0 || sourcePosition.y < 0.0
+            || sourcePosition.x >= f32(dims.x) || sourcePosition.y >= f32(dims.y)) {
+            return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+          }
+          let coords = vec2<i32>(floor(sourcePosition));
           // Apply brightness in linear light, then encode to extended sRGB for
           // the browser canvas. The canvas's extended tone mapping preserves
           // encoded values above 1.0 for HDR output when supported.
@@ -181,7 +186,7 @@ export class HdrLoupeRenderer {
     this.device = device;
     this.pipeline = pipeline;
     this.uniformBuffer = device.createBuffer({
-      size: 16,
+      size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.canvasContext = context;
@@ -235,7 +240,7 @@ export class HdrLoupeRenderer {
 
       const results: Array<Record<string, unknown>> = [];
       for (const brightness of [1.0, 0.4]) {
-        device.queue.writeBuffer(this.uniformBuffer, 0, new Float32Array([brightness, 1, 0, 0]));
+        device.queue.writeBuffer(this.uniformBuffer, 0, new Float32Array([brightness, 1, 1, 1, 0, 0, 0, 0]));
         const encoder = device.createCommandEncoder();
         const pass = encoder.beginRenderPass({
           colorAttachments: [{
