@@ -154,6 +154,7 @@
   .hdr-loupe-overlay {
     position: fixed;
     z-index: 30;
+    transform-origin: top left;
     display: flex;
     flex-direction: column;
     gap: 8px;
