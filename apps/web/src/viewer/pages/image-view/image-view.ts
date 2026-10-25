@@ -210,8 +210,10 @@ export class ImageView {
   /** Overall visual size of the loupe, independent of pixel magnification. */
   protected readonly loupeSizeScale = signal(1);
 
-  /** Relative display brightness for the magnified image; 1 means unchanged. */
+  /** Independent brightness controls; keyboard input changes only the active view. */
   protected readonly loupeBrightness = signal(1);
+
+  protected readonly mainImageBrightness = signal(1);
 
   /** Explicit renderer selection so CSS and WebGPU can be compared at identical settings. */
   protected readonly loupeRendererMode = signal<'css' | 'webgpu'>('webgpu');
@@ -606,7 +608,8 @@ export class ImageView {
   };
 
   protected readonly resetImageBrightness = () => {
-    if (!this.loupeEnabled()) this.loupeBrightness.set(1);
+    if (this.loupeEnabled()) this.loupeBrightness.set(1);
+    else this.mainImageBrightness.set(1);
   };
 
   protected readonly toggleLoupeShape = () => {
@@ -906,8 +909,12 @@ export class ImageView {
     }
   };
 
-  protected readonly adjustLoupeBrightness = (direction: 1 | -1) => {
-    // Extend the previous 0.1–3.0 range by roughly 3× in both directions.
+  protected readonly adjustActiveBrightness = (direction: 1 | -1) => {
+    if (!this.loupeEnabled()) {
+      const next = Math.max(0.03, Math.min(9, Number((this.mainImageBrightness() + direction * 0.1).toFixed(2))));
+      this.mainImageBrightness.set(next);
+      return;
+    }
     const next = Math.max(0.03, Math.min(9, Number((this.loupeBrightness() + direction * 0.1).toFixed(2))));
     this.loupeBrightness.set(next);
     const sample = this.loupeSample();
@@ -1158,7 +1165,7 @@ export class ImageView {
 
         if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
           event.preventDefault();
-          this.adjustLoupeBrightness(event.key === 'ArrowUp' ? 1 : -1);
+          this.adjustActiveBrightness(event.key === 'ArrowUp' ? 1 : -1);
           return;
         }
 
