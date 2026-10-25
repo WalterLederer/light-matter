@@ -18,7 +18,8 @@ export class MainImageBrightnessRenderer {
     private readonly dynamicRange: MainImageDynamicRange = 'sdr',
     // Diagnostic canvases use the broadly supported SDR presentation format,
     // while retaining the FP16 intermediate texture used by the HDR copy test.
-    private readonly useHdrCanvasFormat = true
+    private readonly useHdrCanvasFormat = true,
+    private readonly hdrOutputColorSpace: 'srgb' | 'srgb-linear' = 'srgb'
   ) {}
 
   render(canvas: HTMLCanvasElement, image: HTMLImageElement, brightness: number): Promise<void> {
@@ -60,7 +61,7 @@ export class MainImageBrightnessRenderer {
         { width, height }
       );
       stage = 'Uniform-Daten schreiben';
-      device.queue.writeBuffer(this.uniform!, 0, new Float32Array([brightness, 0, 0, 0]));
+      device.queue.writeBuffer(this.uniform!, 0, new Float32Array([brightness, this.hdrOutputColorSpace === 'srgb-linear' ? 1 : 0, 0, 0]));
 
       stage = 'Bind-Group erstellen';
       const bind = device.createBindGroup({
@@ -133,7 +134,7 @@ export class MainImageBrightnessRenderer {
         device,
         format,
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST,
-        colorSpace: 'srgb',
+        colorSpace: this.hdrOutputColorSpace,
         alphaMode: 'opaque',
         toneMapping: { mode: 'extended' }
       });
@@ -155,7 +156,7 @@ export class MainImageBrightnessRenderer {
       '@vertex fn vs(@builtin(vertex_index) i: u32) -> VOut { var p=array<vec2<f32>,3>(vec2<f32>(-1.0,-1.0),vec2<f32>(3.0,-1.0),vec2<f32>(-1.0,3.0)); var o:VOut; o.position=vec4<f32>(p[i],0.0,1.0); o.uv=vec2<f32>((p[i].x+1.0)*0.5,(1.0-p[i].y)*0.5); return o; }',
       'fn extendedSrgbToLinear(value: f32) -> f32 { if (value <= 0.04045) { return value / 12.92; } return pow(max((value + 0.055) / 1.055, 0.0), 2.4); }',
       'fn linearToExtendedSrgb(value: f32) -> f32 { if (value <= 0.0031308) { return value * 12.92; } return 1.055 * pow(max(value, 0.0), 1.0 / 2.4) - 0.055; }',
-      '@fragment fn fs(i:VOut) -> @location(0) vec4<f32> { let d=vec2<i32>(textureDimensions(imageTexture)); let c=clamp(vec2<i32>(i.uv*vec2<f32>(d)),vec2<i32>(0,0),d-vec2<i32>(1,1)); let encoded=textureLoad(imageTexture,c,0); let linearColor=vec3<f32>(extendedSrgbToLinear(encoded.r),extendedSrgbToLinear(encoded.g),extendedSrgbToLinear(encoded.b))*params.brightness; return vec4<f32>(linearToExtendedSrgb(linearColor.r),linearToExtendedSrgb(linearColor.g),linearToExtendedSrgb(linearColor.b),encoded.a); }'
+      '@fragment fn fs(i:VOut) -> @location(0) vec4<f32> { let d=vec2<i32>(textureDimensions(imageTexture)); let c=clamp(vec2<i32>(i.uv*vec2<f32>(d)),vec2<i32>(0,0),d-vec2<i32>(1,1)); let encoded=textureLoad(imageTexture,c,0); let linearColor=vec3<f32>(extendedSrgbToLinear(encoded.r),extendedSrgbToLinear(encoded.g),extendedSrgbToLinear(encoded.b))*params.brightness; if (params.p0 > 0.5) { return vec4<f32>(linearColor, encoded.a); } return vec4<f32>(linearToExtendedSrgb(linearColor.r),linearToExtendedSrgb(linearColor.g),linearToExtendedSrgb(linearColor.b),encoded.a); }'
     ].join('\n') : [
       'struct Params { brightness: f32, p0: f32, p1: f32, p2: f32 };',
       '@group(0) @binding(0) var imageTexture: texture_2d<f32>;',
