@@ -106,8 +106,10 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
   private readonly sdrDiagnosticRenderer = new MainImageBrightnessRenderer('sdr', false);
   private readonly hdrDiagnosticRenderer = new MainImageBrightnessRenderer('hdr', true);
   private readonly hdrPatternRenderer = new WebGpuDiagnosticPatternRenderer();
-  private readonly hdrOutputPatternRenderer = new WebGpuHdrDiagnosticPatternRenderer();
+  private readonly hdrOutputPatternRenderer = new WebGpuHdrDiagnosticPatternRenderer('srgb');
+  private readonly hdrLinearOutputPatternRenderer = new WebGpuHdrDiagnosticPatternRenderer('srgb-linear');
   protected readonly hdrOutputPatternError = signal<string | null>(null);
+  protected readonly hdrLinearOutputPatternError = signal<string | null>(null);
   protected readonly hdrPatternError = signal<string | null>(null);
   protected readonly hdrDiagnosticError = signal<string | null>(null);
   private gpuRenderRequest = 0;
@@ -164,6 +166,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
           // of the optional brightness-adjustment pass.
           void this.renderHdrPattern(request);
           void this.renderHdrOutputPattern(request);
+          void this.renderHdrLinearOutputPattern(request);
           void this.renderSdrDiagnostic(request, url);
           void this.renderHdrDiagnostic(request, url);
           if (brightness !== 1) void this.renderMainHdrBrightness(request, url, brightness);
@@ -263,6 +266,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     this.hdrDiagnosticRenderer.dispose();
     this.hdrPatternRenderer.dispose();
     this.hdrOutputPatternRenderer.dispose();
+    this.hdrLinearOutputPatternRenderer.dispose();
     this.imagePositioningService.removeViewport();
   }
 
@@ -317,6 +321,23 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
       const message = error instanceof Error ? error.message : String(error);
       this.hdrOutputPatternError.set(message);
       console.error('HDR output diagnostic pattern failed:', error);
+    }
+  };
+
+  private readonly renderHdrLinearOutputPattern = async (request: number, attempt = 0): Promise<void> => {
+    if (request !== this.gpuRenderRequest) return;
+    const canvas = this.viewportRef()?.nativeElement.querySelector<HTMLCanvasElement>('canvas.hdr-linear-output-diagnostic-pattern');
+    if (!canvas) {
+      if (attempt < 30) requestAnimationFrame(() => void this.renderHdrLinearOutputPattern(request, attempt + 1));
+      return;
+    }
+    try {
+      await this.hdrLinearOutputPatternRenderer.render(canvas);
+      if (request === this.gpuRenderRequest) this.hdrLinearOutputPatternError.set(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.hdrLinearOutputPatternError.set(message);
+      console.error('HDR linear output diagnostic pattern failed:', error);
     }
   };
 
