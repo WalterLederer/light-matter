@@ -36,49 +36,81 @@ export class MainImageBrightnessRenderer {
     await this.initialize(canvas);
     if (version !== this.version) return;
 
-    const textureFormat = this.dynamicRange === 'hdr' ? 'rgba16float' : 'rgba8unorm';
-    if (!this.texture || width !== this.width || height !== this.height) {
-      this.texture?.destroy();
-      this.texture = this.device!.createTexture({
-        size: { width, height },
-        format: textureFormat,
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
-      });
-      this.width = width;
-      this.height = height;
-    }
+    const device = this.device!;
+    let stage = 'Textur erstellen';
+    let scopePopped = false;
+    device.pushErrorScope('validation');
+    try {
+      const textureFormat = this.dynamicRange === 'hdr' ? 'rgba16float' : 'rgba8unorm';
+      if (!this.texture || width !== this.width || height !== this.height) {
+        this.texture?.destroy();
+        this.texture = device.createTexture({
+          size: { width, height },
+          format: textureFormat,
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+        });
+        this.width = width;
+        this.height = height;
+      }
 
-    this.device!.queue.copyExternalImageToTexture(
-      { source: image, colorSpace: 'srgb' },
-      { texture: this.texture },
-      { width, height }
-    );
-    this.device!.queue.writeBuffer(this.uniform!, 0, new Float32Array([brightness, 0, 0, 0]));
-    const bind = this.device!.createBindGroup({
-      layout: this.pipeline!.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: this.texture.createView() },
-        { binding: 1, resource: { buffer: this.uniform! } }
-      ]
-    });
-    const encoder = this.device!.createCommandEncoder();
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [{
-        view: this.context!.getCurrentTexture().createView(),
-        loadOp: 'clear',
-        storeOp: 'store',
-        clearValue: { r: 0, g: 0, b: 0, a: 1 }
-      }]
-    });
-    pass.setPipeline(this.pipeline!);
-    pass.setBindGroup(0, bind);
-    pass.draw(3);
-    pass.end();
-    this.device!.queue.submit([encoder.finish()]);
+      stage = 'copyExternalImageToTexture (Bildimport)';
+      device.queue.copyExternalImageToTexture(
+        { source: image, colorSpace: 'srgb' },
+        { texture: this.texture },
+        { width, height }
+      );
+      stage = 'Uniform-Daten schreiben';
+      device.queue.writeBuffer(this.uniform!, 0, new Float32Array([brightness, 0, 0, 0]));
+
+      stage = 'Bind-Group erstellen';
+      const bind = device.createBindGroup({
+        layout: this.pipeline!.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: this.texture.createView() },
+          { binding: 1, resource: { buffer: this.uniform! } }
+        ]
+      });
+      stage = 'Render-Pass erstellen und ausführen';
+      const encoder = device.createCommandEncoder();
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: this.context!.getCurrentTexture().createView(),
+          loadOp: 'clear',
+          storeOp: 'store',
+          clearValue: { r: 0, g: 0, b: 0, a: 1 }
+        }]
+      });
+      pass.setPipeline(this.pipeline!);
+      pass.setBindGroup(0, bind);
+      pass.draw(3);
+      pass.end();
+      device.queue.submit([encoder.finish()]);
+
+      // Wait for queued GPU work before checking asynchronous validation errors.
+      await device.queue.onSubmittedWorkDone();
+      const validationError = await device.popErrorScope();
+      scopePopped = true;
+      if (validationError) {
+        throw new Error(`WebGPU-Validierung bei „${stage}“: ${validationError.message}`);
+      }
+    } catch (error) {
+      if (!scopePopped) {
+        const validationError = await device.popErrorScope().catch(() => null);
+        scopePopped = true;
+        if (validationError) {
+          throw new Error(`WebGPU-Validierung bei „${stage}“: ${validationError.message}`);
+        }
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`WebGPU-Fehler bei „${stage}“: ${message}`);
+    } finally {
+      if (!scopePopped) {
+        await device.popErrorScope().catch(() => null);
+      }
+    }
 
     // Do not report the canvas as ready while its render pass is still queued.
     // The caller only hides the source image after this promise resolves.
-    await this.device!.queue.onSubmittedWorkDone();
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
   }
 
