@@ -328,63 +328,74 @@
         </ui-action-button>
       </section>
 
-      <section>
-        <ui-action-button title="Fit to window"
-                          [disabled]="loupeEnabled() || location.zoom === 'fit'"
-                          (pressed)="fitToWindow()">
-          <ui-icon icon="scaleFit"
-                   size="large"
-                   [inherit]="true" />
-        </ui-action-button>
-
-        <button class="zoom-step-button"
-                type="button"
-                title="Reset image brightness (↑ / ↓)"
-                aria-label="Reset image brightness"
-                [disabled]="loupeEnabled() || loupeBrightness() === 1"
-                (click)="resetImageBrightness()">↺</button>
-        @if (!loupeEnabled() && loupeBrightness() !== 1) {
-          <ui-text class="no-shrink brightness-info" title="Image brightness adjustment: ↑ increases and ↓ decreases the brightness of the entire image. Click ↺ to restore normal brightness.">
-            {{ loupeBrightness() > 1 ? '+' : '' }}{{ ((loupeBrightness() - 1) * 100).toFixed(0) }}%
+      <section class="status-control-groups" aria-label="Image controls">
+        <div class="status-control-group zoom-group" aria-label="Zoom">
+          <span class="status-group-label">ZOOM</span>
+          <ui-action-button title="Fit to window"
+                            [disabled]="loupeEnabled() || location.zoom === 'fit'"
+                            (pressed)="fitToWindow()">
+            <ui-icon icon="scaleFit" size="large" [inherit]="true" />
+          </ui-action-button>
+          <button class="zoom-step-button" type="button"
+                  [title]="loupeEnabled() ? 'Reduce loupe magnification (-)' : 'Zoom out (-)'"
+                  [attr.aria-label]="loupeEnabled() ? 'Reduce loupe magnification' : 'Zoom out'"
+                  (click)="adjustZoom(-1)">−</button>
+          @if (loupeEnabled()) {
+            <ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64"
+                       title="Loupe magnification: adjust how much the area around the mouse pointer is enlarged." />
+            <button class="zoom-step-button loupe-zoom-reset" type="button"
+                    title="Reset loupe magnification to exactly 1×"
+                    aria-label="Reset loupe magnification to 1×"
+                    (click)="resetLoupeZoom()">1×</button>
+          } @else {
+            <ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"
+                       title="Image zoom: drag the slider to change the image magnification. Use Fit to Window to fit the image to the available area." />
+          }
+          <button class="zoom-step-button" type="button"
+                  [title]="loupeEnabled() ? 'Increase loupe magnification (+)' : 'Zoom in (+)'"
+                  [attr.aria-label]="loupeEnabled() ? 'Increase loupe magnification' : 'Zoom in'"
+                  (click)="adjustZoom(1)">+</button>
+          <ui-text class="no-shrink zoom-info">
+            @let zoomValue = location.zoom === 'fit' ? location.fitZoom : zoomSlider.value;
+            @if (loupeEnabled()) { {{ loupePixelSize() * 2 | number: '1.1-2' }}× } @else { {{ zoomValue | number: '1.0-0' }}% }
           </ui-text>
-        }
+        </div>
 
-        <button class="zoom-step-button" type="button" [title]="loupeEnabled() ? 'Reduce loupe magnification (-)' : 'Zoom out (-)'" [attr.aria-label]="loupeEnabled() ? 'Reduce loupe magnification' : 'Zoom out'" (click)="adjustZoom(-1)">−</button>
-        @if (loupeEnabled()) {
-          <ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64" title="Loupe magnification: adjust how much the area around the mouse pointer is enlarged. Use + and − for smaller steps." />
-          <button class="zoom-step-button loupe-zoom-reset" type="button" title="Reset loupe magnification to exactly 1×" aria-label="Reset loupe magnification to 1×" (click)="resetLoupeZoom()">1×</button>
-        } @else {
-          <ui-slider [formControl]="zoomSlider"
-                     [min]="zoomConfig.min"
-                     [max]="zoomConfig.max"
-                     title="Image zoom: drag the slider to change the image magnification. Use Fit to Window to fit the image to the available area." />
-        }
-        <button class="zoom-step-button" type="button" [title]="loupeEnabled() ? 'Increase loupe magnification (+)' : 'Zoom in (+)'" [attr.aria-label]="loupeEnabled() ? 'Increase loupe magnification' : 'Zoom in'" (click)="adjustZoom(1)">+</button>
+        <div class="status-control-group brightness-group" aria-label="Brightness">
+          <span class="status-group-label">HELLIGKEIT</span>
+          <button class="zoom-step-button brightness-reset-button" type="button"
+                  title="Reset active brightness (↑ / ↓)"
+                  aria-label="Reset active brightness"
+                  [disabled]="(loupeEnabled() ? loupeBrightness() : mainImageBrightness()) === 1"
+                  (click)="resetImageBrightness()">↺</button>
+          @let activeBrightness = loupeEnabled() ? loupeBrightness() : mainImageBrightness();
+          @if (activeBrightness !== 1) {
+            <ui-text class="no-shrink brightness-info"
+                     [title]="loupeEnabled() ? 'Loupe brightness: ↑ increases and ↓ decreases. Click ↺ to restore normal brightness.' : 'Main image brightness: ↑ increases and ↓ decreases. Click ↺ to restore normal brightness.'">
+              {{ activeBrightness > 1 ? '+' : '' }}{{ ((activeBrightness - 1) * 100).toFixed(0) }}%
+            </ui-text>
+          } @else {
+            <ui-text class="no-shrink brightness-info">0%</ui-text>
+          }
+        </div>
 
-        <button class="zoom-step-button" type="button"
-                [class.active]="loupeRendererMode() === 'webgpu'"
-                title="Brightness renderer (CSS/GPU). CSS: filter brightness() on the decoded/displayed image; simple SDR-style adjustment and HDR highlights may clip. GPU: Windows Graphics Capture FP16/scRGB frame via Desktop.Loupe.sample(), then HdrLoupeRenderer.render() multiplies linear RGB by loupeBrightness() × 0.4 and encodes extended sRGB for the HDR canvas. GPU preserves values above 1.0 when the display/compositor supports HDR; CSS and GPU brightness values are therefore not numerically equivalent. GPU internals: sampleLoupeAtPosition() → Desktop.Loupe.sample() → HdrLoupeRenderer.render() / WGSL fs()."
-                (click)="toggleLoupeRenderer()">{{ loupeRendererMode() === 'webgpu' ? 'GPU' : 'CSS' }}</button>
-        <label class="loupe-toggle" title="Toggle HDR cursor loupe (FP16 window capture)" [class.active]="loupeEnabled()">
-          <input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)" />
-          <span><u>M</u>agnifier</span>
-        </label>
-
-        <ui-text class="no-shrink zoom-info">
-          @let zoomValue = location.zoom === 'fit' ? location.fitZoom : zoomSlider.value;
-          @if (loupeEnabled()) { {{ loupePixelSize() * 2 | number: '1.1-2' }}× } @else { {{ zoomValue | number: '1.0-0' }}% }
-        </ui-text>
-
-        <app-vertical-divider />
-
-        <ui-action-button title="Toggle full screen mode (F)"
-                          [compact]="true"
-                          [variant]="fullScreen ? 'primary' : 'default'"
-                          (pressed)="toggleFullScreen()">
-          <ui-icon icon="fullScreenMaximize"
-                   size="large"
-                   [inherit]="true" />
-        </ui-action-button>
+        <div class="status-control-group other-group" aria-label="Other">
+          <span class="status-group-label">SONSTIGES</span>
+          <button class="zoom-step-button renderer-mode-button" type="button"
+                  [class.active]="loupeRendererMode() === 'webgpu'"
+                  title="Brightness renderer. GPU uses WebGPU for SDR main-image brightness and FP16 Windows Graphics Capture for the cursor loupe; CSS uses the CSS brightness filter for the main image and loupe."
+                  (click)="toggleLoupeRenderer()">{{ loupeRendererMode() === 'webgpu' ? 'GPU' : 'CSS' }}</button>
+          <label class="loupe-toggle" title="Toggle HDR cursor loupe (FP16 window capture)" [class.active]="loupeEnabled()">
+            <input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)" />
+            <span><u>M</u>agnifier</span>
+          </label>
+          <ui-action-button title="Toggle full screen mode (F)"
+                            [compact]="true"
+                            [variant]="fullScreen ? 'primary' : 'default'"
+                            (pressed)="toggleFullScreen()">
+            <ui-icon icon="fullScreenMaximize" size="large" [inherit]="true" />
+          </ui-action-button>
+        </div>
       </section>
     </ui-tool-menu>
   }
