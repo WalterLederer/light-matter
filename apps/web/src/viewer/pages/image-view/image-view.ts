@@ -745,13 +745,7 @@ export class ImageView {
                 windowBoundsDip: { x: geometry.x, y: geometry.y, width: geometry.windowWidth, height: geometry.windowHeight },
                 captureFramePx: { width: geometry.width, height: geometry.height },
                 windowsScaleFactor: geometry.scaleFactor,
-                measuredScale: { x: measuredScaleX, y: measuredScaleY },
                 requestedFramePosition: { x, y },
-                windowsScaleCandidate: { x: windowsScaleX, y: windowsScaleY },
-                measuredMinusWindowsPx: {
-                  x: x - windowsScaleX,
-                  y: y - windowsScaleY
-                },
                 sampledCenter: { x: sample.x, y: sample.y },
                 mappingErrorPx: { x: sample.x - x, y: sample.y - y },
                 region: { width: sample.regionWidth, height: sample.regionHeight, radius: sample.radius },
