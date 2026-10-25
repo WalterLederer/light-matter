@@ -100,10 +100,13 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
 
   private readonly pixelCanvas = document.createElement('canvas');
 
-  private readonly mainImageBrightnessRenderer = new MainImageBrightnessRenderer();
+  private readonly mainImageBrightnessRenderer = new MainImageBrightnessRenderer('sdr');
+  private readonly mainHdrBrightnessRenderer = new MainImageBrightnessRenderer('hdr');
   private gpuRenderRequest = 0;
   protected readonly gpuBrightnessReady = signal(false);
   protected readonly gpuBrightnessFailed = signal(false);
+  protected readonly gpuHdrBrightnessReady = signal(false);
+  protected readonly gpuHdrBrightnessFailed = signal(false);
 
   private pixelContext: CanvasRenderingContext2D | null = null;
 
@@ -132,17 +135,20 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
       const brightness = this.displayBrightness();
       const mode = this.brightnessRendererMode();
       const comparison = this.comparisonMode();
-      if (url === null || brightness === 1 || mode !== 'webgpu' || comparison !== 'sdr') {
-        this.gpuRenderRequest++;
-        this.gpuBrightnessReady.set(false);
-        this.gpuBrightnessFailed.set(false);
-        return;
-      }
       const request = ++this.gpuRenderRequest;
       this.gpuBrightnessReady.set(false);
       this.gpuBrightnessFailed.set(false);
+      this.gpuHdrBrightnessReady.set(false);
+      this.gpuHdrBrightnessFailed.set(false);
+
+      if (url === null || brightness === 1 || mode !== 'webgpu') return;
+
+      const renderSdr = comparison !== 'hdr';
+      const renderHdr = comparison !== 'sdr';
       queueMicrotask(() => {
-        if (request === this.gpuRenderRequest) void this.renderMainImageBrightness(request, url, brightness);
+        if (request !== this.gpuRenderRequest) return;
+        if (renderSdr) void this.renderMainImageBrightness(request, url, brightness);
+        if (renderHdr) void this.renderMainHdrBrightness(request, url, brightness);
       });
     });
   }
@@ -232,6 +238,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     if (this.debugImageSwitching()) this.debugSwitchingPhase.emit('renderer lifecycle: destroyed');
     this.gpuRenderRequest++;
     this.mainImageBrightnessRenderer.dispose();
+    this.mainHdrBrightnessRenderer.dispose();
     this.imagePositioningService.removeViewport();
   }
 
@@ -241,8 +248,6 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     const image = surface?.querySelector<HTMLImageElement>('img.sdr-image');
     const canvas = surface?.querySelector<HTMLCanvasElement>('canvas.sdr-gpu-image');
     if (!image || !canvas || !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
-      // The signal/effect can run before Angular has inserted the canvas into the DOM.
-      // Retry on the next paint instead of silently leaving the SDR image unprocessed.
       if (attempt < 30) requestAnimationFrame(() => {
         void this.renderMainImageBrightness(request, url, brightness, attempt + 1);
       });
@@ -252,8 +257,28 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
       await this.mainImageBrightnessRenderer.render(canvas, image, brightness);
       if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuBrightnessReady.set(true);
     } catch (error) {
-      console.error('Main-image WebGPU brightness render failed:', error);
+      console.error('Main-image SDR WebGPU brightness render failed:', error);
       if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuBrightnessFailed.set(true);
+    }
+  };
+
+  private readonly renderMainHdrBrightness = async (request: number, url: string, brightness: number, attempt = 0): Promise<void> => {
+    if (request !== this.gpuRenderRequest || this.displayUrl() !== url) return;
+    const surface = this.viewportRef()?.nativeElement;
+    const image = surface?.querySelector<HTMLImageElement>('img.hdr-image');
+    const canvas = surface?.querySelector<HTMLCanvasElement>('canvas.hdr-gpu-image');
+    if (!image || !canvas || !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+      if (attempt < 30) requestAnimationFrame(() => {
+        void this.renderMainHdrBrightness(request, url, brightness, attempt + 1);
+      });
+      return;
+    }
+    try {
+      await this.mainHdrBrightnessRenderer.render(canvas, image, brightness);
+      if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuHdrBrightnessReady.set(true);
+    } catch (error) {
+      console.error('Main-image HDR WebGPU brightness render failed:', error);
+      if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuHdrBrightnessFailed.set(true);
     }
   };
 
