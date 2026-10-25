@@ -75,7 +75,7 @@
     z-index: 20;
     top: 16px;
     left: 16px;
-    width: min(360px, calc(100% - 32px));
+    width: min(720px, calc(100% - 32px));
     padding: 8px;
     box-sizing: border-box;
     border: 1px solid rgb(125 180 255 / 75%);
@@ -97,7 +97,7 @@
       display: block;
       width: 100%;
       height: auto;
-      max-height: 180px;
+      max-height: 360px;
       object-fit: contain;
       background: #111;
     }
