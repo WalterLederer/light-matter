@@ -132,7 +132,7 @@ export class MainImageBrightnessRenderer {
       context.configure({
         device,
         format,
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST,
         colorSpace: 'srgb',
         alphaMode: 'opaque',
         toneMapping: { mode: 'extended' }
@@ -141,7 +141,7 @@ export class MainImageBrightnessRenderer {
       context.configure({
         device,
         format,
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST,
         colorSpace: 'srgb',
         alphaMode: 'opaque'
       });
