@@ -70,6 +70,11 @@ export class MainImageBrightnessRenderer {
     pass.draw(3);
     pass.end();
     this.device!.queue.submit([encoder.finish()]);
+
+    // Do not report the canvas as ready while its render pass is still queued.
+    // The caller only hides the source image after this promise resolves.
+    await this.device!.queue.onSubmittedWorkDone();
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
   }
 
   private async initialize(canvas: HTMLCanvasElement): Promise<void> {
