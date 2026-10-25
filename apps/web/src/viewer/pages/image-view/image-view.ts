@@ -238,7 +238,7 @@ export class ImageView {
 
   protected readonly loupeSourcePoint = signal({ x: 0, y: 0 });
 
-  protected readonly loupeCaptureGeometry = signal<{ width: number; height: number; x: number; y: number; windowWidth: number; windowHeight: number; scaleFactor: number } | null>(null);
+  protected readonly loupeCaptureGeometry = signal<{ width: number; height: number; x: number; y: number; contentX: number; contentY: number; windowWidth: number; windowHeight: number; scaleFactor: number } | null>(null);
 
   protected readonly loupePosition = signal({ x: 24, y: 80 });
 
@@ -983,12 +983,12 @@ export class ImageView {
       const scale = geometry.scaleFactor;
       const view = this.document.defaultView;
       if (!view) return;
-      // DOM bounds are window-client coordinates. Convert them to desktop screen
-      // coordinates before mapping to physical capture pixels. geometry.x/y are
-      // the application window origin, not the monitor-frame origin; subtracting
-      // them here shifts the crop toward the window's top-left corner.
-      const captureLeft = (view.screenX + bounds.left) * scale;
-      const captureTop = (view.screenY + bounds.top) * scale;
+      // DOM bounds are relative to the renderer content area. Use Electron's
+      // content origin in screen DIP coordinates, then subtract the captured
+      // display origin before converting to physical monitor pixels. This avoids
+      // including the title bar/window frame in the captured image rectangle.
+      const captureLeft = (geometry.contentX + bounds.left - geometry.x) * scale;
+      const captureTop = (geometry.contentY + bounds.top - geometry.y) * scale;
       const region = await desktop.Loupe.region(captureLeft, captureTop, bounds.width * scale, bounds.height * scale);
       if (!region || !this.loupeFullImageView() || !this.loupeEnabled()) return;
       const zoom = Math.max(0.01, canvas.clientWidth / region.regionWidth);
