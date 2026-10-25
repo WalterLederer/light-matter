@@ -724,11 +724,18 @@ export class ImageView {
     if (!force && now - this.lastLoupeSampleAt < 24) return;
     this.lastLoupeSampleAt = now;
     const request = ++this.loupeSampleRequest;
-    // The loupe's outer size changes its visible source area without changing
-    // the pixel magnification. Include that size scale when sizing the capture crop;
-    // otherwise PageUp enlarges the loupe beyond the copied region and causes edge streaks.
+    // Size the source crop for the longest viewport dimension. Ruler viewports
+    // are 560 px long, so a 140 px radius only covers their center at low zoom.
+    // Include the physical display scale and outer loupe size, but keep pixel
+    // magnification independent from the loupe's visual size.
+    const shape = this.loupeShape();
+    const viewportHalfExtent = shape === 'ruler' || shape === 'vertical-ruler'
+      ? 280
+      : shape === 'small-circular'
+        ? 70
+        : 140;
     const effectiveZoom = this.loupePixelSize() * geometry.scaleFactor / this.loupeSizeScale();
-    const requestedRadius = Math.ceil(140 / Math.max(effectiveZoom, 0.01)) + 16;
+    const requestedRadius = Math.ceil(viewportHalfExtent / Math.max(effectiveZoom, 0.01)) + 16;
     const radius = Math.max(3, Math.min(2048, requestedRadius));
     this.desktop.Loupe.sample(x, y, radius)
       .then(async sample => {
