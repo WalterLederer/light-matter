@@ -287,7 +287,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
       // Render the same decoded HDR <img> through a separate WebGPU texture into
       // a small overlay. This deliberately tests the browser image-copy path,
       // not the original file decoder or the screen-capture loupe path.
-      const diagnosticCanvas = surface.querySelector<HTMLCanvasElement>('canvas.hdr-copy-diagnostic-canvas');
+      const diagnosticCanvas = surface?.querySelector<HTMLCanvasElement>('canvas.hdr-copy-diagnostic-canvas');
       if (diagnosticCanvas && request === this.gpuRenderRequest) {
         try {
           await this.hdrDiagnosticRenderer.render(diagnosticCanvas, image, 1);
