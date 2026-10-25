@@ -935,6 +935,10 @@ export class ImageView {
     }
     const next = Math.max(0.03, Math.min(9, Number((this.loupeBrightness() + direction * 0.1).toFixed(2))));
     this.loupeBrightness.set(next);
+    if (this.loupeFullImageView()) {
+      void this.renderLoupeFullImage();
+      return;
+    }
     const sample = this.loupeSample();
     if (sample) void this.renderHdrLoupe(sample);
   };
