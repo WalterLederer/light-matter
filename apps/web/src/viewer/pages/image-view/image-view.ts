@@ -789,7 +789,7 @@ export class ImageView {
       });
   };
 
-  protected readonly onLoupeMouseMove = (event: MouseEvent) => {
+  protected readonly onLoupeMouseMove = (event: MouseEvent, forceSample = false) => {
     const position = { clientX: event.clientX, clientY: event.clientY, screenX: event.screenX, screenY: event.screenY };
     this.lastMousePosition.set(position);
     if (!this.loupeEnabled() || this.loupeCapturePending()) return;
@@ -805,7 +805,7 @@ export class ImageView {
     this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
 
     this.updateLoupeSourcePoint(event.clientX, event.clientY);
-    this.sampleLoupeAtPosition(position);
+    this.sampleLoupeAtPosition(position, forceSample);
   };
 
   protected readonly onLoupeMouseLeave = () => {
@@ -1249,7 +1249,17 @@ export class ImageView {
               .then(() => {
                 if (!this.loupeEnabled() || this.loupeFullImageView()) return;
                 const mouse = this.lastMousePosition();
-                if (mouse) this.sampleLoupeAtPosition(mouse, true);
+                if (mouse) {
+                  // Re-run the complete mouse-move path, not just the capture
+                  // request: it also restores the source point and loupe layout
+                  // after the full-image overlay has intercepted pointer events.
+                  this.onLoupeMouseMove(new MouseEvent('mousemove', {
+                    clientX: mouse.clientX,
+                    clientY: mouse.clientY,
+                    screenX: mouse.screenX,
+                    screenY: mouse.screenY
+                  }), true);
+                }
               });
           } else if (this.loupeFullImageView()) { void this.renderLoupeFullImage(); }
           else { this.adjustLoupeSize(event.key === 'PageUp' ? 1 : -1); }
