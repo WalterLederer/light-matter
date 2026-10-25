@@ -51,7 +51,7 @@ async function run() {
     const pipeline = device.createRenderPipeline({
       layout: 'auto',
       vertex: {module: shader, entryPoint: 'vs'},
-      fragment: {module: shader, entryPoint: 'fs', targets: [{format: 'rgba16float'}},
+      fragment: {module: shader, entryPoint: 'fs', targets: [{format: 'rgba16float'}]},
       primitive: {topology: 'triangle-list'}
     });
     const direct = device.createTexture({size: [1,1], format: 'rgba16float', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC});
