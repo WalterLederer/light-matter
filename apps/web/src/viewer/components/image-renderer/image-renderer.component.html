@@ -106,6 +106,11 @@
         @if (hdrPatternError(); as patternError) {
           <div class="hdr-copy-diagnostic-error">GPU-Test: {{ patternError }}</div>
         }
+        <div class="hdr-copy-diagnostic-note">Test 0: HDR-Ausgabe mit Shader-Werten 0,25 / 1 / 2 / 4 (FP16, über SDR-Weiß)</div>
+        <canvas class="hdr-output-diagnostic-pattern" width="640" height="80" style="dynamic-range-limit: no-limit"></canvas>
+        @if (hdrOutputPatternError(); as hdrOutputError) {
+          <div class="hdr-copy-diagnostic-error">HDR-Ausgabe-Test: {{ hdrOutputError }}</div>
+        }
         <div class="hdr-copy-diagnostic-note">Test 1: Bildimport in SDR-Textur (rgba8unorm)</div>
         <canvas class="hdr-copy-diagnostic-sdr-canvas" width="640" height="180"></canvas>
         <div class="hdr-copy-diagnostic-note">Test 2: Bildimport in FP16-Textur (rgba16float)</div>
