@@ -102,6 +102,9 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
 
   private readonly mainImageBrightnessRenderer = new MainImageBrightnessRenderer('sdr');
   private readonly mainHdrBrightnessRenderer = new MainImageBrightnessRenderer('hdr');
+  // Independent diagnostic renderer: keeps the test overlay isolated from the main canvas.
+  private readonly hdrDiagnosticRenderer = new MainImageBrightnessRenderer('hdr');
+  protected readonly hdrDiagnosticError = signal<string | null>(null);
   private gpuRenderRequest = 0;
   protected readonly gpuBrightnessReady = signal(false);
   protected readonly gpuBrightnessFailed = signal(false);
@@ -243,6 +246,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     this.gpuRenderRequest++;
     this.mainImageBrightnessRenderer.dispose();
     this.mainHdrBrightnessRenderer.dispose();
+    this.hdrDiagnosticRenderer.dispose();
     this.imagePositioningService.removeViewport();
   }
 
@@ -280,6 +284,18 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     try {
       await this.mainHdrBrightnessRenderer.render(canvas, image, brightness);
       if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuHdrBrightnessReady.set(true);
+      // Render the same decoded HDR <img> through a separate WebGPU texture into
+      // a small overlay. This deliberately tests the browser image-copy path,
+      // not the original file decoder or the screen-capture loupe path.
+      const diagnosticCanvas = surface.querySelector<HTMLCanvasElement>('canvas.hdr-copy-diagnostic');
+      if (diagnosticCanvas && request === this.gpuRenderRequest) {
+        try {
+          await this.hdrDiagnosticRenderer.render(diagnosticCanvas, image, 1);
+          this.hdrDiagnosticError.set(null);
+        } catch (diagnosticError) {
+          this.hdrDiagnosticError.set(diagnosticError instanceof Error ? diagnosticError.message : String(diagnosticError));
+        }
+      }
     } catch (error) {
       console.error('Main-image HDR WebGPU brightness render failed:', error);
       if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuHdrBrightnessFailed.set(true);
