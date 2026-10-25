@@ -721,8 +721,12 @@ export class ImageView {
     if (!force && now - this.lastLoupeSampleAt < 24) return;
     this.lastLoupeSampleAt = now;
     const request = ++this.loupeSampleRequest;
-    const requestedRadius = Math.ceil(140 / this.loupePixelSize());
-    const radius = Math.max(3, Math.min(280, requestedRadius));
+    // The shader samples a 280px output span divided by the effective zoom.
+    // At low zoom this needs a much larger source crop; otherwise textureLoad()
+    // clamps at the crop edges and produces stretched streaks toward the loupe rim.
+    const effectiveZoom = this.loupePixelSize() * geometry.scaleFactor;
+    const requestedRadius = Math.ceil(140 / Math.max(effectiveZoom, 0.01)) + 8;
+    const radius = Math.max(3, Math.min(2048, requestedRadius));
     this.desktop.Loupe.sample(x, y, radius)
       .then(async sample => {
         if (request === this.loupeSampleRequest && this.loupeEnabled()) {
