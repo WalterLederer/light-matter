@@ -157,7 +157,8 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
         if (renderHdr) {
           // The diagnostic must run at normal brightness too; it is independent
           // of the optional brightness-adjustment pass.
-          void this.renderHdrPattern(request);\n          void this.renderHdrDiagnostic(request, url);
+          void this.renderHdrPattern(request);
+          void this.renderHdrDiagnostic(request, url);
           if (brightness !== 1) void this.renderMainHdrBrightness(request, url, brightness);
         }
       });
