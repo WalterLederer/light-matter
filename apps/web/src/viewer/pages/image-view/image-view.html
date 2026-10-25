@@ -52,7 +52,7 @@
   }
 
   @if (loupeEnabled() && selected !== null) {
-    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'small-circular' || loupeShape() === 'circular-detail'" [class.small-circular]="loupeShape() === 'small-circular'" [class.circular-detail]="loupeShape() === 'circular-detail'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" aria-label="HDR cursor loupe" aria-live="off">
+    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'small-circular' || loupeShape() === 'circular-detail'" [class.small-circular]="loupeShape() === 'small-circular'" [class.circular-detail]="loupeShape() === 'circular-detail'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" [style.transform]="'scale(' + loupeSizeScale() + ')'" aria-label="HDR cursor loupe" aria-live="off">
       @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
         <div class="loupe-handle" aria-hidden="true"></div>
       }
@@ -168,7 +168,7 @@
             <div class="loupe-hdr-linear">scRGB —, —, —</div>
           }
         </section>
-        <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>S</u>: Shape · <u>L</u>: Location · + / −: Zoom · ↑ / ↓: Loupe brightness · <u>H</u>: Histogram</div>
+        <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>S</u>: Shape · <u>L</u>: Location · + / −: Zoom · ↑ / ↓: Brightness · PgUp / PgDn: Loupe size · <u>H</u>: Histogram</div>
         }
       </section>
     </aside>
