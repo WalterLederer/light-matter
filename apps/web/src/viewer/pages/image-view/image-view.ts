@@ -207,6 +207,9 @@ export class ImageView {
 
   protected readonly loupePixelSize = signal(24);
 
+  /** Overall visual size of the loupe, independent of pixel magnification. */
+  protected readonly loupeSizeScale = signal(1);
+
   /** Relative display brightness for the magnified image; 1 means unchanged. */
   protected readonly loupeBrightness = signal(1);
 
@@ -779,8 +782,9 @@ export class ImageView {
     const viewWidth = view?.innerWidth ?? 1280;
     const viewHeight = view?.innerHeight ?? 720;
     const shape = this.loupeShape();
-    const loupeWidth = shape === 'ruler' ? 590 : 310;
-    const loupeHeight = (this.locationInfoExpanded() ? 430 : 310) + (shape === 'ruler' ? -180 : shape === 'vertical-ruler' ? 280 : 0);
+    const sizeScale = this.loupeSizeScale();
+    const loupeWidth = (shape === 'ruler' ? 590 : shape === 'vertical-ruler' ? 130 : 310) * sizeScale;
+    const loupeHeight = ((this.locationInfoExpanded() ? 430 : 310) + (shape === 'ruler' ? -180 : shape === 'vertical-ruler' ? 280 : 0)) * sizeScale;
     const left = event.clientX > viewWidth - loupeWidth - 24 ? event.clientX - loupeWidth - 20 : event.clientX + 20;
     const top = event.clientY > viewHeight - loupeHeight - 24 ? event.clientY - loupeHeight - 20 : event.clientY + 20;
     this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
@@ -906,10 +910,25 @@ export class ImageView {
   };
 
   protected readonly adjustLoupeBrightness = (direction: 1 | -1) => {
-    const next = Math.max(0.1, Math.min(3, Number((this.loupeBrightness() + direction * 0.1).toFixed(1))));
+    // Extend the previous 0.1–3.0 range by roughly 3× in both directions.
+    const next = Math.max(0.03, Math.min(9, Number((this.loupeBrightness() + direction * 0.1).toFixed(2))));
     this.loupeBrightness.set(next);
     const sample = this.loupeSample();
     if (this.loupeShape() === 'rectangular' && sample) void this.renderHdrLoupe(sample);
+  };
+
+  protected readonly adjustLoupeSize = (direction: 1 | -1) => {
+    const next = Math.max(0.5, Math.min(2, Number((this.loupeSizeScale() + direction * 0.1).toFixed(1))));
+    this.loupeSizeScale.set(next);
+    const mouse = this.lastMousePosition();
+    if (this.loupeEnabled() && mouse) {
+      this.onLoupeMouseMove(new MouseEvent('mousemove', {
+        clientX: mouse.clientX,
+        clientY: mouse.clientY,
+        screenX: mouse.screenX,
+        screenY: mouse.screenY
+      }));
+    }
   };
 
   protected readonly adjustZoom = (direction: 1 | -1) => {
@@ -1143,6 +1162,12 @@ export class ImageView {
         if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
           event.preventDefault();
           this.adjustLoupeBrightness(event.key === 'ArrowUp' ? 1 : -1);
+          return;
+        }
+
+        if (this.loupeEnabled() && (event.key === 'PageUp' || event.key === 'PageDown')) {
+          event.preventDefault();
+          this.adjustLoupeSize(event.key === 'PageUp' ? 1 : -1);
           return;
         }
 
