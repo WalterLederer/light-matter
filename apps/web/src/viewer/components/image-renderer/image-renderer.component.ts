@@ -147,14 +147,19 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
       this.gpuHdrBrightnessReady.set(false);
       this.gpuHdrBrightnessFailed.set(false);
 
-      if (url === null || brightness === 1 || mode !== 'webgpu') return;
+      if (url === null || mode !== 'webgpu') return;
 
-      const renderSdr = comparison !== 'hdr';
+      const renderSdr = brightness !== 1 && comparison !== 'hdr';
       const renderHdr = comparison !== 'sdr';
       queueMicrotask(() => {
         if (request !== this.gpuRenderRequest) return;
         if (renderSdr) void this.renderMainImageBrightness(request, url, brightness);
-        if (renderHdr) void this.renderMainHdrBrightness(request, url, brightness);
+        if (renderHdr) {
+          // The diagnostic must run at normal brightness too; it is independent
+          // of the optional brightness-adjustment pass.
+          void this.renderHdrDiagnostic(request, url);
+          if (brightness !== 1) void this.renderMainHdrBrightness(request, url, brightness);
+        }
       });
     });
 
@@ -270,6 +275,28 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     }
   };
 
+  private readonly renderHdrDiagnostic = async (request: number, url: string, attempt = 0): Promise<void> => {
+    if (request !== this.gpuRenderRequest || this.displayUrl() !== url) return;
+    const surface = this.viewportRef()?.nativeElement;
+    const image = surface?.querySelector<HTMLImageElement>('img.hdr-image');
+    const diagnosticCanvas = surface?.querySelector<HTMLCanvasElement>('canvas.hdr-copy-diagnostic-canvas');
+    if (!image || !diagnosticCanvas || !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+      if (attempt < 30) requestAnimationFrame(() => {
+        void this.renderHdrDiagnostic(request, url, attempt + 1);
+      });
+      return;
+    }
+
+    try {
+      await this.hdrDiagnosticRenderer.render(diagnosticCanvas, image, 1);
+      if (request === this.gpuRenderRequest && this.displayUrl() === url) this.hdrDiagnosticError.set(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.hdrDiagnosticError.set(message);
+      console.error('HDR copy diagnostic render failed:', error);
+    }
+  };
+
   private readonly renderMainHdrBrightness = async (request: number, url: string, brightness: number, attempt = 0): Promise<void> => {
     if (request !== this.gpuRenderRequest || this.displayUrl() !== url) return;
     const surface = this.viewportRef()?.nativeElement;
@@ -284,18 +311,6 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     try {
       await this.mainHdrBrightnessRenderer.render(canvas, image, brightness);
       if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuHdrBrightnessReady.set(true);
-      // Render the same decoded HDR <img> through a separate WebGPU texture into
-      // a small overlay. This deliberately tests the browser image-copy path,
-      // not the original file decoder or the screen-capture loupe path.
-      const diagnosticCanvas = surface?.querySelector<HTMLCanvasElement>('canvas.hdr-copy-diagnostic-canvas');
-      if (diagnosticCanvas && request === this.gpuRenderRequest) {
-        try {
-          await this.hdrDiagnosticRenderer.render(diagnosticCanvas, image, 1);
-          this.hdrDiagnosticError.set(null);
-        } catch (diagnosticError) {
-          this.hdrDiagnosticError.set(diagnosticError instanceof Error ? diagnosticError.message : String(diagnosticError));
-        }
-      }
     } catch (error) {
       console.error('Main-image HDR WebGPU brightness render failed:', error);
       if (request === this.gpuRenderRequest && this.displayUrl() === url) this.gpuHdrBrightnessFailed.set(true);
