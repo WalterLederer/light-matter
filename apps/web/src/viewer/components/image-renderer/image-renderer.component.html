@@ -23,7 +23,7 @@
       <img alt=""
          class="comparison-image sdr-image"
          [class.pannable]="location.zoom !== 'fit' && comparisonMode() !== 'dual-side-by-side' && comparisonMode() !== 'dual-stacked'"
-         [class.hidden-variant]="comparisonMode() === 'hdr'"
+         [class.hidden-variant]="comparisonMode() === 'hdr' || (brightnessRendererMode() === 'webgpu' && displayBrightness() !== 1)"
          [class.dual-side-by-side]="comparisonMode() === 'dual-side-by-side'"
          [width]="location.width"
          [height]="location.height"

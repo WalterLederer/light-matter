@@ -175,7 +175,8 @@
     }
   }
 
-  img {
+  img,
+  canvas.comparison-image {
     position: absolute;
 
     &.pannable {
