@@ -142,10 +142,14 @@ export const sampleLoupeRegion = (x: number, y: number, radius = 5) => {
   // Clip the crop to the real monitor frame instead of repeating edge pixels.
   // The shader treats coordinates outside this cropped texture as empty, so a
   // low zoom never stretches the monitor's border pixels across the ruler.
-  const left = Math.max(0, px - safeRadius);
-  const right = Math.min(frame.width - 1, px + safeRadius);
-  const top = Math.max(0, py - safeRadius);
-  const bottom = Math.min(frame.height - 1, py + safeRadius);
+  const requestedDiameter = safeRadius * 2 + 1;
+  // If the requested crop spans an entire monitor dimension, copy that whole
+  // dimension even when the cursor is near an edge. Otherwise the far side of
+  // the monitor would be missing and the shader would have to show empty pixels.
+  const left = requestedDiameter >= frame.width ? 0 : Math.max(0, px - safeRadius);
+  const right = requestedDiameter >= frame.width ? frame.width - 1 : Math.min(frame.width - 1, px + safeRadius);
+  const top = requestedDiameter >= frame.height ? 0 : Math.max(0, py - safeRadius);
+  const bottom = requestedDiameter >= frame.height ? frame.height - 1 : Math.min(frame.height - 1, py + safeRadius);
   const regionWidth = right - left + 1;
   const regionHeight = bottom - top + 1;
   const centerX = px - left;
