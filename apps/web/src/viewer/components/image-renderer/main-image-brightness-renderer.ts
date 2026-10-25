@@ -265,6 +265,8 @@ export class WebGpuDiagnosticPatternRenderer {
 
 /** HDR output test using known shader values above SDR white (1.0). */
 export class WebGpuHdrDiagnosticPatternRenderer {
+  constructor(private readonly colorSpace: 'srgb' | 'srgb-linear' = 'srgb') {}
+
   private device: GPUDevice | null = null;
   private context: GPUCanvasContext | null = null;
   private canvas: HTMLCanvasElement | null = null;
@@ -290,7 +292,7 @@ export class WebGpuHdrDiagnosticPatternRenderer {
       device,
       format: 'rgba16float',
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST,
-      colorSpace: 'srgb',
+      colorSpace: this.colorSpace,
       alphaMode: 'opaque',
       toneMapping: { mode: 'extended' }
     });
