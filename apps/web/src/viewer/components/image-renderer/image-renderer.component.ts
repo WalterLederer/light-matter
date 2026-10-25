@@ -103,6 +103,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
   private readonly mainImageBrightnessRenderer = new MainImageBrightnessRenderer('sdr');
   private readonly mainHdrBrightnessRenderer = new MainImageBrightnessRenderer('hdr');
   // Independent diagnostic renderer: keeps the test overlay isolated from the main canvas.
+  private readonly sdrDiagnosticRenderer = new MainImageBrightnessRenderer('sdr', false);
   private readonly hdrDiagnosticRenderer = new MainImageBrightnessRenderer('hdr', false);
   private readonly hdrPatternRenderer = new WebGpuDiagnosticPatternRenderer();
   protected readonly hdrPatternError = signal<string | null>(null);
@@ -160,6 +161,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
           // The diagnostic must run at normal brightness too; it is independent
           // of the optional brightness-adjustment pass.
           void this.renderHdrPattern(request);
+          void this.renderSdrDiagnostic(request, url);
           void this.renderHdrDiagnostic(request, url);
           if (brightness !== 1) void this.renderMainHdrBrightness(request, url, brightness);
         }
@@ -254,6 +256,7 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     this.gpuRenderRequest++;
     this.mainImageBrightnessRenderer.dispose();
     this.mainHdrBrightnessRenderer.dispose();
+    this.sdrDiagnosticRenderer.dispose();
     this.hdrDiagnosticRenderer.dispose();
     this.hdrPatternRenderer.dispose();
     this.imagePositioningService.removeViewport();
@@ -296,6 +299,26 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     }
   };
 
+  private readonly renderSdrDiagnostic = async (request: number, url: string, attempt = 0): Promise<void> => {
+    if (request !== this.gpuRenderRequest || this.displayUrl() !== url) return;
+    const surface = this.viewportRef()?.nativeElement;
+    const image = surface?.querySelector<HTMLImageElement>('img.hdr-image');
+    const diagnosticCanvas = surface?.querySelector<HTMLCanvasElement>('canvas.hdr-copy-diagnostic-sdr-canvas');
+    if (!image || !diagnosticCanvas || !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+      if (attempt < 30) requestAnimationFrame(() => {
+        void this.renderSdrDiagnostic(request, url, attempt + 1);
+      });
+      return;
+    }
+
+    try {
+      await this.sdrDiagnosticRenderer.render(diagnosticCanvas, image, 1);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.hdrDiagnosticError.set('SDR-Texturtest: ' + message);
+      console.error('SDR copy diagnostic render failed:', error);
+    }
+  };
   private readonly renderHdrDiagnostic = async (request: number, url: string, attempt = 0): Promise<void> => {
     if (request !== this.gpuRenderRequest || this.displayUrl() !== url) return;
     const surface = this.viewportRef()?.nativeElement;
