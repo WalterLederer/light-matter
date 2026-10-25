@@ -331,6 +331,10 @@
       <section class="status-control-groups" aria-label="Image controls">
         <div class="status-control-group zoom-group" aria-label="Zoom">
           <span class="status-group-label">ZOOM</span>
+          <label class="loupe-toggle" title="Toggle HDR cursor loupe (FP16 window capture)" [class.active]="loupeEnabled()">
+            <input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)" />
+            <span><u>M</u>agnifier</span>
+          </label>
           <ui-action-button title="Fit to window"
                             [disabled]="loupeEnabled() || location.zoom === 'fit'"
                             (pressed)="fitToWindow()">
@@ -344,9 +348,9 @@
             <ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64"
                        title="Loupe magnification: adjust how much the area around the mouse pointer is enlarged." />
             <button class="zoom-step-button loupe-zoom-reset" type="button"
-                    title="Reset loupe magnification to exactly 1×"
+                    title="Reset loupe magnification to 1×"
                     aria-label="Reset loupe magnification to 1×"
-                    (click)="resetLoupeZoom()">1×</button>
+                    (click)="resetLoupeZoom()">Reset</button>
           } @else {
             <ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"
                        title="Image zoom: drag the slider to change the image magnification. Use Fit to Window to fit the image to the available area." />
@@ -362,7 +366,7 @@
         </div>
 
         <div class="status-control-group brightness-group" aria-label="Brightness">
-          <span class="status-group-label">HELLIGKEIT</span>
+          <span class="status-group-label">BRIGHTNESS</span>
           <button class="zoom-step-button renderer-mode-button" type="button"
                   [class.active]="loupeRendererMode() === 'webgpu'"
                   title="Brightness renderer. GPU uses WebGPU for SDR/HDR main-image brightness and FP16 Windows Graphics Capture for the cursor loupe; CSS uses the CSS brightness filter for the main image and loupe."
@@ -384,11 +388,7 @@
         </div>
 
         <div class="status-control-group other-group" aria-label="Other">
-          <span class="status-group-label">SONSTIGES</span>
-          <label class="loupe-toggle" title="Toggle HDR cursor loupe (FP16 window capture)" [class.active]="loupeEnabled()">
-            <input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)" />
-            <span><u>M</u>agnifier</span>
-          </label>
+          <span class="status-group-label">OTHER</span>
           <ui-action-button title="Toggle full screen mode (F)"
                             [compact]="true"
                             [variant]="fullScreen ? 'primary' : 'default'"
