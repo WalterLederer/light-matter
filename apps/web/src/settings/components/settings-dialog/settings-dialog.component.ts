@@ -1,19 +1,12 @@
-import { Dialog, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import {
-  DialogComponent,
-  TitleComponent
-} from '@light-matter/ui';
 import { CacheClearResult, CacheInfo, supportedFileFormats } from 'internal-api';
 import { CacheManager } from '../../../ipc/cache-manager';
 import { ProcessManager } from '../../../ipc/process-manager';
 import { ByteSizePipe } from '../../../ui/pipes/byte-size/byte-size.pipe';
 
 @Component({
-  selector: 'app-settings-dialog',
+  selector: 'app-settings-panel',
   imports: [
-    DialogComponent,
-    TitleComponent,
     ByteSizePipe
   ],
   templateUrl: './settings-dialog.component.html',
@@ -23,8 +16,6 @@ import { ByteSizePipe } from '../../../ui/pipes/byte-size/byte-size.pipe';
 })
 export class SettingsDialogComponent {
   /* DI */
-  readonly dialogRef = inject<DialogRef<boolean>>(DialogRef);
-
   readonly cacheManager = inject(CacheManager);
 
   private readonly processManager = inject(ProcessManager);
@@ -215,9 +206,4 @@ export class SettingsDialogComponent {
     }
   };
 
-  /* Static methods */
-  static readonly open = (dialog: Dialog) => dialog.open(SettingsDialogComponent, {
-    width: '1100px',
-    maxWidth: '94vw'
-  }).closed;
 }
