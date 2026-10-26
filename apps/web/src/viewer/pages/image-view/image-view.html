@@ -84,7 +84,7 @@
       </div>
       <section class="loupe-info-box location-info-box" [class.collapsed]="!locationInfoExpanded()" aria-label="Location pixel information">
         <div class="loupe-info-heading location-heading">
-          <span><u>L</u>ocation</span>
+          <span class="location-heading-label"><span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? 'v' : '>' }}</span><u>L</u>ocation</span>
           <span class="loupe-coordinates">
             @if (loupeSample(); as sample) {
               X: {{ sample.x }}/{{ dimensions.width || '—' }} · Y: {{ sample.y }}/{{ dimensions.height || '—' }}
@@ -92,7 +92,6 @@
               X: —/{{ dimensions.width || '—' }} · Y: —/{{ dimensions.height || '—' }}
             }
           </span>
-          <span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? 'v' : '>' }}</span>
         </div>
         @if (locationInfoExpanded()) {
         <div class="loupe-brightness-correction" aria-label="Brightness correction">
