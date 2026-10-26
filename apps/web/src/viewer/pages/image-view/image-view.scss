@@ -822,7 +822,7 @@
 
   .image-controls-sidebar .location-heading {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
@@ -855,15 +855,15 @@
     justify-self: end;
   }
 
-  .image-controls-sidebar .loupe-hdr-swatch {
-    background-color: var(--hdr-swatch-sdr-color, #000);
-    dynamic-range-limit: no-limit;
+  .image-controls-sidebar .loupe-hdr-swatch-container {
+    overflow: hidden;
+    padding: 0;
   }
 
-  @supports (background-color: color(srgb-linear 1 1 1)) {
-    .image-controls-sidebar .loupe-hdr-swatch {
-      background-color: var(--hdr-swatch-hdr-color, var(--hdr-swatch-sdr-color, #000));
-    }
+  .image-controls-sidebar .loupe-hdr-swatch-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   .image-controls-sidebar .coordinate-rgb-channels .loupe-rgb-channel {
@@ -914,23 +914,6 @@
   .image-controls-sidebar .coordinate-rgb-channels .loupe-rgb-fill.blue {
     background: #438cff;
   }
-
-  .image-controls-sidebar .coordinate-rgb-readout {
-    display: flex;
-    flex: 1 0 100%;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 2px 7px;
-    width: 100%;
-    margin-top: 3px;
-    font: 9px/1.35 Consolas, "Courier New", monospace;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-
-  .image-controls-sidebar .coordinate-rgb-readout .red { color: #ff4242; }
-  .image-controls-sidebar .coordinate-rgb-readout .green { color: #36cf70; }
-  .image-controls-sidebar .coordinate-rgb-readout .blue { color: #438cff; }
 
   .image-controls-sidebar .loupe-sdr-info,
   .image-controls-sidebar .loupe-hdr-info {
