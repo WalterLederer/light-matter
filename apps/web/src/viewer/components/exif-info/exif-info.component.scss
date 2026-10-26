@@ -65,3 +65,44 @@
   font-size: 0.9em;
   opacity: 0.8;
 }
+
+
+.full-path-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 var(--dim-small);
+  min-width: 0;
+}
+
+.full-path-value {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  user-select: text;
+  font-family: var(--font-family-monospace, monospace);
+  font-size: 0.85em;
+  line-height: 1.35;
+  opacity: 0.9;
+}
+
+.copy-path-button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--color-border-default, currentColor);
+  border-radius: 4px;
+  padding: 3px 6px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+.copy-path-button:hover {
+  background: var(--color-background-hover, rgb(128 128 128 / 18%));
+}
+
+.copy-path-icon { font-size: 1.15em; }
