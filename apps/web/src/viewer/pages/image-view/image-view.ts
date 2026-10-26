@@ -395,7 +395,6 @@ export class ImageView {
 
   private lastLoupeSampleAt = 0;
 
-  private lastLoupeDiagnosticAt = 0;
 
   /** Cells already logged for the current capture, to compare mapping across the whole window. */
 
