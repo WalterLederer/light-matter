@@ -612,7 +612,7 @@ export class ImageView {
     this.configuration.config()
       .pipe(take(1), takeUntilDestroyed())
       .subscribe(config => {
-        this.sidebarSections.set({ ...this.sidebarSections(), ...config.system.imageSidebarSections });
+        this.sidebarSections.set({ ...this.sidebarSections(), ...config.system.imageSidebarSections, general: false });
         if (this.sidebarSectionExpanded('loupe')) void this.toggleLoupe(true);
         this.histogramVisible.set(config.system.histogramVisible === true);
         const savedMode = config.system.comparisonMode ?? 'hdr';
