@@ -58,17 +58,6 @@
     }
   }
 
-  .hdr-quality-logo {
-    .logo-main {
-      color: #111;
-      background: var(--hdr-logo-main-gradient);
-    }
-
-    .logo-accent {
-      background: var(--hdr-logo-accent-gradient);
-    }
-  }
-
   .hdr-image-adjustment-canvas {
     position: fixed;
     z-index: 28;
