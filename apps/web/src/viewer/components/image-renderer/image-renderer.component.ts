@@ -428,49 +428,43 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
   protected readonly onSurfaceMouseMove = (event: MouseEvent) => {
     const surface = this.viewportRef()?.nativeElement;
     const target = event.target;
-    const images = surface?.querySelectorAll<HTMLImageElement>('.comparison-image:not(.hidden-variant)');
-    const targetImage = target instanceof HTMLImageElement &&
+    const sources = surface?.querySelectorAll<HTMLImageElement | HTMLCanvasElement>(
+      '.comparison-image:not(.hidden-variant)'
+    );
+    const isSource = (element: EventTarget | null): element is HTMLImageElement | HTMLCanvasElement =>
+      element instanceof HTMLImageElement || element instanceof HTMLCanvasElement;
+    const targetSource = isSource(target) &&
       target.matches('.comparison-image:not(.hidden-variant)')
       ? target
       : null;
-    const imageElement = targetImage ?? (images === undefined
+    const source = targetSource ?? (sources === undefined
       ? null
-      : Array.from(images).find(image => {
-          const bounds = image.getBoundingClientRect();
-          return event.clientX >= bounds.left && event.clientX < bounds.right &&
+      : Array.from(sources).find(element => {
+          const bounds = element.getBoundingClientRect();
+          return bounds.width > 0 && bounds.height > 0 &&
+            event.clientX >= bounds.left && event.clientX < bounds.right &&
             event.clientY >= bounds.top && event.clientY < bounds.bottom;
         }) ?? null);
 
-    const targetDescription = target instanceof HTMLElement
-      ? `${target.tagName.toLowerCase()}.${String(target.className).replace(/\\s+/g, '.').slice(0, 48)}`
-      : String(target);
-    const imageDescription = imageElement === null
-      ? 'none'
-      : `${imageElement.className} ${imageElement.naturalWidth}x${imageElement.naturalHeight} complete=${imageElement.complete}`;
-
-    if (imageElement === null) {
-      this.pixelDebugChange.emit(`move target=${targetDescription}; images=${images?.length ?? 0}; image=none`);
+    if (source === null) {
+      this.pixelDebugChange.emit('move: no visible comparison image or canvas');
       this.pixelColorChange.emit(null);
       return;
     }
 
-    const sourceWidth = imageElement.naturalWidth;
-    const sourceHeight = imageElement.naturalHeight;
-    const bounds = imageElement.getBoundingClientRect();
+    const sourceWidth = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+    const sourceHeight = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+    const bounds = source.getBoundingClientRect();
 
-    if (this.pixelContext === null) {
-      this.pixelDebugChange.emit(`move target=${targetDescription}; image=${imageDescription}; canvas=NONE`);
+    if (source instanceof HTMLImageElement && !source.complete ||
+        sourceWidth <= 0 || sourceHeight <= 0 || bounds.width <= 0 || bounds.height <= 0 ||
+        this.pixelContext === null) {
+      this.pixelDebugChange.emit('move: source not ready for RGB sampling');
       this.pixelColorChange.emit(null);
       return;
     }
 
-    if (sourceWidth <= 0 || sourceHeight <= 0 || bounds.width <= 0 || bounds.height <= 0) {
-      this.pixelDebugChange.emit(`move target=${targetDescription}; image=${imageDescription}; bounds=${Math.round(bounds.width)}x${Math.round(bounds.height)}`);
-      this.pixelColorChange.emit(null);
-      return;
-    }
-
-    // Account for object-fit: contain in the dual SDR/HDR layout, as well as zoom and pan.
+    // Map the pointer through object-fit: contain, including zoom/pan and GPU canvases.
     const scale = Math.min(bounds.width / sourceWidth, bounds.height / sourceHeight);
     const renderedWidth = sourceWidth * scale;
     const renderedHeight = sourceHeight * scale;
@@ -480,23 +474,17 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
     const y = Math.floor((event.clientY - top) / scale);
 
     if (x < 0 || y < 0 || x >= sourceWidth || y >= sourceHeight) {
-      this.pixelDebugChange.emit(`move image=${imageDescription}; outside x=${x} y=${y}; scale=${scale.toFixed(3)}`);
+      this.pixelDebugChange.emit('move: pointer outside source image');
       this.pixelColorChange.emit(null);
       return;
     }
 
     try {
       this.pixelContext.clearRect(0, 0, 1, 1);
-      // Sample the exact source pixel explicitly; negative destination offsets can
-      // be misleading when the displayed image is zoomed or transformed.
-      this.pixelContext.drawImage(imageElement, x, y, 1, 1, 0, 0, 1, 1);
+      this.pixelContext.drawImage(source, x, y, 1, 1, 0, 0, 1, 1);
       const pixel = this.pixelContext.getImageData(0, 0, 1, 1).data;
-      const rgb = { r: pixel[0], g: pixel[1], b: pixel[2] };
-      this.pixelDebugChange.emit(`OK ${imageElement.classList.contains('sdr-image') ? 'SDR' : 'HDR'} x=${x} y=${y} rgb=${rgb.r},${rgb.g},${rgb.b}`);
-      this.pixelColorChange.emit(rgb);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.pixelDebugChange.emit(`CANVAS ERROR: ${message.slice(0, 90)}`);
+      this.pixelColorChange.emit({ r: pixel[0], g: pixel[1], b: pixel[2] });
+    } catch {
       this.pixelColorChange.emit(null);
     }
   };
