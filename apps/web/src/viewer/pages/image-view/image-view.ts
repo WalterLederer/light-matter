@@ -764,6 +764,19 @@ export class ImageView {
     }
   };
 
+  /** Restore a neutral viewing state without changing the selected image or comparison mode. */
+  protected readonly resetViewAndAdjustments = (): void => {
+    if (this.loupeEnabled()) void this.toggleLoupe(false);
+    this.loupeBrightness.set(1);
+    this.mainImageBrightness.set(1);
+    this.imageContrast.set(1);
+    this.redChannelLevel.set(1);
+    this.greenChannelLevel.set(1);
+    this.blueChannelLevel.set(1);
+    this.imagePositioningService.setZoom('fit');
+    this.refreshHdrImageAdjustments();
+  };
+
   protected readonly resetImageBrightness = () => {
     if (this.loupeEnabled()) this.loupeBrightness.set(1);
     else this.setMainBrightness(1);
