@@ -240,7 +240,13 @@
             <label class="channel-control"><span><b>Black point</b><span>{{(blackPoint()*100).toFixed(0)}}%</span></span><input type="range" min="0" [max]="whitePoint() - 0.01" step=".005" [value]="blackPoint()" (input)="setBlackPoint($any($event.target).value)"/></label>
             <label class="channel-control"><span><b>White point</b><span>{{(whitePoint()*100).toFixed(0)}}%</span></span><input type="range" [min]="blackPoint() + 0.01" max="2" step=".01" [value]="whitePoint()" (input)="setWhitePoint($any($event.target).value)"/></label>
           </div>
-          <label class="hdr-highlight-toggle"><input type="checkbox" [checked]="highlightHdrPixels()" (change)="setHdrPixelHighlight($any($event.target).checked)"/> Highlight HDR pixels <span>(scRGB &gt; 1.0)</span></label>
+          <label class="hdr-highlight-toggle"><input type="checkbox" [checked]="highlightHdrPixels()" (change)="setHdrPixelHighlight($any($event.target).checked)"/> Highlight HDR pixels</label>
+          @if (highlightHdrPixels()) {
+            <label class="hdr-threshold-control">
+              <span><b>Threshold</b><span>{{hdrHighlightThreshold().toFixed(1)}} scRGB · {{hdrHighlightThresholdNits().toLocaleString()}} nits</span></span>
+              <input type="range" min="1" max="125" step="0.1" [value]="hdrHighlightThreshold()" (input)="setHdrHighlightThreshold($any($event.target).value)" aria-label="HDR highlight threshold from 80 to 10000 nits"/>
+            </label>
+          }
           <button (click)="resetCorrections()">Reset corrections</button>
         }
       </section>
