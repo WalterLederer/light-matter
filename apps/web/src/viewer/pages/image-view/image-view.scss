@@ -7,55 +7,18 @@
 
   position: relative;
 
-  .sdr-quality-logo,
-  .hdr-quality-logo {
+  .sdr-quality-logo {
     position: absolute;
     z-index: 10;
     top: 12px;
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
-    width: 220px;
+    width: 104px;
+    height: 104px;
     max-width: calc(100% - 24px);
-    height: 45px;
-    display: grid;
-    grid-template-rows: 27px 3px 15px;
-    overflow: hidden;
-    opacity: 0.95;
-    border: 1px solid #d5dbe4;
-    border-radius: 4px;
-    box-sizing: border-box;
-    background: #d9d9d9;
-    color: #111;
-    text-align: center;
-    box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
-
-    .logo-main {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #050505;
-      color: #fff;
-      font-size: 24px;
-      font-weight: 750;
-      line-height: 1;
-      letter-spacing: 0.02em;
-    }
-
-    .logo-accent {
-      background: #ef7d00;
-    }
-
-    .logo-caption {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 3px;
-      font-size: 7.5px;
-      font-weight: 650;
-      line-height: 1.1;
-      white-space: nowrap;
-    }
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgb(0 0 0 / 35%));
   }
 
   .hdr-image-adjustment-canvas {
@@ -829,46 +792,9 @@
   .mode-row .mode-button {position:relative;display:flex;align-items:center;justify-content:center;min-height:80px;padding:7px 5px 5px;overflow:hidden}
   .mode-logo-pair {display:flex;align-items:center;justify-content:center;gap:3px;min-width:0}
   .mode-logo-pair.vertical {flex-direction:column;gap:3px}
-  .mode-logo {display:grid;grid-template-rows:18px 3px 10px;width:63px;height:31px;overflow:hidden;flex:0 1 auto;border:1px solid #d5dbe4;border-radius:2px;box-sizing:border-box;background:#d9d9d9;color:#111;text-align:center;box-shadow:0 1px 2px rgb(0 0 0 / 25%)}
-  .mode-logo .logo-main {display:flex;align-items:center;justify-content:center;background:#050505;color:#fff;font-size:15px;font-weight:750;line-height:1;letter-spacing:.02em}
-  .mode-logo .logo-accent {background:#111}
-  .mode-logo .logo-caption {display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;padding:0 1px;font-size:5px;font-weight:650;line-height:1}
-  .mode-logo.sdr-logo .logo-accent {background:#777}
-  .mode-logo.sdr-logo .logo-caption {background:linear-gradient(#f1f1f1,#d5d5d5);color:#222}
-  .mode-logo.hdr-logo .logo-main {color:#111;background:var(--hdr-logo-main-gradient)}
-  .mode-logo.hdr-logo .logo-accent {background:var(--hdr-logo-accent-gradient)}
-  .mode-logo.hdr-logo .logo-caption {background:linear-gradient(#f1f1f1,#d5d5d5);color:#222}
-  .mode-logo-pair.vertical .mode-logo {width:72px;height:27px;grid-template-rows:15px 3px 8px}
-  .mode-logo-pair.vertical .mode-logo .logo-main {font-size:12px}
-  .mode-logo-pair.vertical .mode-logo .logo-caption {font-size:4px}
- .red {color:#ff6868}.green {color:#68dc85}.blue {color:#6ba9ff}.path {overflow-wrap:anywhere;font-size:11px;opacity:.75}
-}
-
-  .image-controls-sidebar .location-info-box {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    min-width: 0;
-    padding: 8px;
-    border: 1px solid rgb(255 255 255 / 30%);
-    border-radius: 5px;
-    background: rgb(12 14 18 / 96%);
-    color: #f5f5f5;
-    box-shadow: 0 4px 16px rgb(0 0 0 / 20%);
-    font: 10px/1.35 Consolas, "Courier New", monospace;
-    font-variant-numeric: tabular-nums;
-  }
-  .image-controls-sidebar .location-heading {display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px}
-  .image-controls-sidebar .location-heading .loupe-coordinates {justify-self:end;text-align:right;flex:0 0 auto;padding-left:6px}
-  .image-controls-sidebar .loupe-pixel-row {display:grid;grid-template-columns:29px minmax(0,1fr);align-items:center;gap:5px;min-width:0;padding-left:6px}
-  .image-controls-sidebar .loupe-rgb-swatch {display:inline-block;flex:0 0 15px;width:15px;height:14px;border:1px solid rgb(255 255 255 / 65%);border-radius:2px;box-sizing:border-box}
-  .image-controls-sidebar .loupe-rgb-values {white-space:normal;overflow-wrap:anywhere}
-  .image-controls-sidebar .loupe-rgb-channels {display:flex;flex-direction:column;gap:2px;width:100%;margin-top:2px;grid-column:2}
-  .image-controls-sidebar .coordinate-rgb-channels {flex:0 0 96px;min-width:38px;max-width:96px;margin:0;justify-self:end;grid-column:auto}
-  .image-controls-sidebar .loupe-capture-error {max-width:100%}
-  .image-controls-sidebar .loupe-hdr-linear {margin-left:42px}
+  .mode-logo-image {display:block;width:46px;height:46px;object-fit:contain;flex:0 0 auto}
+  .mode-logo-pair .mode-logo-image {width:39px;height:39px}
+  .mode-logo-pair.vertical .mode-logo-image {width:32px;height:32px}
 
   .mode-layout-icon {position:absolute;top:3px;right:4px;width:13px;height:13px;box-sizing:border-box;opacity:.9}
   .mode-layout-icon.overlay span {position:absolute;width:8px;height:8px;border:1px solid #aeb7c5;border-radius:1px;background:#30343a}
