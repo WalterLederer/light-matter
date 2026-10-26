@@ -270,6 +270,11 @@
                   </span>
                   <span class="loupe-rgb-values">R:0x{{ sample.center.rHex }} G:0x{{ sample.center.gHex }} B:0x{{ sample.center.bHex }}</span>
                 </div>
+                <div class="loupe-rgb-channels coordinate-rgb-channels hdr-rgb-channels" aria-label="HDR RGB channel levels; scRGB 1.0 reference-white boundary; scale to 1000 nits">
+                  <span class="loupe-rgb-channel"><span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="sample.center.r / 12.5 * 100"></span></span></span>
+                  <span class="loupe-rgb-channel"><span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="sample.center.g / 12.5 * 100"></span></span></span>
+                  <span class="loupe-rgb-channel"><span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="sample.center.b / 12.5 * 100"></span></span></span>
+                </div>
               } @else if (loupeCaptureError(); as captureError) {
                 <div class="loupe-capture-error" role="status">HDR pixel info unavailable: {{ captureError }}</div>
               } @else {
