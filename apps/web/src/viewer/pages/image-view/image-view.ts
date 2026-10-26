@@ -272,6 +272,9 @@ export class ImageView {
     const sections = { ...this.sidebarSections(), [key]: !this.sidebarSectionExpanded(key) };
     this.sidebarSections.set(sections);
     this.configuration.updateSystemConfig({ imageSidebarSections: sections });
+    if (key === 'loupe') {
+      void this.toggleLoupe(sections['loupe']);
+    }
     if (key === 'info') {
       this.exifVisible.set(sections['info']);
       this.configuration.updateSystemConfig({ exifVisible: sections['info'] });
@@ -298,6 +301,17 @@ export class ImageView {
       if (this.sidebarSections()[key] && !this.histogramVisible()) this.toggleHistogram();
       else if (!this.sidebarSections()[key] && this.histogramVisible()) this.closeHistogram();
     }
+  };
+  protected readonly collapseAllSidebarSections = (): void => {
+    const sections = Object.fromEntries(
+      Object.keys(this.sidebarSections()).map(key => [key, false])
+    ) as Record<string, boolean>;
+    this.sidebarSections.set(sections);
+    this.configuration.updateSystemConfig({ imageSidebarSections: sections, exifVisible: false, histogramVisible: false });
+    this.exifVisible.set(false);
+    this.exifState.set(false);
+    if (this.loupeEnabled()) void this.toggleLoupe(false);
+    if (this.histogramVisible()) this.closeHistogram();
   };
   protected readonly toggleControlsSidebar = (): void => this.controlsSidebarVisible.update(value => !value);
   protected readonly setDebugImageSwitching = (enabled: boolean): void => { try { this.document.defaultView?.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* storage may be unavailable */ } this.debugImageSwitching.set(enabled); };
@@ -561,6 +575,7 @@ export class ImageView {
       .pipe(take(1), takeUntilDestroyed())
       .subscribe(config => {
         this.sidebarSections.set({ ...this.sidebarSections(), ...config.system.imageSidebarSections });
+        if (this.sidebarSectionExpanded('loupe')) void this.toggleLoupe(true);
         this.histogramVisible.set(config.system.histogramVisible === true);
         const savedMode = config.system.comparisonMode ?? 'hdr';
         this.comparisonMode.set(savedMode);
