@@ -398,7 +398,6 @@ export class ImageView {
   private lastLoupeDiagnosticAt = 0;
 
   /** Cells already logged for the current capture, to compare mapping across the whole window. */
-  private readonly loupeDiagnosticCells = new Set<string>();
 
   private get desktop(): Desktop | undefined {
     return (this.document.defaultView as (Window & { desktop?: Desktop }) | null)?.desktop;
@@ -1101,7 +1100,6 @@ export class ImageView {
     }
     try {
       const geometry = await desktop.Loupe.capture();
-      this.loupeDiagnosticCells.clear();
       this.loupeCaptureGeometry.set(geometry);
       const lastMouse = this.lastMousePosition();
       if (lastMouse) this.sampleLoupeAtPosition(lastMouse, true);
