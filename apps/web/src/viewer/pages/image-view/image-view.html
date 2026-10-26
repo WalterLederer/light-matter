@@ -267,18 +267,18 @@
           <section class="loupe-hdr-info" aria-label="HDR pixel information">
             <div class="loupe-info-subheading"><span class="loupe-rgb-swatch loupe-hdr-swatch-container" aria-hidden="true"><canvas class="loupe-hdr-swatch-canvas"></canvas></span><span>HDR 0x</span></div>
             @if (loupeHdrRgb(); as hdr) {
-              <div class="loupe-channel-meters hdr-rgb-channels" aria-label="HDR RGB channel values and levels; scRGB 1.0 reference-white boundary; scale to 2000 nits">
+              <div class="loupe-channel-meters hdr-rgb-channels" aria-label="HDR RGB channel values and levels; scRGB 1.0 reference-white boundary; scale to 3000 nits">
                 <div class="loupe-channel-meter">
                   <span class="loupe-channel-value">{{ hdr.rHex }}</span>
-                  <span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="hdr.r / 25 * 100"></span></span>
+                  <span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="hdr.r / 37.5 * 100"></span></span>
                 </div>
                 <div class="loupe-channel-meter">
                   <span class="loupe-channel-value">{{ hdr.gHex }}</span>
-                  <span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="hdr.g / 25 * 100"></span></span>
+                  <span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="hdr.g / 37.5 * 100"></span></span>
                 </div>
                 <div class="loupe-channel-meter">
                   <span class="loupe-channel-value">{{ hdr.bHex }}</span>
-                  <span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="hdr.b / 25 * 100"></span></span>
+                  <span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="hdr.b / 37.5 * 100"></span></span>
                 </div>
               </div>
               <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">{{ hdr.r | number:'1.0-4' }}</span><span class="loupe-scrgb-values">{{ hdr.g | number:'1.0-4' }}</span><span class="loupe-scrgb-values">{{ hdr.b | number:'1.0-4' }}</span><span class="loupe-scrgb-label">scRGB</span></div>
