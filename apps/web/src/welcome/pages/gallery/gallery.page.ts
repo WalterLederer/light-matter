@@ -78,7 +78,7 @@ export class GalleryPage {
 
   protected readonly defaultThumbnailSize = defaultThumbnailSize;
 
-  protected readonly controlsSidebarVisible = signal(true);
+  protected readonly controlsSidebarVisible = signal(false);
   private readonly readStoredControlsSidebarWidth = (): number => {
     try {
       const stored = Number(globalThis.localStorage.getItem('light-matter.gallerySidebarWidth'));
