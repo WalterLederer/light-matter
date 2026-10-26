@@ -17,7 +17,7 @@ import { catchError, distinctUntilChanged, filter, from, fromEvent, map, of, sta
 import { ExifService } from '../../../ipc/exif';
 import { HistogramService } from '../../../ipc/histogram';
 import { ProcessManager } from '../../../ipc/process-manager';
-import { SettingsDialogComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
+import { SettingsPanelComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
 import { Configuration } from '../../../system/services/configuration/configuration';
 import { ThemeService } from '../../../system/services/theme/theme.service';
 import { Keyboard } from '../../../system/services/keyboard/keyboard';
@@ -39,7 +39,7 @@ const HDR_WEBGPU_BRIGHTNESS_CORRECTION = 0.4;
   imports: [
     AsyncPipe,
     ImageRendererComponent,
-    SettingsDialogComponent,
+    SettingsPanelComponent,
     ToolMenuComponent,
     ActionButtonComponent,
     IconComponent,
