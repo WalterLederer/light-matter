@@ -871,6 +871,57 @@
     border-radius: inherit;
   }
 
+  .image-controls-sidebar .loupe-sdr-info,
+  .image-controls-sidebar .loupe-hdr-info {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    min-width: 0;
+    padding-top: 6px;
+    border-top: 1px solid rgb(255 255 255 / 16%);
+  }
+
+  .image-controls-sidebar .loupe-info-subheading {
+    flex: 0 0 auto;
+    font: 600 10px/1.2 sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  .image-controls-sidebar .loupe-rgb-summary {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .image-controls-sidebar .loupe-rgb-swatch {
+    display: inline-block;
+    flex: 0 0 15px;
+    width: 15px;
+    height: 14px;
+    border: 1px solid rgb(255 255 255 / 65%);
+    border-radius: 2px;
+    box-sizing: border-box;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 18%);
+  }
+
+  .image-controls-sidebar .loupe-pixel-row .loupe-info-subheading {
+    align-self: start;
+    padding-top: 2px;
+  }
+
+  .image-controls-sidebar .loupe-pixel-row .loupe-rgb-summary {
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .image-controls-sidebar .loupe-pixel-row .loupe-rgb-values {
+    font-size: 9px;
+    letter-spacing: -0.055em;
+  }
+
   .image-controls-sidebar .loupe-pixel-row {
     display: grid;
     grid-template-columns: 29px minmax(0, 1fr) 42px;
