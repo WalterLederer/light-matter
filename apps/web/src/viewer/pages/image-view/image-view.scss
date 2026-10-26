@@ -1124,4 +1124,7 @@
 .image-controls-sidebar .rgb-inversion-controls {display:flex;flex-direction:column;gap:4px}
 .image-controls-sidebar .rgb-inversion-row {display:flex;align-items:center;gap:16px;flex-wrap:nowrap;padding:1px 0 4px}
 .image-controls-sidebar .rgb-inversion-row label {display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:12px;font-weight:400}
+.image-controls-sidebar .rgb-inversion-row label:nth-child(1) {color:#ff6666}
+.image-controls-sidebar .rgb-inversion-row label:nth-child(2) {color:#55d98a}
+.image-controls-sidebar .rgb-inversion-row label:nth-child(3) {color:#58a6ff}
 .image-controls-sidebar .rgb-inversion-row input[type=checkbox] {width:auto;margin:0;accent-color:#65a9ff}
