@@ -915,6 +915,26 @@
     background: #438cff;
   }
 
+  /* HDR bars use scRGB linear values: 1.0 is reference white (80 nits),
+     and 12.5 represents 1000 nits. The marker shows the HDR boundary. */
+  .image-controls-sidebar .hdr-rgb-channels .hdr-rgb-track {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .image-controls-sidebar .hdr-rgb-channels .hdr-rgb-track::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    top: -1px;
+    bottom: -1px;
+    left: 8%;
+    width: 1px;
+    background: var(--color-text, #fff);
+    box-shadow: 0 0 1px rgb(0 0 0 / 85%);
+    pointer-events: none;
+  }
+
   .image-controls-sidebar .loupe-sdr-info,
   .image-controls-sidebar .loupe-hdr-info {
     display: flex;
