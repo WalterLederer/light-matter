@@ -44,3 +44,35 @@ ul, li {
 .block-icon {
   display: block;
 }
+
+/* Consistent disclosure styling across the app. */
+details {
+  border-bottom: 1px solid var(--color-content-default-low);
+}
+
+details > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--dim-small);
+  list-style: none;
+  cursor: pointer;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details > summary::before {
+  content: ">";
+  display: inline-block;
+  flex: 0 0 12px;
+  width: 12px;
+  text-align: center;
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+details[open] > summary::before {
+  content: "v";
+}
+
