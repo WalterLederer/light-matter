@@ -289,7 +289,7 @@ export class ImageView {
               map(response => response.success ? response.data : null),
               catchError(() => of(null))
             )),
-            takeUntilDestroyed()
+            takeUntilDestroyed(this.destroyRef)
           )
           .subscribe(tags => {
             this.imageTags.set(tags);
