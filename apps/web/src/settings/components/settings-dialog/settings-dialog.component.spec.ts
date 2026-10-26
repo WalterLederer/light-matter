@@ -1,25 +1,34 @@
-import { DialogRef } from '@angular/cdk/dialog';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CacheManager } from '../../../ipc/cache-manager';
+import { ProcessManager } from '../../../ipc/process-manager';
 
-import { SettingsDialogComponent } from './settings-dialog.component';
+import { SettingsPanelComponent } from './settings-dialog.component';
 
 describe('SettingsDialogComponent', () => {
   let component: SettingsDialogComponent;
   let fixture: ComponentFixture<SettingsDialogComponent>;
 
-  const dialogRef = {};
-
   const cacheManager = {
-    cacheSize: jest.fn().mockResolvedValue(0)
+    cacheInfo: jest.fn().mockResolvedValue({ path: '', entries: 0, bytes: 0, fullSize: { entries: 0, bytes: 0 }, thumbnails: { entries: 0, bytes: 0 } }),
+    openCacheFolder: jest.fn().mockResolvedValue(null),
+    clear: jest.fn().mockResolvedValue({ entries: 0, bytes: 0 }),
+    clearFullSize: jest.fn().mockResolvedValue({ entries: 0, bytes: 0 }),
+    clearThumbnails: jest.fn().mockResolvedValue({ entries: 0, bytes: 0 })
+  };
+
+  const processManager = {
+    getDevToolsOpen: jest.fn().mockResolvedValue(false),
+    getSystemPaths: jest.fn().mockResolvedValue({ appConfig: '' }),
+    setDevToolsOpen: jest.fn().mockResolvedValue(undefined),
+    openConfigFile: jest.fn().mockResolvedValue(null)
   };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ SettingsDialogComponent ],
       providers: [
-        { provide: DialogRef, useValue: dialogRef },
-        { provide: CacheManager, useValue: cacheManager }
+        { provide: CacheManager, useValue: cacheManager },
+        { provide: ProcessManager, useValue: processManager }
       ]
     })
       .compileComponents();
