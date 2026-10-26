@@ -237,7 +237,7 @@
           <div class="loupe-info-heading location-heading">
             <span class="loupe-coordinates">
               @if (loupeSample(); as sample) {
-                X: {{ sample.x }}/{{ loupeCaptureGeometry()?.width || '—' }} · Y: {{ sample.y }}/{{ loupeCaptureGeometry()?.height || '—' }}
+                X: {{ sample.x }}/{{ loupeCaptureGeometry() ? loupeCaptureGeometry()!.width - 1 : '—' }} · Y: {{ sample.y }}/{{ loupeCaptureGeometry() ? loupeCaptureGeometry()!.height - 1 : '—' }}
               } @else {
                 X: —/{{ loupeCaptureGeometry()?.width || '—' }} · Y: —/{{ loupeCaptureGeometry()?.height || '—' }}
               }
