@@ -352,7 +352,10 @@ export class ImageView {
   protected readonly setLoupeBrightness = (v: string | number): void => {
     this.loupeBrightness.set(Math.max(0, Math.min(4, Number(v))));
     const sample = this.loupeSample();
-    if (sample) void this.renderHdrLoupe(sample);
+    if (sample) {
+      void this.renderHdrLoupe(sample);
+      void this.renderHdrColorSwatch(sample);
+    }
   };
   protected readonly setLoupeShape = (shape: 'circular' | 'rectangular' | 'ruler' | 'vertical-ruler'): void => {
     this.loupeShape.set(shape); this.storeLoupeShape(shape); this.hdrLoupeActive.set(false); this.hdrLoupeRenderer.dispose();
@@ -1210,13 +1213,18 @@ export class ImageView {
       if (request !== this.hdrSwatchRenderRequest || this.loupeSample() !== sample) return;
       const canvas = this.document.querySelector<HTMLCanvasElement>('.loupe-hdr-swatch-canvas');
       if (!canvas) return;
+      // Match the loupe's 0.4 HDR brightness correction; otherwise this
+      // small patch is substantially brighter than the corrected magnifier.
       await this.hdrSwatchRenderer.render(canvas, {
         width: sample.regionWidth,
         height: sample.regionHeight,
         centerX: sample.centerX,
         centerY: sample.centerY,
         data: sample.data
-      }, 1, 1000);
+      }, HDR_WEBGPU_BRIGHTNESS_CORRECTION, 1000);
+      // A newer sample may have arrived while WebGPU initialized/rendered.
+      // Never leave an obsolete frame as the apparent current pixel color.
+      if (request !== this.hdrSwatchRenderRequest || this.loupeSample() !== sample) return;
     } catch (error) {
       console.warn('HDR pixel swatch WebGPU render failed:', error);
     }
@@ -1515,7 +1523,13 @@ export class ImageView {
 
         if (event.key === 'm' || event.key === 'M') {
           event.preventDefault();
-          this.toggleSidebarSection('loupe');
+          // Toggle the actual loupe state, not just the sidebar section state.
+          // These can diverge after restoring persisted sidebar preferences.
+          const enabled = !this.loupeEnabled();
+          const sections = { ...this.sidebarSections(), loupe: enabled };
+          this.sidebarSections.set(sections);
+          this.configuration.updateSystemConfig({ imageSidebarSections: sections });
+          void this.toggleLoupe(enabled);
           return;
         }
 
