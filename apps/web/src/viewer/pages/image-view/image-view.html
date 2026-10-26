@@ -238,15 +238,6 @@
                 X: —/{{ loupeCaptureGeometry()?.width || '—' }} · Y: —/{{ loupeCaptureGeometry()?.height || '—' }}
               }
             </span>
-            @if (pixelColor(); as rgb) {
-              <div class="coordinate-rgb-readout" aria-label="RGB channel values and maximum">
-                <span class="red">R {{ rgb.r }}/255 ({{ (rgb.r / 255 * 100).toFixed(1) }}%)</span>
-                <span class="green">G {{ rgb.g }}/255 ({{ (rgb.g / 255 * 100).toFixed(1) }}%)</span>
-                <span class="blue">B {{ rgb.b }}/255 ({{ (rgb.b / 255 * 100).toFixed(1) }}%)</span>
-              </div>
-            } @else {
-              <div class="coordinate-rgb-readout" aria-label="RGB channel values and maximum">R —/255 · G —/255 · B —/255</div>
-            }
           </div>
           <section class="loupe-sdr-info" aria-label="SDR pixel information">
             <div class="loupe-pixel-row">
@@ -274,10 +265,8 @@
               <div class="loupe-info-subheading">HDR</div>
               @if (loupeSample(); as sample) {
                 <div class="loupe-rgb-summary">
-                  <span class="loupe-rgb-swatch loupe-hdr-swatch"
-                        [style.--hdr-swatch-sdr-color]="sample.center.color"
-                        [style.--hdr-swatch-hdr-color]="'color(srgb-linear ' + sample.center.r + ' ' + sample.center.g + ' ' + sample.center.b + ')'"
-                        aria-label="HDR pixel color in extended linear sRGB"></span>
+                  <canvas class="loupe-rgb-swatch loupe-hdr-swatch loupe-hdr-swatch-canvas"
+                          aria-label="HDR pixel color rendered from the FP16 capture"></canvas>
                   <span class="loupe-rgb-values">R:0x{{ sample.center.rHex }} G:0x{{ sample.center.gHex }} B:0x{{ sample.center.bHex }}</span>
                 </div>
               } @else if (loupeCaptureError(); as captureError) {
