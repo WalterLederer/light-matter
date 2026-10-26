@@ -1,7 +1,7 @@
 import { appConfigName } from 'internal-api';
 import { readFileSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { writeJsonAtomically } from '../file-system/json-file';
 
 export class StartupConfig {
   private _bounds: Electron.Rectangle | null = null;
@@ -116,7 +116,7 @@ export class StartupConfig {
   private readonly save = async (data: unknown) => {
     try {
       const configPath = this.configPath();
-      await writeFile(configPath, JSON.stringify(data, null, 2), 'utf-8');
+      await writeJsonAtomically(configPath, data);
       return true;
     } catch (_) {
       return false;
