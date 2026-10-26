@@ -815,7 +815,7 @@
     gap: 7px;
     min-width: 0;
     padding: 8px;
-    font: 10px/1.35 Consolas, "Courier New", monospace;
+    font: 20px/1.35 Consolas, "Courier New", monospace;
     font-variant-numeric: tabular-nums;
     text-align: left;
   }
@@ -833,20 +833,20 @@
 
   .image-controls-sidebar .location-heading .loupe-coordinates {
     flex: 0 0 auto;
-    font: 11px/1.35 Consolas, "Courier New", monospace;
+    font: 22px/1.35 Consolas, "Courier New", monospace;
     white-space: nowrap;
     letter-spacing: 0;
   }
 
   .image-controls-sidebar .coordinate-rgb-channels {
     display: flex;
-    flex: 0 0 42px;
+    flex: 0 0 126px;
     flex-direction: column;
     align-items: stretch;
     justify-content: center;
     gap: 2px;
-    width: 42px;
-    min-width: 42px;
+    width: 126px;
+    min-width: 126px;
     margin: 0 0 0 auto;
   }
 
@@ -868,7 +868,7 @@
 
   .image-controls-sidebar .coordinate-rgb-channels .loupe-rgb-channel {
     display: flex;
-    height: 4px;
+    height: 8px;
     align-items: center;
   }
 
@@ -876,7 +876,7 @@
     display: block;
     flex: 1 1 auto;
     width: 100%;
-    height: 4px;
+    height: 8px;
     overflow: hidden;
     border-radius: 2px;
     background: rgb(127 127 127 / 30%);
@@ -948,7 +948,7 @@
 
   .image-controls-sidebar .loupe-info-subheading {
     flex: 0 0 auto;
-    font: 600 10px/1.2 sans-serif;
+    font: 600 20px/1.2 sans-serif;
     letter-spacing: 0.05em;
   }
 
@@ -982,20 +982,20 @@
   }
 
   .image-controls-sidebar .loupe-pixel-row .loupe-rgb-values {
-    font-size: 9px;
+    font-size: 18px;
     letter-spacing: -0.055em;
   }
 
   .image-controls-sidebar .loupe-pixel-row {
     display: grid;
-    grid-template-columns: 29px minmax(0, 1fr) 42px;
+    grid-template-columns: 58px minmax(0, 1fr) 126px;
     align-items: center;
     gap: 5px;
     min-width: 0;
   }
 
   .image-controls-sidebar .loupe-rgb-values {
-    font: 10px/1.35 Consolas, "Courier New", monospace;
+    font: 20px/1.35 Consolas, "Courier New", monospace;
     white-space: nowrap;
     letter-spacing: -0.04em;
   }
