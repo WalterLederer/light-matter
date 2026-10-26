@@ -3,7 +3,6 @@ import { CacheClearResult, CacheInfo, supportedFileFormats } from 'internal-api'
 import { CacheManager } from '../../../ipc/cache-manager';
 import { ProcessManager } from '../../../ipc/process-manager';
 import { ByteSizePipe } from '../../../ui/pipes/byte-size/byte-size.pipe';
-import { ThemeService } from '../../../system/services/theme/theme.service';
 
 @Component({
   selector: 'app-settings-panel',
@@ -18,8 +17,6 @@ import { ThemeService } from '../../../system/services/theme/theme.service';
 export class SettingsPanelComponent {
   /* DI */
   readonly cacheManager = inject(CacheManager);
-
-  protected readonly themeService = inject(ThemeService);
 
   private readonly processManager = inject(ProcessManager);
 
