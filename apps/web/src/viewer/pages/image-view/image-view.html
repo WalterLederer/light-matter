@@ -5,7 +5,6 @@
 @let fullScreen = isFullScreen();
 @let dimensions = imageDimensions();
 @let exif = exifState();
-@let location = imageLocation$ | async | default:defaultImageLocation;
 @let isHdrImage = imageDynamicRange(selected?.path ?? '', imageTags(), imageBitDepth()) === 'HDR';
 
 @if (selected !== null) {
@@ -42,31 +41,31 @@
         <canvas class="hdr-loupe-full-frame-canvas" aria-hidden="true"></canvas>
       </aside>
     } @else {
-    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'small-circular' || loupeShape() === 'circular-detail'" [class.small-circular]="loupeShape() === 'small-circular'" [class.circular-detail]="loupeShape() === 'circular-detail'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" [style.transform]="'scale(' + loupeSizeScale() + ')'" aria-label="HDR cursor loupe" aria-live="off">
+    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" [style.transform]="'scale(' + loupeSizeScale() + ')'" aria-label="HDR cursor loupe" aria-live="off">
       @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
         <div class="loupe-handle" aria-hidden="true"></div>
       }
       @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
-        <div class="loupe-led-ring" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [class.rectangular]="loupeShape() === 'rectangular'" [class.small-circular]="loupeShape() === 'small-circular'" [style.opacity]="loupeBrightnessIndicatorOpacity()" aria-hidden="true">
+        <div class="loupe-led-ring" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [class.rectangular]="loupeShape() === 'rectangular'" [style.opacity]="loupeBrightnessIndicatorOpacity()" aria-hidden="true">
           @if (loupeShape() === 'rectangular') {
             @for (position of loupeLedRectPositions; track $index) {
               <span class="loupe-led" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [style.left.px]="position.x" [style.top.px]="position.y"></span>
             }
           } @else {
             @for (angle of loupeLedAngles; track angle) {
-              <span class="loupe-led" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [style.transform]="'rotate(' + angle + 'deg) translateY(-' + (loupeShape() === 'small-circular' ? 61 : 132) + 'px)'"></span>
+              <span class="loupe-led" [class.bright]="loupeBrightness() > 1" [class.dark]="loupeBrightness() < 1" [style.transform]="'rotate(' + angle + 'deg) translateY(-' + 132 + 'px)'"></span>
             }
           }
         </div>
       }
-      <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular' || loupeShape() === 'small-circular' || loupeShape() === 'circular-detail'" [class.small-circular]="loupeShape() === 'small-circular'" [class.ruler]="loupeShape() === 'ruler'" [class.vertical-ruler]="loupeShape() === 'vertical-ruler'">
+      <div class="loupe-image-viewport" [class.circular]="loupeShape() === 'circular'" [class.ruler]="loupeShape() === 'ruler'" [class.vertical-ruler]="loupeShape() === 'vertical-ruler'">
         <canvas class="loupe-image hdr-loupe-canvas" [style.display]="loupeRendererMode() === 'webgpu' ? 'block' : 'none'" aria-hidden="true"></canvas>
         <img class="loupe-image"
              [src]="selected.url"
              [width]="dimensions.width"
              [height]="dimensions.height"
-             [style.left.px]="(loupeShape() === 'ruler' ? 280 : loupeShape() === 'vertical-ruler' ? 50 : loupeShape() === 'small-circular' ? 70 : 140) - loupeSourcePoint().x * loupePixelSize() / loupeSizeScale()"
-             [style.top.px]="(loupeShape() === 'ruler' ? 50 : loupeShape() === 'vertical-ruler' ? 280 : loupeShape() === 'small-circular' ? 70 : 140) - loupeSourcePoint().y * loupePixelSize() / loupeSizeScale()"
+             [style.left.px]="(loupeShape() === 'ruler' ? 280 : loupeShape() === 'vertical-ruler' ? 50 : 140) - loupeSourcePoint().x * loupePixelSize() / loupeSizeScale()"
+             [style.top.px]="(loupeShape() === 'ruler' ? 50 : loupeShape() === 'vertical-ruler' ? 280 : 140) - loupeSourcePoint().y * loupePixelSize() / loupeSizeScale()"
              [style.transform]="'scale(' + (loupePixelSize() / loupeSizeScale()) + ')'"
              [style.display]="loupeRendererMode() === 'webgpu' ? 'none' : null"
              [style.filter]="loupeRendererMode() === 'css' && loupeBrightness() !== 1 ? 'brightness(' + loupeBrightness() + ')' : null"
@@ -75,22 +74,6 @@
              draggable="false" />
         <div class="loupe-crosshair" aria-hidden="true"></div>
       </div>
-      @if (loupeShape() === 'circular-detail') {
-        <div class="loupe-detail-viewport" aria-label="Magnified detail, 2× main loupe">
-          <img class="loupe-image loupe-detail-image"
-               [src]="selected.url"
-               [width]="dimensions.width"
-               [height]="dimensions.height"
-               [style.left.px]="52 - loupeSourcePoint().x * loupePixelSize() * 2 / loupeSizeScale()"
-               [style.top.px]="52 - loupeSourcePoint().y * loupePixelSize() * 2 / loupeSizeScale()"
-               [style.transform]="'scale(' + (loupePixelSize() * 2 / loupeSizeScale()) + ')'"
-               [style.filter]="loupeBrightness() === 1 ? null : 'brightness(' + loupeBrightness() + ')'"
-               alt=""
-               aria-hidden="true"
-               draggable="false" />
-          <div class="loupe-detail-crosshair" aria-hidden="true"></div>
-        </div>
-      }
       <section class="loupe-info-box location-info-box" [class.collapsed]="!locationInfoExpanded()" aria-label="Location pixel information">
         <div class="loupe-info-heading location-heading">
           <span><u>L</u>ocation</span>
