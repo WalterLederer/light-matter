@@ -1,7 +1,7 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { CdkMenu, CdkMenuItem } from '@angular/cdk/menu';
 import { AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   ActionButtonComponent,
@@ -17,13 +17,14 @@ import {
   TreeNode,
   VerticalStackComponent
 } from '@light-matter/ui';
-import { defaultThumbnailSize, FileInfo, SortDirection, SortType, ThumbnailSize } from 'internal-api';
+import { CacheInfo, defaultThumbnailSize, FileInfo, SortDirection, SortType, ThumbnailSize } from 'internal-api';
 import { ImageGridComponent } from '../../../gallery/components/image-grid/image-grid.component';
 import { GalleryLocations } from '../../../gallery/services/gallery-locations/gallery-locations';
 import { GalleryState } from '../../../gallery/services/gallery-state/gallery-state';
 import { defaultSortMode, treeNode } from '../../../gallery/services/gallery-state/gallery-state.types';
 import { Dialogs } from '../../../ipc/dialogs';
 import { ProcessManager } from '../../../ipc/process-manager';
+import { CacheManager } from '../../../ipc/cache-manager';
 import { SettingsDialogComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
 import { DefaultPipe } from '../../../system/pipes/default/default.pipe';
 import { ImageView } from '../../../viewer/pages/image-view/image-view';
@@ -56,6 +57,8 @@ export class GalleryPage {
 
   private readonly processManager = inject(ProcessManager);
 
+  private readonly cacheManager = inject(CacheManager);
+
   private readonly dialogs = inject(Dialogs);
 
   private readonly dialog = inject(Dialog);
@@ -74,6 +77,24 @@ export class GalleryPage {
 
   protected readonly defaultThumbnailSize = defaultThumbnailSize;
 
+  protected readonly controlsSidebarVisible = signal(true);
+  protected readonly generalSections = signal<Record<string, boolean>>({ cache: true, locations: true, debug: true });
+  protected readonly generalSectionExpanded = (key: string): boolean => this.generalSections()[key] === true;
+  protected readonly toggleGeneralSection = (key: string): void => this.generalSections.update(current => ({ ...current, [key]: !current[key] }));
+  protected readonly toggleControlsSidebar = (): void => this.controlsSidebarVisible.update(value => !value);
+  protected readonly debugImageSwitching = signal(this.readDebugImageSwitching());
+  protected readonly cacheInfo = signal<CacheInfo>({ path: '', entries: 0, bytes: 0, fullSize: { entries: 0, bytes: 0 }, thumbnails: { entries: 0, bytes: 0 } });
+  protected readonly configPath = signal('');
+  protected readonly generalSettingsError = signal<string | null>(null);
+  private readDebugImageSwitching(): boolean { try { return globalThis.localStorage.getItem('light-matter.debugImageSwitching') === 'true'; } catch { return false; } }
+  protected readonly setDebugImageSwitching = (enabled: boolean): void => { this.debugImageSwitching.set(enabled); try { globalThis.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* session-only fallback */ } };
+  protected readonly refreshGeneralSettings = async (): Promise<void> => {
+    try { this.cacheInfo.set(await this.cacheManager.cacheInfo()); this.configPath.set((await this.processManager.getSystemPaths()).appConfig); this.generalSettingsError.set(null); }
+    catch (error) { this.generalSettingsError.set(error instanceof Error ? error.message : String(error)); }
+  };
+  protected readonly openCacheFolder = async (): Promise<void> => { const error = await this.cacheManager.openCacheFolder(); if (error) this.generalSettingsError.set(error); };
+  protected readonly openConfigFile = async (): Promise<void> => { const error = await this.processManager.openConfigFile(); if (error) this.generalSettingsError.set(error); };
+
   /* State */
   readonly galleryRoot$ = this.galleryState.galleryRoot();
 
@@ -86,6 +107,7 @@ export class GalleryPage {
   readonly thumbSize$ = this.galleryState.thumbSize();
 
   constructor() {
+    void this.refreshGeneralSettings();
     this.processManager.getAppVersion()
       .then(version => this.processManager.setWindowTitle(`Light Matter - ${version}`))
       .catch(() => undefined);

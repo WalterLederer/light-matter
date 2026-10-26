@@ -46,6 +46,26 @@
 
 </ui-side-panel>
 
+@if (!controlsSidebarVisible()) {
+  <button class="show-controls-sidebar" type="button" title="Allgemeine Einstellungen anzeigen" (click)="toggleControlsSidebar()">⚙</button>
+}
+@if (controlsSidebarVisible()) {
+  <aside class="gallery-controls-sidebar" aria-label="Allgemeine Einstellungen">
+    <header><strong>Allgemeine Einstellungen</strong><button type="button" aria-label="Seitenleiste schließen" (click)="toggleControlsSidebar()">×</button></header>
+    <section><button class="section-heading" (click)="toggleGeneralSection('cache')">Cache {{generalSectionExpanded('cache')?'−':'+'}}</button>
+      @if (generalSectionExpanded('cache')) { <p>{{cacheInfo().entries}} Dateien · {{cacheInfo().bytes}} Bytes</p><p class="path">{{cacheInfo().path}}</p><button (click)="openCacheFolder()">Cache-Ordner öffnen</button><button (click)="openSettings()">Cache verwalten…</button> }
+    </section>
+    <section><button class="section-heading" (click)="toggleGeneralSection('locations')">Dateispeicherorte {{generalSectionExpanded('locations')?'−':'+'}}</button>
+      @if (generalSectionExpanded('locations')) { <span>Konfigurationsdatei</span><p class="path">{{configPath() || 'Wird geladen…'}}</p><button (click)="openConfigFile()">Einstellungen öffnen</button><button (click)="openSettings()">Weitere Speicherorte…</button> }
+    </section>
+    <section><button class="section-heading" (click)="toggleGeneralSection('debug')">Debug {{generalSectionExpanded('debug')?'−':'+'}}</button>
+      @if (generalSectionExpanded('debug')) { <label><input type="checkbox" [checked]="debugImageSwitching()" (change)="setDebugImageSwitching($any($event.target).checked)"/> Debug: Bildwechsel</label><p class="path">Zusätzliche Phaseninformationen beim Laden und Wechseln von Bildern.</p><button (click)="openSettings()">Weitere Debug-Optionen…</button> }
+    </section>
+    @if (generalSettingsError()) { <p class="general-settings-error">{{generalSettingsError()}}</p> }
+    <button (click)="refreshGeneralSettings()">Aktualisieren</button>
+  </aside>
+}
+
 <ng-template #galleryMenu let-data="data">
   <ui-popup-menu cdkMenu>
 

@@ -302,6 +302,7 @@
       </section>
       <section><button class="section-heading" (click)="toggleSidebarSection('histogram')">Histogramm {{sidebarSectionExpanded('histogram')?'−':'+'}}</button>@if(sidebarSectionExpanded('histogram')){<button (click)="toggleHistogram()">{{histogramVisible()?'Histogramm schließen':'Histogramm berechnen und öffnen'}}</button>}</section>
       <section><button class="section-heading" (click)="toggleSidebarSection('info')">Bildinformationen {{sidebarSectionExpanded('info')?'−':'+'}}</button>@if(sidebarSectionExpanded('info')){<button (click)="toggleExifInfo(selected.path)">{{exifVisible()?'Informationen schließen':'Informationen öffnen'}}</button><p>{{imageDimensions().width}} × {{imageDimensions().height}} px</p><p class="path">{{selected.path}}</p>}</section>
+      <section><button class="section-heading" (click)="toggleSidebarSection('general')">Allgemeine Einstellungen {{sidebarSectionExpanded('general')?'−':'+'}}</button>@if(sidebarSectionExpanded('general')){<label><input type="checkbox" [checked]="debugImageSwitching()" (change)="setDebugImageSwitching($any($event.target).checked)"/> Debug: Bildwechsel</label><p class="path">Cache, Dateispeicherorte und weitere Debug-Optionen</p><button (click)="openGeneralSettings()">Cache &amp; Dateispeicherorte öffnen…</button>}</section>
     </aside>
   }
 

@@ -18,6 +18,7 @@ import { catchError, distinctUntilChanged, filter, from, fromEvent, map, of, sta
 import { ExifService } from '../../../ipc/exif';
 import { HistogramService } from '../../../ipc/histogram';
 import { ProcessManager } from '../../../ipc/process-manager';
+import { SettingsDialogComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
 import { Configuration } from '../../../system/services/configuration/configuration';
 import { Keyboard } from '../../../system/services/keyboard/keyboard';
 import { ExifInfoComponent } from '../../components/exif-info/exif-info.component';
@@ -217,7 +218,7 @@ export class ImageView {
   protected readonly greenChannelVisible = signal(true);
   protected readonly blueChannelVisible = signal(true);
   protected readonly controlsSidebarVisible = signal(true);
-  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, loupe: true, mode: true, histogram: false, info: false });
+  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, loupe: true, mode: true, histogram: false, info: false, general: false });
   protected readonly sidebarSectionExpanded = (key: string): boolean => this.sidebarSections()[key] === true;
   protected readonly toggleSidebarSection = (key: string): void => {
     this.sidebarSections.update(current => ({ ...current, [key]: !current[key] }));
@@ -227,6 +228,8 @@ export class ImageView {
     }
   };
   protected readonly toggleControlsSidebar = (): void => this.controlsSidebarVisible.update(value => !value);
+  protected readonly setDebugImageSwitching = (enabled: boolean): void => { try { this.document.defaultView?.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* storage may be unavailable */ } this.debugImageSwitching.set(enabled); };
+  protected readonly openGeneralSettings = (): void => { void SettingsDialogComponent.open(this.dialog); };
   protected readonly imageChannelFilterActive = computed(() => this.imageContrast() !== 1 || !this.redChannelVisible() || !this.greenChannelVisible() || !this.blueChannelVisible());
   protected readonly imageChannelFilterMatrix = computed(() => {
     const c = this.imageContrast();
