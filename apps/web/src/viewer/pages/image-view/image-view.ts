@@ -265,7 +265,8 @@ export class ImageView {
   protected readonly redChannelLevel = signal(1);
   protected readonly greenChannelLevel = signal(1);
   protected readonly blueChannelLevel = signal(1);
-  protected readonly controlsSidebarVisible = signal(false);
+  protected readonly colorIntensity = signal(1);
+  protected readonly controlsSidebarVisible = signal(true);
   private readonly readStoredSidebarWidth = (): number => {
     try {
       const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.imageSidebarWidth'));
@@ -350,7 +351,7 @@ export class ImageView {
   protected readonly setDebugImageSwitching = (enabled: boolean): void => { try { this.document.defaultView?.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* storage may be unavailable */ } this.debugImageSwitching.set(enabled); };
   protected readonly hdrImageAdjustmentActive = computed(() =>
     this.mainImageBrightness() !== 1 || this.imageContrast() !== 1 ||
-    this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1
+    this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1 || this.colorIntensity() !== 1
   );
   protected readonly setMainBrightness = (v: string | number): void => {
     this.mainImageBrightness.set(Math.max(0, Math.min(2, Number(v))));
@@ -378,6 +379,19 @@ export class ImageView {
   };
   protected readonly resetRgbChannels = (): void => {
     this.redChannelLevel.set(1); this.greenChannelLevel.set(1); this.blueChannelLevel.set(1);
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly setColorIntensity = (v: string | number): void => {
+    this.colorIntensity.set(Math.max(0, Math.min(3, Number(v))));
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly resetCorrections = (): void => {
+    this.mainImageBrightness.set(1);
+    this.imageContrast.set(1);
+    this.redChannelLevel.set(1);
+    this.greenChannelLevel.set(1);
+    this.blueChannelLevel.set(1);
+    this.colorIntensity.set(1);
     this.refreshHdrImageAdjustments();
   };
   protected readonly setLoupeBrightness = (v: string | number): void => {
@@ -1177,7 +1191,8 @@ export class ImageView {
         contrast: this.imageContrast(),
         red: this.redChannelLevel(),
         green: this.greenChannelLevel(),
-        blue: this.blueChannelLevel()
+        blue: this.blueChannelLevel(),
+        saturation: this.colorIntensity()
       }
     );
     if (request === this.hdrImageAdjustmentRequest && this.hdrImageAdjustmentActive()) {
