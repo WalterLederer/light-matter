@@ -858,28 +858,15 @@
     font: 10px/1.35 Consolas, "Courier New", monospace;
     font-variant-numeric: tabular-nums;
   }
-  .image-controls-sidebar .loupe-info-heading {display:flex;align-items:center;justify-content:space-between;gap:8px;color:rgb(230 230 230 / 96%);font:600 11px/1.2 sans-serif;letter-spacing:.06em}
   .image-controls-sidebar .location-heading {display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px}
-  .image-controls-sidebar .loupe-coordinates {color:rgb(205 205 205 / 90%);font:11px/1.35 Consolas,"Courier New",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
   .image-controls-sidebar .location-heading .loupe-coordinates {justify-self:end;text-align:right;flex:0 0 auto;padding-left:6px}
-  .image-controls-sidebar .loupe-sdr-info,
-  .image-controls-sidebar .loupe-hdr-info {display:flex;flex-direction:column;gap:5px;padding-top:6px;border-top:1px solid rgb(255 255 255 / 16%);border-left:0;border-right:0;border-bottom:0}
-  .image-controls-sidebar .loupe-info-subheading {color:rgb(220 220 220 / 92%);font:600 10px/1.2 sans-serif;letter-spacing:.05em}
   .image-controls-sidebar .loupe-pixel-row {display:grid;grid-template-columns:29px minmax(0,1fr);align-items:center;gap:5px;min-width:0;padding-left:6px}
-  .image-controls-sidebar .loupe-rgb-summary {display:flex;align-items:center;gap:5px;min-width:0}
   .image-controls-sidebar .loupe-rgb-swatch {display:inline-block;flex:0 0 15px;width:15px;height:14px;border:1px solid rgb(255 255 255 / 65%);border-radius:2px;box-sizing:border-box}
-  .image-controls-sidebar .loupe-rgb-values {min-width:0;font:10px/1.35 Consolas,"Courier New",monospace;white-space:normal;overflow-wrap:anywhere;letter-spacing:-.04em}
+  .image-controls-sidebar .loupe-rgb-values {white-space:normal;overflow-wrap:anywhere}
   .image-controls-sidebar .loupe-rgb-channels {display:flex;flex-direction:column;gap:2px;width:100%;margin-top:2px;grid-column:2}
   .image-controls-sidebar .coordinate-rgb-channels {flex:0 0 96px;min-width:38px;max-width:96px;margin:0;justify-self:end;grid-column:auto}
-  .image-controls-sidebar .loupe-rgb-channel {display:flex;align-items:center;height:4px}
-  .image-controls-sidebar .loupe-rgb-track {flex:1;height:3px;overflow:hidden;border-radius:2px;background:rgb(127 127 127 / 30%)}
-  .image-controls-sidebar .loupe-rgb-fill {display:block;height:100%;border-radius:inherit}
-  .image-controls-sidebar .loupe-rgb-fill.red {background:#ff4242}
-  .image-controls-sidebar .loupe-rgb-fill.green {background:#36cf70}
-  .image-controls-sidebar .loupe-rgb-fill.blue {background:#438cff}
-  .image-controls-sidebar .loupe-capture-error {max-width:100%;color:#ffb4ab;font-size:.75rem;line-height:1.3;overflow-wrap:anywhere;white-space:pre-wrap}
-  .image-controls-sidebar .loupe-hdr-linear {margin-top:1px;margin-left:42px;overflow-wrap:anywhere;color:rgb(255 255 255 / 82%)}
-  .image-controls-sidebar .loupe-key-hint {color:rgb(190 198 208 / 88%);font:10px/1.35 sans-serif;text-align:left;margin-top:3px;padding-top:6px;border-top:1px solid rgb(255 255 255 / 12%)}
+  .image-controls-sidebar .loupe-capture-error {max-width:100%}
+  .image-controls-sidebar .loupe-hdr-linear {margin-left:42px}
 
   :host-context(html[data-theme='light']) {
  .image-controls-sidebar {color:#202124;background:#f7f7f7;border-left-color:rgb(0 0 0 / 14%);box-shadow:-4px 0 16px rgb(0 0 0 / 12%)}
