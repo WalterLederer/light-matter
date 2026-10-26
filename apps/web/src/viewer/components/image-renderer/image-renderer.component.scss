@@ -212,8 +212,13 @@
       color: #222;
     }
 
+    &.hdr-logo .logo-main {
+      color: #111;
+      background: var(--hdr-logo-main-gradient);
+    }
+
     &.hdr-logo .logo-accent {
-      background: linear-gradient(90deg, #d9008d 0%, #8b36b5 22%, #1679db 45%, #16a56b 64%, #e5d51b 80%, #ff7a00 100%);
+      background: var(--hdr-logo-accent-gradient);
     }
 
     &.hdr-logo .logo-caption {
