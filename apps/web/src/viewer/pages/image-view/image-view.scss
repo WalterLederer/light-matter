@@ -833,7 +833,7 @@
 
   .image-controls-sidebar .location-heading .loupe-coordinates {
     flex: 0 0 auto;
-    font: 18px/1.35 Consolas, "Courier New", monospace;
+    font: 20px/1.35 Consolas, "Courier New", monospace;
     white-space: nowrap;
     letter-spacing: 0;
   }
@@ -936,7 +936,7 @@
     display: block;
     min-width: 0;
     color: inherit;
-    font: 12px/1.2 Consolas, "Courier New", monospace;
+    font: 14px/1.2 Consolas, "Courier New", monospace;
     text-align: center;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
@@ -950,6 +950,10 @@
     border-radius: 2px;
     background: rgb(127 127 127 / 30%);
   }
+
+  .image-controls-sidebar .loupe-channel-meter:nth-child(1) .loupe-rgb-track { background: rgb(255 66 66 / 35%); }
+  .image-controls-sidebar .loupe-channel-meter:nth-child(2) .loupe-rgb-track { background: rgb(54 207 112 / 35%); }
+  .image-controls-sidebar .loupe-channel-meter:nth-child(3) .loupe-rgb-track { background: rgb(67 140 255 / 35%); }
 
   .image-controls-sidebar .loupe-channel-meter .loupe-rgb-fill {
     display: block;
