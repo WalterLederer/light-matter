@@ -42,15 +42,7 @@
   }
 
   @if (loupeEnabled() && selected !== null) {
-    @if (loupeFullImageView()) {
-      <aside class="hdr-loupe-full-frame" [class.capture-pending]="loupeCapturePending() || hdrImageAdjustmentPending()"
-             [style.left.px]="loupeFullImageBounds().left" [style.top.px]="loupeFullImageBounds().top"
-             [style.width.px]="loupeFullImageBounds().width" [style.height.px]="loupeFullImageBounds().height"
-             aria-label="Full main-image FP16 loupe view" aria-live="off">
-        <canvas class="hdr-loupe-full-frame-canvas" aria-hidden="true"></canvas>
-      </aside>
-    } @else {
-    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending() || hdrImageAdjustmentPending()" [class.circular]="loupeShape() === 'circular'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" [style.transform]="'scale(' + loupeSizeScale() + ')'" aria-label="HDR cursor loupe" aria-live="off">
+<aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending() || hdrImageAdjustmentPending()" [class.circular]="loupeShape() === 'circular'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" [style.transform]="'scale(' + loupeSizeScale() + ')'" aria-label="HDR cursor loupe" aria-live="off">
       @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
         <div class="loupe-handle" aria-hidden="true"></div>
       }
@@ -85,7 +77,6 @@
       </div>
       
     </aside>
-    }
   }
 
   @if (isHdrImage && comparisonMode() === 'sdr') {
@@ -239,9 +230,9 @@
         @if(sidebarSectionExpanded('rgb')) { <label class="channel-control"><span><b class="red">R</b> Red <span>{{(redChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="redChannelLevel()" (input)="setRedChannelLevel($any($event.target).value)"/></label><label class="channel-control"><span><b class="green">G</b> Green <span>{{(greenChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="greenChannelLevel()" (input)="setGreenChannelLevel($any($event.target).value)"/></label><label class="channel-control"><span><b class="blue">B</b> Blue <span>{{(blueChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="blueChannelLevel()" (input)="setBlueChannelLevel($any($event.target).value)"/></label><button (click)="resetRgbChannels()">Reset all channels</button> }
       </section>
       <section><button class="section-heading" (click)="toggleSidebarSection('loupe')"><span class="section-chevron">{{sidebarSectionExpanded('loupe') ? 'v' : '>'}}</span>Magnifier</button>
-        @if(sidebarSectionExpanded('loupe')) { <label><input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)"/> Enable magnifier (M)</label><label class="channel-control"><span><b>Magnifier zoom</b><span>{{(loupePixelSize() * 2).toFixed(1)}}×</span></span><div class="control-row"><button aria-label="Magnifier zoom out" (click)="adjustLoupeZoom(-1)">−</button><ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64"/><button aria-label="Magnifier zoom in" (click)="adjustLoupeZoom(1)">+</button></div></label><div class="shape-row"><button [class.active]="loupeShape()==='circular'" title="Circle" (click)="setLoupeShape('circular')">◯</button><button [class.active]="loupeShape()==='rectangular'" title="Rectangle" (click)="setLoupeShape('rectangular')">▭</button><button [class.active]="loupeShape()==='ruler'" title="Horizontal ruler" (click)="setLoupeShape('ruler')">↔</button><button [class.active]="loupeShape()==='vertical-ruler'" title="Vertical ruler" (click)="setLoupeShape('vertical-ruler')">↕</button></div><label class="channel-control"><span><b>Magnifier brightness</b><span>{{(loupeBrightness()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="loupeBrightness()" (input)="setLoupeBrightness($any($event.target).value)"/></label><button (click)="toggleLoupeRenderer()">Magnifier renderer: {{loupeRendererMode()==='webgpu'?'WebGPU (HDR)':'CSS (SDR)'}}</button> }
+        @if(sidebarSectionExpanded('loupe')) { <label><input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)"/> Enable magnifier (M)</label><label class="channel-control"><span><b>Magnifier zoom</b><span>{{(loupePixelSize() * 2).toFixed(1)}}×</span></span><div class="control-row"><button aria-label="Magnifier zoom out" (click)="adjustLoupeZoom(-1)">−</button><ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64"/><button aria-label="Magnifier zoom in" (click)="adjustLoupeZoom(1)">+</button></div></label><label class="channel-control"><span><b>Magnifier size</b><span>{{(loupeSizeScale()*100).toFixed(0)}}%</span></span><input type="range" min="0.5" max="1.2" step="0.1" [value]="loupeSizeScale()" (input)="setLoupeSize($any($event.target).value)"/></label><label class="channel-control"><span><b>Magnifier brightness</b><span>{{(loupeBrightness()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="loupeBrightness()" (input)="setLoupeBrightness($any($event.target).value)"/></label><div class="shape-row"><button [class.active]="loupeShape()==='circular'" title="Circle" (click)="setLoupeShape('circular')">◯</button><button [class.active]="loupeShape()==='rectangular'" title="Rectangle" (click)="setLoupeShape('rectangular')">▭</button><button [class.active]="loupeShape()==='ruler'" title="Horizontal ruler" (click)="setLoupeShape('ruler')">↔</button><button [class.active]="loupeShape()==='vertical-ruler'" title="Vertical ruler" (click)="setLoupeShape('vertical-ruler')">↕</button></div><button (click)="toggleLoupeRenderer()">Magnifier renderer: {{loupeRendererMode()==='webgpu'?'WebGPU (HDR)':'CSS (SDR)'}}</button> }
       @if (sidebarSectionExpanded('loupe') && loupeEnabled()) {
-        <section class="loupe-info-box location-info-box" [class.collapsed]="!locationInfoExpanded()" aria-label="Location pixel information">
+        <section class="loupe-info-box location-info-box" aria-label="Location pixel information">
         <div class="loupe-info-heading location-heading">
           <span class="loupe-coordinates">
             @if (loupeSample(); as sample) {
@@ -250,8 +241,18 @@
               X: —/{{ dimensions.width || '—' }} · Y: —/{{ dimensions.height || '—' }}
             }
           </span>
+          <div class="loupe-rgb-channels coordinate-rgb-channels" aria-label="SDR RGB channel levels">
+            @if (pixelColor(); as rgb) {
+              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
+              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
+              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
+            } @else {
+              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
+              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
+              <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
+            }
+          </div>
         </div>
-        @if (locationInfoExpanded()) {
         <section class="loupe-sdr-info" aria-label="SDR pixel information">
           <div class="loupe-pixel-row">
             <div class="loupe-info-subheading">SDR</div>
@@ -260,20 +261,10 @@
                 <span class="loupe-rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'SDR RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
                 <span class="loupe-rgb-values">R:0x{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }} G:0x{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }} B:0x{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
               </div>
-              <div class="loupe-rgb-channels" aria-label="SDR RGB channel levels">
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
-              </div>
             } @else {
               <div class="loupe-rgb-summary">
                 <span class="loupe-rgb-swatch" aria-label="No SDR pixel selected"></span>
                 <span class="loupe-rgb-values">R:-- G:-- B:--</span>
-              </div>
-              <div class="loupe-rgb-channels" aria-hidden="true">
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
               </div>
             }
           </div>
@@ -298,10 +289,8 @@
             <div class="loupe-hdr-linear">scRGB —, —, —</div>
           }
         </section>
-        <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>S</u>: Shape · <u>L</u>: Location · + / −: Zoom · ↑ / ↓: Brightness · PgUp / PgDn: Loupe size · <u>H</u>: Histogram</div>
-        }
+        <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>S</u>: Shape · + / −: Zoom · ↑ / ↓: Brightness · <u>H</u>: Histogram</div>
       </section>
-        }
       </section>
       <section><button class="section-heading" (click)="toggleSidebarSection('mode')"><span class="section-chevron">{{sidebarSectionExpanded('mode') ? 'v' : '>'}}</span>View mode</button>
         @if(sidebarSectionExpanded('mode')) { <div class="mode-row"><button [class.active]="comparisonMode()==='hdr'" [disabled]="!isHdrImage" (click)="setComparisonMode('hdr')">HDR</button><button [class.active]="comparisonMode()==='sdr'" (click)="setComparisonMode('sdr')">SDR</button><button [class.active]="comparisonMode()==='side-by-side'" [disabled]="!isHdrImage" (click)="setComparisonMode('side-by-side')">◧ Side by side</button><button [class.active]="comparisonMode()==='stacked'" [disabled]="!isHdrImage" (click)="setComparisonMode('stacked')">▤ Stacked</button><button class="full-comparison-mode" [class.active]="comparisonMode()==='dual-side-by-side'" [disabled]="!isHdrImage" (click)="setComparisonMode('dual-side-by-side')"><span class="comparison-mode-icons"><span class="sdr-mode-icon">SDR</span><span class="hdr-mode-icon">HDR</span></span> Full side by side</button><button class="full-comparison-mode" [class.active]="comparisonMode()==='dual-stacked'" [disabled]="!isHdrImage" (click)="setComparisonMode('dual-stacked')"><span class="comparison-mode-icons vertical"><span class="sdr-mode-icon">SDR</span><span class="hdr-mode-icon">HDR</span></span> Full stacked</button></div>@if(isHdrImage&&(comparisonMode()==='side-by-side'||comparisonMode()==='stacked')){<label>Split {{comparisonSplit()}}%</label><input type="range" min="1" max="99" [value]="comparisonSplit()" (input)="previewComparisonSplit($any($event.target).value)" (change)="setComparisonSplit($any($event.target).value)"/>} }
