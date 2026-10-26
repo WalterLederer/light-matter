@@ -1114,6 +1114,8 @@ export class ImageView {
           y: geometry.height / geometry.windowHeight
         }
       });
+      const lastMouse = this.lastMousePosition();
+      if (lastMouse) this.sampleLoupeAtPosition(lastMouse, true);
     } catch (error) {
       console.error('HDR loupe capture failed:', error);
       this.loupeCaptureGeometry.set(null);
