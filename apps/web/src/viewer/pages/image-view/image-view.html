@@ -249,6 +249,15 @@
                 <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
               }
             </div>
+            @if (pixelColor(); as rgb) {
+              <div class="coordinate-rgb-readout" aria-label="RGB channel values and maximum">
+                <span class="red">R {{ rgb.r }}/255 ({{ (rgb.r / 255 * 100).toFixed(1) }}%)</span>
+                <span class="green">G {{ rgb.g }}/255 ({{ (rgb.g / 255 * 100).toFixed(1) }}%)</span>
+                <span class="blue">B {{ rgb.b }}/255 ({{ (rgb.b / 255 * 100).toFixed(1) }}%)</span>
+              </div>
+            } @else {
+              <div class="coordinate-rgb-readout" aria-label="RGB channel values and maximum">R —/255 · G —/255 · B —/255</div>
+            }
           </div>
           <section class="loupe-sdr-info" aria-label="SDR pixel information">
             <div class="loupe-pixel-row">
