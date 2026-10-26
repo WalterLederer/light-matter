@@ -2,6 +2,23 @@
 @let clearResult = lastClearResult();
 
 <div class="settings-panel">
+  <section class="theme-setting">
+    <div class="setting-row">
+      <div class="setting-description">
+        <strong>Appearance</strong>
+        <span>Switch between light and dark mode.</span>
+      </div>
+      <button class="cache-button theme-toggle"
+              type="button"
+              [attr.aria-label]="themeService.current() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+              [title]="themeService.current() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+              (click)="themeService.toggle()">
+        <span class="theme-toggle-symbol" aria-hidden="true">●</span>
+        {{ themeService.current() === 'dark' ? 'Dark mode' : 'Light mode' }}
+      </button>
+    </div>
+  </section>
+
   <section>
     <div class="setting-row setting-config-path">
       <div class="cache-path-details">
