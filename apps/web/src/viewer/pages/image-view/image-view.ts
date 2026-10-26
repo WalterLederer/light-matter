@@ -869,38 +869,43 @@ export class ImageView {
 
   private loupeSdrPixelCanvas: HTMLCanvasElement | null = null;
   private loupeSdrPixelContext: CanvasRenderingContext2D | null = null;
-  private loupeSdrPixelImage: HTMLImageElement | null = null;
 
-  /** Read the source SDR pixel under the pointer for the RGB bars and SDR values. */
+  /** Read only the source SDR pixel under the pointer; use a 1×1 canvas to avoid stale full-image copies. */
   private readonly updateLoupeSdrPixelColor = (image: HTMLImageElement, x: number, y: number): void => {
     try {
-      if (this.loupeSdrPixelImage !== image || !this.loupeSdrPixelCanvas || !this.loupeSdrPixelContext) {
+      if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+        this.pixelColor.set(null);
+        return;
+      }
+      if (!this.loupeSdrPixelCanvas || !this.loupeSdrPixelContext) {
         const canvas = this.document.createElement('canvas');
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
+        canvas.width = 1;
+        canvas.height = 1;
         const context = canvas.getContext('2d', { willReadFrequently: true });
-        if (!context || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+        if (!context) {
           this.pixelColor.set(null);
           return;
         }
-        context.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight);
         this.loupeSdrPixelCanvas = canvas;
         this.loupeSdrPixelContext = context;
-        this.loupeSdrPixelImage = image;
       }
-      const pixel = this.loupeSdrPixelContext.getImageData(
+
+      // Sampling one source pixel on every pointer move also handles an <img>
+      // element whose src changes while Angular reuses the same DOM element.
+      this.loupeSdrPixelContext.clearRect(0, 0, 1, 1);
+      this.loupeSdrPixelContext.drawImage(
+        image,
         Math.max(0, Math.min(image.naturalWidth - 1, x)),
         Math.max(0, Math.min(image.naturalHeight - 1, y)),
-        1, 1
-      ).data;
+        1, 1, 0, 0, 1, 1
+      );
+      const pixel = this.loupeSdrPixelContext.getImageData(0, 0, 1, 1).data;
       this.pixelColor.set({ r: pixel[0], g: pixel[1], b: pixel[2] });
     } catch {
-      // If the image cannot be read back (for example due to canvas security),
-      // keep the UI honest rather than displaying stale RGB values.
+      // Never leave stale RGB values visible if the current image cannot be sampled.
       this.pixelColor.set(null);
       this.loupeSdrPixelCanvas = null;
       this.loupeSdrPixelContext = null;
-      this.loupeSdrPixelImage = null;
     }
   };
 
@@ -912,7 +917,11 @@ export class ImageView {
         clientY >= bounds.top && clientY < bounds.bottom &&
         candidate.naturalWidth > 0 && candidate.naturalHeight > 0;
     });
-    if (!image) return;
+    if (!image) {
+      this.pixelColor.set(null);
+      this.loupeSourcePoint.set(null);
+      return;
+    }
 
     const bounds = image.getBoundingClientRect();
     const scale = Math.min(bounds.width / image.naturalWidth, bounds.height / image.naturalHeight);
