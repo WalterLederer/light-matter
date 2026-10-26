@@ -231,15 +231,16 @@
             <label class="channel-control rgb-green"><span><b>G</b><span>{{(greenChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="greenChannelLevel()" (input)="setGreenChannelLevel($any($event.target).value)"/></label>
             <label class="channel-control rgb-blue"><span><b>B</b><span>{{(blueChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="blueChannelLevel()" (input)="setBlueChannelLevel($any($event.target).value)"/></label>
           </div>
-          <div class="gradation-controls">
-            <div class="correction-subheading">Gradationskurve</div>
-            <svg class="gradation-curve" viewBox="0 0 120 72" role="img" aria-label="Tone curve with adjustable black and white points">
-              <path class="gradation-grid" d="M4 4V68H116M4 36H116M60 4V68" />
-              <path class="gradation-line" [attr.d]="'M4 68 H' + (4 + blackPoint() * 56) + ' L' + (4 + whitePoint() * 56) + ' 4 H116'" />
+          <div class="tone-curve-controls">
+            <div class="correction-subheading">Tone curve</div>
+            <svg class="tone-curve" viewBox="0 0 120 72" role="img" aria-label="Tone curve with adjustable black and white points">
+              <path class="tone-curve-grid" d="M4 4V68H116M4 36H116M60 4V68" />
+              <path class="tone-curve-line" [attr.d]="'M4 68 H' + (4 + blackPoint() * 56) + ' L' + (4 + whitePoint() * 56) + ' 4 H116'" />
             </svg>
-            <label class="channel-control"><span><b>Black point</b><span>{{(blackPoint()*100).toFixed(0)}}%</span></span><input type="range" min="0" max=".49" step=".005" [value]="blackPoint()" (input)="setBlackPoint($any($event.target).value)"/></label>
-            <label class="channel-control"><span><b>White point</b><span>{{(whitePoint()*100).toFixed(0)}}%</span></span><input type="range" min=".51" max="2" step=".01" [value]="whitePoint()" (input)="setWhitePoint($any($event.target).value)"/></label>
+            <label class="channel-control"><span><b>Black point</b><span>{{(blackPoint()*100).toFixed(0)}}%</span></span><input type="range" min="0" [max]="whitePoint() - 0.01" step=".005" [value]="blackPoint()" (input)="setBlackPoint($any($event.target).value)"/></label>
+            <label class="channel-control"><span><b>White point</b><span>{{(whitePoint()*100).toFixed(0)}}%</span></span><input type="range" [min]="blackPoint() + 0.01" max="2" step=".01" [value]="whitePoint()" (input)="setWhitePoint($any($event.target).value)"/></label>
           </div>
+          <label class="hdr-highlight-toggle"><input type="checkbox" [checked]="highlightHdrPixels()" (change)="setHdrPixelHighlight($any($event.target).checked)"/> Highlight HDR pixels <span>(scRGB &gt; 1.0)</span></label>
           <button (click)="resetCorrections()">Reset corrections</button>
         }
       </section>
