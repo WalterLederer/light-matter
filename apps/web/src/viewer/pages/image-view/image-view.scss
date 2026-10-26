@@ -884,6 +884,22 @@
     border-radius: inherit;
   }
 
+  .image-controls-sidebar .coordinate-rgb-readout {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 2px 7px;
+    width: 100%;
+    margin-top: 3px;
+    font: 9px/1.35 Consolas, "Courier New", monospace;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .image-controls-sidebar .coordinate-rgb-readout .red { color: #ff4242; }
+  .image-controls-sidebar .coordinate-rgb-readout .green { color: #36cf70; }
+  .image-controls-sidebar .coordinate-rgb-readout .blue { color: #438cff; }
+
   .image-controls-sidebar .loupe-sdr-info,
   .image-controls-sidebar .loupe-hdr-info {
     display: flex;
