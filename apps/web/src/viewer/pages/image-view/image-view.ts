@@ -618,7 +618,15 @@ export class ImageView {
     this.configuration.config()
       .pipe(take(1), takeUntilDestroyed())
       .subscribe(config => {
-        this.sidebarSections.set({ ...this.sidebarSections(), ...config.system.imageSidebarSections, general: false });
+        // General settings must never be restored as expanded at startup. Override
+        // the saved value in memory and persist the collapsed state as well, so
+        // older configuration files cannot keep reopening this section.
+        const savedSidebarSections = config.system.imageSidebarSections ?? {};
+        const sidebarSections = { ...this.sidebarSections(), ...savedSidebarSections, general: false };
+        this.sidebarSections.set(sidebarSections);
+        if (savedSidebarSections.general === true) {
+          this.configuration.updateSystemConfig({ imageSidebarSections: sidebarSections });
+        }
         if (this.sidebarSectionExpanded('loupe')) void this.toggleLoupe(true);
         this.histogramVisible.set(config.system.histogramVisible === true);
         const savedMode = config.system.comparisonMode ?? 'hdr';
