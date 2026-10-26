@@ -1,11 +1,7 @@
 @let currentCache = cacheInfo();
 @let clearResult = lastClearResult();
 
-<ui-dialog>
-  <header class="settings-header">
-    <ui-title>Light Matter Settings</ui-title>
-    <button class="settings-close-button" type="button" title="Close settings" aria-label="Close settings" (click)="dialogRef.close(false)">×</button>
-  </header>
+<div class="settings-panel">
   <section>
     <div class="setting-row setting-config-path">
       <div class="cache-path-details">
@@ -188,4 +184,4 @@
     </details>
   </section>
 
-</ui-dialog>
+</div>
