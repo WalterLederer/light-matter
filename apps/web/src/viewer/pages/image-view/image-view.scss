@@ -7,7 +7,8 @@
 
   position: relative;
 
-  .sdr-quality-logo {
+  .sdr-quality-logo,
+  .hdr-quality-logo {
     position: absolute;
     z-index: 10;
     top: 12px;
@@ -54,6 +55,30 @@
       font-weight: 650;
       line-height: 1.1;
       white-space: nowrap;
+    }
+  }
+
+  .hdr-quality-logo {
+    .logo-main {
+      position: relative;
+      isolation: isolate;
+      color: transparent;
+      background: linear-gradient(90deg, #ff4fc8 0%, #c45bff 20%, #4aa7ff 40%, #45e0c0 58%, #d8ed4d 75%, #ffad42 90%, #ff5b4a 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+
+      &::before {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        inset: 0;
+        background: #050505;
+      }
+    }
+
+    .logo-accent {
+      background: linear-gradient(90deg, #d9008d 0%, #8b36b5 22%, #1679db 45%, #16a56b 64%, #e5d51b 80%, #ff7a00 100%);
     }
   }
 
@@ -834,6 +859,8 @@
   .mode-logo .logo-caption {display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;padding:0 1px;font-size:5px;font-weight:650;line-height:1}
   .mode-logo.sdr-logo .logo-accent {background:#777}
   .mode-logo.sdr-logo .logo-caption {background:linear-gradient(#f1f1f1,#d5d5d5);color:#222}
+  .mode-logo.hdr-logo .logo-main {position:relative;isolation:isolate;color:transparent;background:linear-gradient(90deg,#ff4fc8 0%,#c45bff 20%,#4aa7ff 40%,#45e0c0 58%,#d8ed4d 75%,#ffad42 90%,#ff5b4a 100%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .mode-logo.hdr-logo .logo-main::before {content:'';position:absolute;z-index:-1;inset:0;background:#050505}
   .mode-logo.hdr-logo .logo-accent {background:linear-gradient(90deg,#d9008d 0%,#8b36b5 22%,#1679db 45%,#16a56b 64%,#e5d51b 80%,#ff7a00 100%)}
   .mode-logo.hdr-logo .logo-caption {background:linear-gradient(#f1f1f1,#d5d5d5);color:#222}
   .mode-logo-pair.vertical .mode-logo {width:72px;height:27px;grid-template-rows:15px 3px 8px}
