@@ -1,9 +1,10 @@
 import { IpcMainInvokeEvent } from 'electron';
 import { ApiResponse, FileInfo, SortDirection, SortType, supportedFileExtensions } from 'internal-api';
 import { Dirent, statSync } from 'node:fs';
-import { readdir, readFile, unlink, writeFile } from 'node:fs/promises';
+import { readdir, readFile, unlink } from 'node:fs/promises';
 import { dirname, extname, join } from 'node:path';
 import { IpcHandler } from '../app/decorators/ipc-handler';
+import { writeJsonAtomically } from './json-file';
 
 export class FileSystem {
   @IpcHandler({ name: 'FileSystem.join' })
@@ -32,7 +33,7 @@ export class FileSystem {
   @IpcHandler({ name: 'FileSystem.writeJson' })
   readonly writeJson = async <T>(_: IpcMainInvokeEvent, path: string, data: T): Promise<ApiResponse<undefined>> => {
     try {
-      await writeFile(path, JSON.stringify(data, null, 2), 'utf-8');
+      await writeJsonAtomically(path, data);
       return { success: true, data: undefined };
     } catch (_) {
       return { success: false, errorMessage: `Failed to write file ${path}.` };
