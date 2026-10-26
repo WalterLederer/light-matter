@@ -624,7 +624,7 @@ export class ImageView {
         const savedSidebarSections = config.system.imageSidebarSections ?? {};
         const sidebarSections = { ...this.sidebarSections(), ...savedSidebarSections, general: false };
         this.sidebarSections.set(sidebarSections);
-        if (savedSidebarSections.general === true) {
+        if (savedSidebarSections['general'] === true) {
           this.configuration.updateSystemConfig({ imageSidebarSections: sidebarSections });
         }
         if (this.sidebarSectionExpanded('loupe')) void this.toggleLoupe(true);
