@@ -390,3 +390,32 @@ section {
   color: var(--color-content-default-medium);
   font-size: 0.75rem;
 }
+
+
+/* Theme toggle in the shared settings panel. */
+.theme-setting .setting-row {
+  align-items: center;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.theme-toggle-symbol {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  color: transparent;
+  background: #000;
+  box-shadow: 0 0 0 1px rgb(127 127 127 / 45%);
+  flex: 0 0 12px;
+}
+
+:host-context(html[data-theme='dark']) .theme-toggle-symbol {
+  background: #000;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 65%);
+}
