@@ -122,17 +122,6 @@ ipcMain.handle('Loupe.capture', async () => {
 
     phase = 'capture FP16 monitor frame';
     const frame = await captureLoupeFrame(monitorIndex);
-    console.debug('[HDR loupe native geometry diagnostic]', {
-      displayBoundsDip: display.bounds,
-      captureFramePx: { width: frame.width, height: frame.height },
-      windowsDisplayScaleFactor: display.scaleFactor,
-      monitorIndex,
-      expectedFramePx: { width: expectedWidth, height: expectedHeight },
-      captureToDisplayScale: {
-        x: frame.width / display.bounds.width,
-        y: frame.height / display.bounds.height
-      }
-    });
     return {
       width: frame.width,
       height: frame.height,
