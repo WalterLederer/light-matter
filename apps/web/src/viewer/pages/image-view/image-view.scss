@@ -949,6 +949,12 @@
     letter-spacing: -0.04em;
   }
 
+  .image-controls-sidebar .image-theme-setting { display:flex; flex-direction:column; gap:7px; padding:0 0 8px; }
+  .image-controls-sidebar .image-theme-toggle { display:flex; align-items:center; justify-content:flex-start; gap:8px; width:100%; min-height:28px; padding:4px 8px; text-align:left; }
+  .image-controls-sidebar .image-theme-toggle-icon { display:inline-flex; align-items:center; justify-content:center; flex:0 0 16px; width:16px; height:16px; font-size:16px; line-height:1; }
+  .image-controls-sidebar .image-theme-toggle-icon:has(+ span) { color:inherit; }
+  .image-controls-sidebar .image-theme-toggle-icon { }
+
   :host-context(html[data-theme='light']) {
  .image-controls-sidebar {color:#202124;background:#f7f7f7;border-left-color:rgb(0 0 0 / 14%);box-shadow:-4px 0 16px rgb(0 0 0 / 12%)}
  .image-controls-sidebar button {background:rgb(0 0 0 / 4%);border-color:rgb(0 0 0 / 16%)}
