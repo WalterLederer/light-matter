@@ -793,6 +793,7 @@
   .mode-logo-pair {display:flex;align-items:center;justify-content:center;gap:3px;min-width:0}
   .mode-logo-pair.vertical {flex-direction:column;gap:3px}
   .mode-logo-image {display:block;width:46px;height:46px;object-fit:contain;flex:0 0 auto}
+  .sdr-logo-image {filter:brightness(1.4) drop-shadow(0 2px 5px rgb(0 0 0 / 30%))}
   .mode-logo-pair .mode-logo-image {width:39px;height:39px}
   .mode-logo-pair.vertical .mode-logo-image {width:32px;height:32px}
 
