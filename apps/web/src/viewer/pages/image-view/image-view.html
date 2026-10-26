@@ -80,11 +80,7 @@
   }
 
   @if (isHdrImage && comparisonMode() === 'sdr') {
-    <div class="sdr-quality-logo" aria-label="SDR display mode" title="SDR view of an HDR-capable image">
-      <div class="logo-main">SDR</div>
-      <div class="logo-accent"></div>
-      <div class="logo-caption">Standard Dynamic Range</div>
-    </div>
+    <img class="sdr-quality-logo" src="/sdr-logo.png" alt="SDR — Standard Dynamic Range" title="SDR view of an HDR-capable image">
   }
 
   @if (histogramVisible()) {
