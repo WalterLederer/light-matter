@@ -851,6 +851,12 @@
  .image-controls-sidebar input[type=range] {width:100%;accent-color:#65a9ff}
  .control-row {display:flex;align-items:center;gap:6px}.control-row ui-slider {flex:1;min-width:0}
  .shape-row,.mode-row {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.shape-row {grid-template-columns:repeat(4,minmax(0,1fr))}.shape-row button {font-size:20px}
+  .mode-row .full-comparison-mode {display:flex;align-items:center;gap:6px;justify-content:flex-start}
+  .comparison-mode-icons {display:inline-flex;align-items:center;gap:2px;flex:0 0 auto}
+  .comparison-mode-icons.vertical {flex-direction:column;gap:1px}
+  .comparison-mode-icons > span {display:inline-block;padding:1px 3px;border-radius:2px;font-size:8px;font-weight:700;line-height:1.2}
+  .comparison-mode-icons .sdr-mode-icon {background:#e6e6e6;color:#202124}
+  .comparison-mode-icons .hdr-mode-icon {background:#65a9ff;color:#10233a}
  .red {color:#ff6868}.green {color:#68dc85}.blue {color:#6ba9ff}.path {overflow-wrap:anywhere;font-size:11px;opacity:.75}
 }
 :host-context(html[data-theme='light']) {
