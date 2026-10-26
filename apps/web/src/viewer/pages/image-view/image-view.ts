@@ -276,6 +276,11 @@ export class ImageView {
     const sections = { ...this.sidebarSections(), [key]: !this.sidebarSectionExpanded(key) };
     this.sidebarSections.set(sections);
     this.configuration.updateSystemConfig({ imageSidebarSections: sections });
+    if (key === 'info') {
+      this.exifVisible.set(sections.info);
+      this.configuration.updateSystemConfig({ exifVisible: sections.info });
+      this.exifState.set(sections.info ? this.imageTags() ?? false : false);
+    }
     if (key === 'histogram') {
       if (this.sidebarSections()[key] && !this.histogramVisible()) this.toggleHistogram();
       else if (!this.sidebarSections()[key] && this.histogramVisible()) this.closeHistogram();
@@ -1125,8 +1130,7 @@ export class ImageView {
       return;
     }
     try {
-      // The WebGPU loupe needs a 0.4 baseline to match normal image brightness.
-      // Keep the correction control active by applying its relative value on top.
+      // Apply the shared HDR brightness correction while preserving the relative loupe adjustment.
       const brightness = this.loupeBrightness() * HDR_WEBGPU_BRIGHTNESS_CORRECTION;
       // Convert CSS/DIP loupe size to physical capture pixels using the official
       // Windows display scale factor (1.5 at 150% scaling in the current setup).
