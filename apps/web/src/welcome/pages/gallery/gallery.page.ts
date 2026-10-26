@@ -22,10 +22,8 @@ import { GalleryLocations } from '../../../gallery/services/gallery-locations/ga
 import { GalleryState } from '../../../gallery/services/gallery-state/gallery-state';
 import { defaultSortMode, treeNode } from '../../../gallery/services/gallery-state/gallery-state.types';
 import { Dialogs } from '../../../ipc/dialogs';
-import { Configuration } from '../../../system/services/configuration/configuration';
 import { ThemeService } from '../../../system/services/theme/theme.service';
-import { take } from 'rxjs';
-import { SettingsDialogComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
+import { SettingsPanelComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
 import { DefaultPipe } from '../../../system/pipes/default/default.pipe';
 import { ImageView } from '../../../viewer/pages/image-view/image-view';
 import { ViewNavigator } from '../../../viewer/services/view-navigator/view-navigator';
@@ -35,7 +33,7 @@ import { ViewNavigator } from '../../../viewer/services/view-navigator/view-navi
   imports: [
     AsyncPipe,
     ImageGridComponent,
-    SettingsDialogComponent,
+    SettingsPanelComponent,
     SidePanelComponent,
     TreeComponent,
     ActionButtonComponent,
@@ -55,8 +53,6 @@ import { ViewNavigator } from '../../../viewer/services/view-navigator/view-navi
 export class GalleryPage {
   /* DI */
   private readonly galleryState = inject(GalleryState);
-
-  private readonly configuration = inject(Configuration);
 
   protected readonly themeService = inject(ThemeService);
 
