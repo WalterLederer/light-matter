@@ -240,19 +240,19 @@
             </span>
           </div>
           <section class="loupe-sdr-info" aria-label="SDR pixel information">
-            <div class="loupe-info-subheading">SDR</div>
+            <div class="loupe-info-subheading">SDR 0x</div>
             @if (pixelColor(); as rgb) {
               <div class="loupe-channel-meters" aria-label="SDR RGB channel values and levels">
                 <div class="loupe-channel-meter">
-                  <span class="loupe-channel-value">0x{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }}</span>
+                  <span class="loupe-channel-value">{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }}</span>
                   <span class="loupe-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span>
                 </div>
                 <div class="loupe-channel-meter">
-                  <span class="loupe-channel-value">0x{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }}</span>
+                  <span class="loupe-channel-value">{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }}</span>
                   <span class="loupe-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span>
                 </div>
                 <div class="loupe-channel-meter">
-                  <span class="loupe-channel-value">0x{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
+                  <span class="loupe-channel-value">{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
                   <span class="loupe-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span>
                 </div>
               </div>
@@ -265,7 +265,7 @@
             }
           </section>
           <section class="loupe-hdr-info" aria-label="HDR pixel information">
-            <div class="loupe-info-subheading">HDR</div>
+            <div class="loupe-info-subheading">HDR 0x</div>
             @if (loupeHdrRgb(); as hdr) {
               <div class="loupe-channel-meters hdr-rgb-channels" aria-label="HDR RGB channel values and levels; scRGB 1.0 reference-white boundary; scale to 4000 nits">
                 <div class="loupe-channel-meter">
@@ -281,7 +281,7 @@
                   <span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="hdr.b / 50 * 100"></span></span>
                 </div>
               </div>
-              <div class="loupe-hdr-linear">scRGB {{ hdr.r | number:'1.0-4' }}, {{ hdr.g | number:'1.0-4' }}, {{ hdr.b | number:'1.0-4' }}</div>
+              <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">{{ hdr.r | number:'1.0-4' }}, {{ hdr.g | number:'1.0-4' }}, {{ hdr.b | number:'1.0-4' }}</span><span class="loupe-scrgb-label">scRGB</span></div>
             } @else if (loupeCaptureError(); as captureError) {
               <div class="loupe-capture-error" role="status">HDR pixel info unavailable: {{ captureError }}</div>
             } @else {
@@ -290,7 +290,7 @@
                 <div class="loupe-channel-meter"><span class="loupe-channel-value">—</span><span class="loupe-rgb-track"></span></div>
                 <div class="loupe-channel-meter"><span class="loupe-channel-value">—</span><span class="loupe-rgb-track"></span></div>
               </div>
-              <div class="loupe-hdr-linear">scRGB —, —, —</div>
+              <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">—, —, —</span><span class="loupe-scrgb-label">scRGB</span></div>
             }
           </section>
           
