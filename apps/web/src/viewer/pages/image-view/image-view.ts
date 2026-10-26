@@ -919,34 +919,6 @@ export class ImageView {
           this.loupeSample.set(sample);
           this.loupeCaptureError.set(null);
           if (sample) {
-            // Log one sample in each cell of a 3x3 grid. This reveals whether
-            // mapping error grows with distance (scale) or stays nearly constant (offset).
-            const column = Math.min(2, Math.max(0, Math.floor(x / geometry.width * 3)));
-            const row = Math.min(2, Math.max(0, Math.floor(y / geometry.height * 3)));
-            const cell = `${column},${row}`;
-            if (!this.loupeDiagnosticCells.has(cell)) {
-              this.loupeDiagnosticCells.add(cell);
-              const mouse = this.lastMousePosition();
-              console.debug('[HDR loupe 3x3 coordinate diagnostic]', {
-                cell: { column, row },
-                screen: { x: position.screenX, y: position.screenY },
-                client: mouse ? { x: mouse.clientX, y: mouse.clientY } : null,
-                htmlImageSourcePointPx: this.loupeSourcePoint(),
-                windowBoundsDip: { x: geometry.x, y: geometry.y, width: geometry.windowWidth, height: geometry.windowHeight },
-                captureFramePx: { width: geometry.width, height: geometry.height },
-                windowsScaleFactor: geometry.scaleFactor,
-                requestedFramePosition: { x, y },
-                sampledCenter: { x: sample.x, y: sample.y },
-                mappingErrorPx: { x: sample.x - x, y: sample.y - y },
-                region: { width: sample.regionWidth, height: sample.regionHeight, radius: sample.radius },
-                centerLinearScRgb: {
-                  r: sample.center.r, g: sample.center.g, b: sample.center.b,
-                  rHex: sample.center.rHex, gHex: sample.center.gHex, bHex: sample.center.bHex
-                }
-              });
-            }
-          }
-          if (sample) {
             await this.renderHdrLoupe(sample);
           } else {
             this.hdrLoupeActive.set(false);
@@ -1131,14 +1103,6 @@ export class ImageView {
       const geometry = await desktop.Loupe.capture();
       this.loupeDiagnosticCells.clear();
       this.loupeCaptureGeometry.set(geometry);
-      console.debug('[HDR loupe capture geometry]', {
-        windowBoundsDip: { x: geometry.x, y: geometry.y, width: geometry.windowWidth, height: geometry.windowHeight },
-        captureFramePx: { width: geometry.width, height: geometry.height },
-        scale: {
-          x: geometry.width / geometry.windowWidth,
-          y: geometry.height / geometry.windowHeight
-        }
-      });
       const lastMouse = this.lastMousePosition();
       if (lastMouse) this.sampleLoupeAtPosition(lastMouse, true);
     } catch (error) {
