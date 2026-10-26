@@ -895,6 +895,10 @@ export class ImageView {
     this.redChannelLevel.set(1);
     this.greenChannelLevel.set(1);
     this.blueChannelLevel.set(1);
+    this.invertRedChannel.set(false);
+    this.invertGreenChannel.set(false);
+    this.invertBlueChannel.set(false);
+    this.invertAllRgbChannels.set(false);
     this.imagePositioningService.setZoom('fit');
     this.refreshHdrImageAdjustments();
   };
