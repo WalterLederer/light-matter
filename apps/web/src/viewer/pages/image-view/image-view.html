@@ -87,14 +87,6 @@
     </div>
   }
 
-  @if (isHdrImage && comparisonMode() === 'hdr') {
-    <div class="hdr-quality-logo" aria-label="HDR display mode" title="HDR view of an HDR-capable image">
-      <div class="logo-main">HDR</div>
-      <div class="logo-accent"></div>
-      <div class="logo-caption">High Dynamic Range</div>
-    </div>
-  }
-
   @if (histogramVisible()) {
     <section class="histogram-overlay" [style.right.px]="!fullScreen && controlsSidebarVisible() ? sidebarWidth() + 12 : 12" role="dialog" aria-label="SDR and HDR image histogram">
       <header>
