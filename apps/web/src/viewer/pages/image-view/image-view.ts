@@ -1288,12 +1288,12 @@ export class ImageView {
     }
   };
 
-  protected readonly adjustZoom = (direction: 1 | -1) => {
-    if (this.loupeEnabled()) {
-      this.loupeSlider.setValue(Math.max(0.1, Math.min(64, Number((this.loupeSlider.value * (direction > 0 ? 1.25 : 0.8)).toFixed(2)))));
-      return;
-    }
+  protected readonly adjustLoupeZoom = (direction: 1 | -1) => {
+    const next = Math.max(0.1, Math.min(64, Number((this.loupeSlider.value * (direction > 0 ? 1.25 : 0.8)).toFixed(2))));
+    this.loupeSlider.setValue(next);
+  };
 
+  protected readonly adjustZoom = (direction: 1 | -1) => {
     this.imageLocation$
       .pipe(take(1))
       .subscribe(location => {
@@ -1560,13 +1560,15 @@ export class ImageView {
 
         if (event.key === '+' || event.key === '=' || event.key === 'Add') {
           event.preventDefault();
-          this.adjustZoom(1);
+          if (this.loupeEnabled()) this.adjustLoupeZoom(1);
+          else this.adjustZoom(1);
           return;
         }
 
         if (event.key === '-' || event.key === '_' || event.key === 'Subtract') {
           event.preventDefault();
-          this.adjustZoom(-1);
+          if (this.loupeEnabled()) this.adjustLoupeZoom(-1);
+          else this.adjustZoom(-1);
           return;
         }
 
