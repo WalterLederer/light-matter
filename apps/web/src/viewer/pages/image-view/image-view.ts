@@ -277,9 +277,9 @@ export class ImageView {
     this.sidebarSections.set(sections);
     this.configuration.updateSystemConfig({ imageSidebarSections: sections });
     if (key === 'info') {
-      this.exifVisible.set(sections.info);
-      this.configuration.updateSystemConfig({ exifVisible: sections.info });
-      this.exifState.set(sections.info ? this.imageTags() ?? false : false);
+      this.exifVisible.set(sections['info']);
+      this.configuration.updateSystemConfig({ exifVisible: sections['info'] });
+      this.exifState.set(sections['info'] ? this.imageTags() ?? false : false);
     }
     if (key === 'histogram') {
       if (this.sidebarSections()[key] && !this.histogramVisible()) this.toggleHistogram();
@@ -554,7 +554,7 @@ export class ImageView {
         this.comparisonMode.set(savedMode === 'dual-side-by-side' || savedMode === 'dual-stacked' ? 'hdr' : savedMode);
         this.comparisonSplit.set(config.system.comparisonSplit ?? 50);
         this.exifVisible.set(config.system.exifVisible === true);
-        if (config.system.exifVisible === true && config.system.imageSidebarSections?.info === undefined) {
+        if (config.system.exifVisible === true && config.system.imageSidebarSections?.['info'] === undefined) {
           this.sidebarSections.set({ ...this.sidebarSections(), info: true });
         }
         if (this.exifVisible()) {
@@ -1283,9 +1283,9 @@ export class ImageView {
   protected readonly toggleExifInfo = (_path: string) => {
     const sections = { ...this.sidebarSections(), info: !this.sidebarSectionExpanded('info') };
     this.sidebarSections.set(sections);
-    this.configuration.updateSystemConfig({ imageSidebarSections: sections, exifVisible: sections.info });
-    this.exifVisible.set(sections.info);
-    this.exifState.set(sections.info ? this.imageTags() ?? false : false);
+    this.configuration.updateSystemConfig({ imageSidebarSections: sections, exifVisible: sections['info'] });
+    this.exifVisible.set(sections['info']);
+    this.exifState.set(sections['info'] ? this.imageTags() ?? false : false);
   };
 
   private readonly selectedImagePathForDebug = (): string => {
