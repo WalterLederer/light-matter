@@ -357,7 +357,7 @@ export class HdrImageBrightnessRenderer {
     region: HdrLoupeRegion,
     brightness: number,
     sourceKey: string | number,
-    adjustments: { contrast: number; red: number; green: number; blue: number } = { contrast: 1, red: 1, green: 1, blue: 1 }
+    adjustments: { contrast: number; red: number; green: number; blue: number; saturation: number } = { contrast: 1, red: 1, green: 1, blue: 1, saturation: 1 }
   ): Promise<void> {
     const task = this.queue.then(() => this.renderInternal(canvas, region, brightness, sourceKey, adjustments));
     this.queue = task.catch(() => undefined);
@@ -369,7 +369,7 @@ export class HdrImageBrightnessRenderer {
     region: HdrLoupeRegion,
     brightness: number,
     sourceKey: string | number,
-    adjustments: { contrast: number; red: number; green: number; blue: number }
+    adjustments: { contrast: number; red: number; green: number; blue: number; saturation: number }
   ): Promise<void> {
     const width = Math.max(1, Math.round(canvas.clientWidth || canvas.parentElement?.clientWidth || region.width));
     const height = Math.max(1, Math.round(canvas.clientHeight || canvas.parentElement?.clientHeight || region.height));
@@ -402,7 +402,7 @@ export class HdrImageBrightnessRenderer {
 
     device.queue.writeBuffer(this.uniformBuffer!, 0, new Float32Array([
       brightness, adjustments.contrast, adjustments.red, adjustments.green,
-      adjustments.blue, width, height, 0
+      adjustments.blue, adjustments.saturation, width, height
     ]));
     const bindGroup = device.createBindGroup({
       layout: this.pipeline!.getBindGroupLayout(0),
@@ -447,7 +447,7 @@ export class HdrImageBrightnessRenderer {
       toneMapping: { mode: 'extended' }
     });
     const module = device.createShaderModule({ code: `
-      struct Params { brightness: f32, contrast: f32, red: f32, green: f32, blue: f32, outputWidth: f32, outputHeight: f32, _pad: f32 };
+      struct Params { brightness: f32, contrast: f32, red: f32, green: f32, blue: f32, saturation: f32, outputWidth: f32, outputHeight: f32 };
       @group(0) @binding(0) var imageTexture: texture_2d<f32>;
       @group(0) @binding(1) var<uniform> params: Params;
       struct VertexOutput { @builtin(position) position: vec4<f32>, @location(0) uv: vec2<f32> };
@@ -473,6 +473,8 @@ export class HdrImageBrightnessRenderer {
           linearToExtendedSrgb(linearColor.b)
         );
         encodedColor = (encodedColor - vec3<f32>(0.5)) * params.contrast + vec3<f32>(0.5);
+        let luminance = dot(encodedColor, vec3<f32>(0.2126, 0.7152, 0.0722));
+        encodedColor = vec3<f32>(luminance) + (encodedColor - vec3<f32>(luminance)) * params.saturation;
         encodedColor *= vec3<f32>(params.red, params.green, params.blue);
         return vec4<f32>(encodedColor, 1.0);
       }
