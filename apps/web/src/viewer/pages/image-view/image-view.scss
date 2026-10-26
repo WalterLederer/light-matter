@@ -792,6 +792,10 @@
   .mode-row .mode-button {position:relative;display:flex;align-items:center;justify-content:center;min-height:80px;padding:7px 5px 5px;overflow:hidden}
   .mode-logo-pair {display:flex;align-items:center;justify-content:center;gap:3px;min-width:0}
   .mode-logo-pair.vertical {flex-direction:column;gap:3px}
+  .mode-logo-pair.overlay-pair {gap:0}
+  .mode-logo-pair.overlay-pair .mode-logo-image + .mode-logo-image {position:relative;z-index:2;margin-left:-34px}
+  .mode-logo-pair.vertical.overlay-pair .mode-logo-image + .mode-logo-image {margin-top:-34px;margin-left:0}
+  .mode-logo-pair.overlay-pair .mode-logo-image:first-child {position:relative;z-index:1}
   .mode-logo-image {display:block;width:69px;height:69px;object-fit:contain;flex:0 0 auto}
   .sdr-logo-image {opacity:0.58;filter:drop-shadow(0 2px 5px rgb(0 0 0 / 30%))}
 
