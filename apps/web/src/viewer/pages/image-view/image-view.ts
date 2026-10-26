@@ -551,6 +551,12 @@ export class ImageView {
 
   protected readonly onHistogramMouseLeave = () => this.histogramHoverStatus.set(null);
 
+  /** Logarithmic HDR channel-bar scale: scRGB 1.0 = 80 cd/m², capped at 10000 cd/m². */
+  protected readonly hdrRgbBarWidth = (scRgbValue: number): number => {
+    const nits = Math.max(0, scRgbValue * 80);
+    return Math.min(100, Math.log1p(nits) / Math.log1p(10000) * 100);
+  };
+
   protected readonly imageDynamicRange = imageDynamicRange;
 
   protected readonly exifVisible = signal(false);
