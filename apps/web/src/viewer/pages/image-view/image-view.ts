@@ -1163,9 +1163,12 @@ export class ImageView {
     const next = this.loupeRendererMode() === 'css' ? 'webgpu' : 'css';
     this.loupeRendererMode.set(next);
     if (next === 'css') {
+      this.hdrLoupeActive.set(false);
+      this.hdrLoupeRenderer.dispose();
+      return;
+    }
 
     // Request a fresh FP16 sample instead of reusing a possibly stale sample.
-    // The canvas is shown only after WebGPU successfully completes a render.
     const mouse = this.lastMousePosition();
     if (this.loupeEnabled() && mouse) {
       this.sampleLoupeAtPosition({
