@@ -280,6 +280,23 @@ export class ImageView {
       this.exifVisible.set(sections['info']);
       this.configuration.updateSystemConfig({ exifVisible: sections['info'] });
       this.exifState.set(sections['info'] ? this.imageTags() ?? false : false);
+      if (sections['info']) {
+        this.selectedImage$
+          .pipe(
+            take(1),
+            filter(image => image !== null),
+            switchMap(image => from(this.exif.read(image.path)).pipe(
+              map(response => response.success ? response.data : null),
+              catchError(() => of(null))
+            )),
+            takeUntilDestroyed()
+          )
+          .subscribe(tags => {
+            this.imageTags.set(tags);
+            this.imageBitDepth.set(tags === null ? null : this.getBitDepth(tags));
+            this.exifState.set(tags ?? false);
+          });
+      }
     }
     if (key === 'histogram') {
       if (this.sidebarSections()[key] && !this.histogramVisible()) this.toggleHistogram();
@@ -374,7 +391,7 @@ export class ImageView {
     return (this.document.defaultView as (Window & { desktop?: Desktop }) | null)?.desktop;
   }
 
-  protected readonly comparisonMode = signal<'hdr' | 'sdr' | 'side-by-side' | 'stacked'>('hdr');
+  protected readonly comparisonMode = signal<'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side' | 'dual-stacked'>('hdr');
 
   protected readonly comparisonSplit = signal(50);
 
@@ -551,7 +568,7 @@ export class ImageView {
         this.sidebarSections.set({ ...this.sidebarSections(), ...config.system.imageSidebarSections });
         this.histogramVisible.set(config.system.histogramVisible === true);
         const savedMode = config.system.comparisonMode ?? 'hdr';
-        this.comparisonMode.set(savedMode === 'dual-side-by-side' || savedMode === 'dual-stacked' ? 'hdr' : savedMode);
+        this.comparisonMode.set(savedMode);
         this.comparisonSplit.set(config.system.comparisonSplit ?? 50);
         this.exifVisible.set(config.system.exifVisible === true);
         if (config.system.exifVisible === true && config.system.imageSidebarSections?.['info'] === undefined) {
@@ -676,7 +693,7 @@ export class ImageView {
     }
   };
 
-  protected readonly setComparisonMode = (mode: 'hdr' | 'sdr' | 'side-by-side' | 'stacked') => {
+  protected readonly setComparisonMode = (mode: 'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side' | 'dual-stacked') => {
     this.comparisonMode.set(mode);
     this.configuration.updateSystemConfig({ comparisonMode: mode });
     if (this.hdrImageAdjustmentActive()) void this.renderHdrImageAdjustments(true);
@@ -691,7 +708,7 @@ export class ImageView {
           return;
         }
 
-        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked'] as const;
+        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked', 'dual-side-by-side', 'dual-stacked'] as const;
         const currentIndex = modes.indexOf(this.comparisonMode());
         this.setComparisonMode(modes[(currentIndex + 1) % modes.length]);
       });
