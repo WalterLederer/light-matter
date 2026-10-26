@@ -1119,3 +1119,9 @@
  .image-controls-sidebar .hdr-threshold-control > span {display:flex;justify-content:space-between;align-items:center;gap:8px}
  .image-controls-sidebar .hdr-threshold-control > span > span {font-variant-numeric:tabular-nums;opacity:.8;text-align:right}
  .image-controls-sidebar .hdr-threshold-control input[type="range"] {width:100%;accent-color:#ff35df}
+
+
+:host .image-controls-sidebar .rgb-invert-options {display:flex;align-items:center;gap:5px;font-size:12px;opacity:.9}
+:host .image-controls-sidebar .rgb-invert-options input[type=checkbox],
+:host .image-controls-sidebar .rgb-invert-all input[type=checkbox] {width:auto;margin:0;accent-color:#65a9ff}
+:host .image-controls-sidebar .rgb-invert-all {display:flex;align-items:center;gap:7px;padding:4px 0;font-weight:600}
