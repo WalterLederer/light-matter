@@ -847,6 +847,9 @@ export class ImageView {
     this.loupeCaptureError.set(null);
     this.loupeSampleRequest++;
     if (!enabled) {
+      // Invalidate any pending swatch render while Angular removes its canvas.
+      // The renderer will release the old canvas context when the next canvas is attached.
+      this.hdrSwatchRenderRequest++;
       this.hdrLoupeActive.set(false);
       this.hdrLoupeRenderer.dispose();
       this.loupeCaptureRequest++;
@@ -1009,6 +1012,9 @@ export class ImageView {
 
   protected readonly onLoupeMouseLeave = () => {
     this.loupeSampleRequest++;
+    // The sample block (including its WebGPU canvas) is removed from the DOM.
+    // Invalidate queued animation-frame renders so they cannot target that stale canvas.
+    this.hdrSwatchRenderRequest++;
     this.loupeSample.set(null);
   };
 
