@@ -357,7 +357,7 @@ export class HdrImageBrightnessRenderer {
     region: HdrLoupeRegion,
     brightness: number,
     sourceKey: string | number,
-    adjustments: { contrast: number; red: number; green: number; blue: number; saturation: number } = { contrast: 1, red: 1, green: 1, blue: 1, saturation: 1 }
+    adjustments: { contrast: number; red: number; green: number; blue: number; saturation: number; blackPoint: number; whitePoint: number } = { contrast: 1, red: 1, green: 1, blue: 1, saturation: 1, blackPoint: 0, whitePoint: 1 }
   ): Promise<void> {
     const task = this.queue.then(() => this.renderInternal(canvas, region, brightness, sourceKey, adjustments));
     this.queue = task.catch(() => undefined);
@@ -369,7 +369,7 @@ export class HdrImageBrightnessRenderer {
     region: HdrLoupeRegion,
     brightness: number,
     sourceKey: string | number,
-    adjustments: { contrast: number; red: number; green: number; blue: number; saturation: number }
+    adjustments: { contrast: number; red: number; green: number; blue: number; saturation: number; blackPoint: number; whitePoint: number }
   ): Promise<void> {
     const width = Math.max(1, Math.round(canvas.clientWidth || canvas.parentElement?.clientWidth || region.width));
     const height = Math.max(1, Math.round(canvas.clientHeight || canvas.parentElement?.clientHeight || region.height));
@@ -402,7 +402,7 @@ export class HdrImageBrightnessRenderer {
 
     device.queue.writeBuffer(this.uniformBuffer!, 0, new Float32Array([
       brightness, adjustments.contrast, adjustments.red, adjustments.green,
-      adjustments.blue, adjustments.saturation, width, height
+      adjustments.blue, adjustments.saturation, adjustments.blackPoint, adjustments.whitePoint
     ]));
     const bindGroup = device.createBindGroup({
       layout: this.pipeline!.getBindGroupLayout(0),
@@ -475,6 +475,7 @@ export class HdrImageBrightnessRenderer {
         encodedColor = (encodedColor - vec3<f32>(0.5)) * params.contrast + vec3<f32>(0.5);
         let luminance = dot(encodedColor, vec3<f32>(0.2126, 0.7152, 0.0722));
         encodedColor = vec3<f32>(luminance) + (encodedColor - vec3<f32>(luminance)) * params.saturation;
+        encodedColor = (encodedColor - vec3<f32>(params.outputWidth)) / max(params.outputHeight - params.outputWidth, 0.01);
         encodedColor *= vec3<f32>(params.red, params.green, params.blue);
         return vec4<f32>(encodedColor, 1.0);
       }
