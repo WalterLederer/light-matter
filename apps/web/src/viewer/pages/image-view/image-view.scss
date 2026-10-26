@@ -852,14 +852,8 @@
   .image-controls-sidebar .location-info-box.collapsed { gap: 0; padding: 5px 8px; }
   .image-controls-sidebar .loupe-info-heading {display:flex;align-items:center;justify-content:space-between;gap:8px;color:rgb(230 230 230 / 96%);font:600 11px/1.2 sans-serif;letter-spacing:.06em}
   .image-controls-sidebar .location-heading {display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px}
-  .image-controls-sidebar .location-heading-label {display:inline-flex;align-items:center;gap:7px}
-  .image-controls-sidebar .loupe-collapse-indicator {display:inline-block;width:12px;text-align:center;font-size:14px;line-height:1;opacity:.8}
   .image-controls-sidebar .loupe-coordinates {color:rgb(205 205 205 / 90%);font:11px/1.35 Consolas,"Courier New",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
   .image-controls-sidebar .location-heading .loupe-coordinates {justify-self:end;text-align:right}
-  .image-controls-sidebar .loupe-brightness-correction {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0 4px;color:rgb(205 205 205 / 90%);font:11px/1.35 Consolas,"Courier New",monospace;font-variant-numeric:tabular-nums}
-  .image-controls-sidebar .loupe-brightness-value {font-weight:600}
-  .image-controls-sidebar .loupe-brightness-value.positive {color:#ffe08a}
-  .image-controls-sidebar .loupe-brightness-value.negative {color:#a9caff}
   .image-controls-sidebar .loupe-sdr-info,
   .image-controls-sidebar .loupe-hdr-info {display:flex;flex-direction:column;gap:5px;padding-top:6px;border-top:1px solid rgb(255 255 255 / 16%);border-left:0;border-right:0;border-bottom:0}
   .image-controls-sidebar .loupe-info-subheading {color:rgb(220 220 220 / 92%);font:600 10px/1.2 sans-serif;letter-spacing:.05em}
