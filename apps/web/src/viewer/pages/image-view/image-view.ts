@@ -185,6 +185,8 @@ export class ImageView {
   protected readonly hdrLoupeActive = signal(false);
 
   private readonly hdrLoupeRenderer = new HdrLoupeRenderer();
+  private readonly hdrSwatchRenderer = new HdrLoupeRenderer();
+  private hdrSwatchRenderRequest = 0;
   private readonly hdrImageAdjustmentRenderer = new HdrImageBrightnessRenderer();
   protected readonly hdrImageAdjustmentPending = signal(false);
   protected readonly hdrImageAdjustmentReady = signal(false);
@@ -616,6 +618,8 @@ export class ImageView {
       this.loupeCaptureRequest++;
       this.loupeSampleRequest++;
       this.hdrLoupeRenderer.dispose();
+      this.hdrSwatchRenderRequest++;
+      this.hdrSwatchRenderer.dispose();
       this.hdrImageAdjustmentRenderer.dispose();
       this.hdrImageAdjustmentRequest++;
       this.desktop?.Loupe.release().catch(() => undefined);
@@ -966,6 +970,7 @@ export class ImageView {
           this.loupeSample.set(sample);
           this.loupeCaptureError.set(null);
           if (sample) {
+            void this.renderHdrColorSwatch(sample);
             await this.renderHdrLoupe(sample);
           } else {
             this.hdrLoupeActive.set(false);
@@ -1193,6 +1198,27 @@ export class ImageView {
       console.error('HDR WebGPU loupe render failed:', error);
       this.hdrLoupeRenderer.dispose();
       this.hdrLoupeActive.set(false);
+    }
+  };
+
+  /** Render the sampled FP16/scRGB pixel through the same extended-range WebGPU path as the HDR loupe. */
+  private readonly renderHdrColorSwatch = async (sample: NonNullable<ReturnType<typeof this.loupeSample>>): Promise<void> => {
+    const request = ++this.hdrSwatchRenderRequest;
+    try {
+      // Wait for Angular to attach the canvas and size its fixed 16px wrapper.
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      if (request !== this.hdrSwatchRenderRequest || this.loupeSample() !== sample) return;
+      const canvas = this.document.querySelector<HTMLCanvasElement>('.loupe-hdr-swatch-canvas');
+      if (!canvas) return;
+      await this.hdrSwatchRenderer.render(canvas, {
+        width: sample.regionWidth,
+        height: sample.regionHeight,
+        centerX: sample.centerX,
+        centerY: sample.centerY,
+        data: sample.data
+      }, 1, 1000);
+    } catch (error) {
+      console.warn('HDR pixel swatch WebGPU render failed:', error);
     }
   };
 
