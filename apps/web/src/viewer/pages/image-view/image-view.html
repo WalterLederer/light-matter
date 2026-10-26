@@ -244,29 +244,6 @@
   @if (!fullScreen) {
     <ui-tool-menu>
       <section>
-        <ui-action-button class="raised-panel-button"
-                          [title]="exifVisible() ? 'Close image information (I)' : 'Open image information (I)'"
-                          aria-keyshortcuts="I"
-                          [attr.aria-pressed]="exifVisible()"
-                          [compact]="true"
-                          [variant]="exifVisible() ? 'primary' : 'default'"
-                          (pressed)="toggleExifInfo(selected.path)">
-          <ui-icon icon="info"
-                   size="large"
-                   [inherit]="true" />
-          <ui-text [inherit]="true"><u>I</u>nfo</ui-text>
-        </ui-action-button>
-
-        <ui-action-button class="raised-panel-button"
-                          [title]="histogramVisible() ? 'Close SDR / HDR histogram (H)' : 'Open SDR / HDR histogram (H)'"
-                          aria-keyshortcuts="H"
-                          [attr.aria-pressed]="histogramVisible()"
-                          [compact]="true"
-                          [variant]="histogramVisible() ? 'primary' : 'default'"
-                          (pressed)="toggleHistogram()">
-          <ui-text [inherit]="true"><u>H</u>istogram</ui-text>
-        </ui-action-button>
-
         <ui-text class="status-info">
           @if (debugImageSwitching() && debugSwitchingPhase() !== null) {
             <span class="debug-switching-readout">debug switching: {{ debugSwitchingPhase() }}</span>
@@ -318,6 +295,9 @@
       </section>
 
     </ui-tool-menu>
+  }
+  @if (!fullScreen && !controlsSidebarVisible()) {
+    <button class="show-controls-sidebar" type="button" title="Bildsteuerung anzeigen" (click)="toggleControlsSidebar()">⚙</button>
   }
   @if (!fullScreen && controlsSidebarVisible()) {
     <aside class="image-controls-sidebar" aria-label="Bildsteuerung">

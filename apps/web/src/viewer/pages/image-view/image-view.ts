@@ -179,19 +179,18 @@ export class ImageView {
   private readonly hdrLoupeRenderer = new HdrLoupeRenderer();
   private readonly hdrFullImageRenderer = new HdrLoupeRenderer();
 
-  private readonly readStoredLoupeShape = (): 'circular' | 'small-circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler' => {
+  private readonly readStoredLoupeShape = (): 'circular' | 'rectangular' | 'ruler' | 'vertical-ruler' => {
     try {
       const stored = this.document.defaultView?.localStorage.getItem('light-matter.loupeShape');
       // Removed legacy small-circle and double-circle modes; normalize saved settings.
       if (stored === 'circular' || stored === 'rectangular' || stored === 'ruler' || stored === 'vertical-ruler') return stored;
-      if (stored === 'small-circular' || stored === 'circular-detail') return 'circular';
       return this.readStoredBoolean('loupeCircular', false) ? 'circular' : 'rectangular';
     } catch {
       return 'rectangular';
     }
   };
 
-  protected readonly loupeShape = signal<'circular' | 'small-circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler'>(this.readStoredLoupeShape());
+  protected readonly loupeShape = signal<'circular' | 'rectangular' | 'ruler' | 'vertical-ruler'>(this.readStoredLoupeShape());
 
   protected readonly locationInfoExpanded = signal(this.readStoredBoolean('locationInfoExpanded', true));
 
@@ -294,7 +293,7 @@ export class ImageView {
     return (this.document.defaultView as (Window & { desktop?: Desktop }) | null)?.desktop;
   }
 
-  protected readonly comparisonMode = signal<'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side' | 'dual-stacked'>('hdr');
+  protected readonly comparisonMode = signal<'hdr' | 'sdr' | 'side-by-side' | 'stacked'>('hdr');
 
   protected readonly comparisonSplit = signal(50);
 
@@ -469,7 +468,8 @@ export class ImageView {
       .pipe(take(1), takeUntilDestroyed())
       .subscribe(config => {
         this.histogramVisible.set(config.system.histogramVisible === true);
-        this.comparisonMode.set(config.system.comparisonMode ?? 'hdr');
+        const savedMode = config.system.comparisonMode ?? 'hdr';
+        this.comparisonMode.set(savedMode === 'dual-side-by-side' || savedMode === 'dual-stacked' ? 'hdr' : savedMode);
         this.comparisonSplit.set(config.system.comparisonSplit ?? 50);
         this.exifVisible.set(config.system.exifVisible === true);
         if (this.exifVisible()) {
@@ -573,7 +573,7 @@ export class ImageView {
     }
   };
 
-  protected readonly setComparisonMode = (mode: 'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side' | 'dual-stacked') => {
+  protected readonly setComparisonMode = (mode: 'hdr' | 'sdr' | 'side-by-side' | 'stacked') => {
     this.comparisonMode.set(mode);
     this.configuration.updateSystemConfig({ comparisonMode: mode });
   };
@@ -587,7 +587,7 @@ export class ImageView {
           return;
         }
 
-        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked', 'dual-side-by-side', 'dual-stacked'] as const;
+        const modes = ['hdr', 'sdr', 'side-by-side', 'stacked'] as const;
         const currentIndex = modes.indexOf(this.comparisonMode());
         this.setComparisonMode(modes[(currentIndex + 1) % modes.length]);
       });
@@ -656,10 +656,7 @@ export class ImageView {
 
     // Normalize legacy saved shape values before cycling through supported shapes.
     const currentShape = this.loupeShape();
-    const normalizedShape = currentShape === 'small-circular' || currentShape === 'circular-detail'
-      ? 'circular'
-      : currentShape;
-    const currentIndex = shapes.indexOf(normalizedShape);
+    const currentIndex = shapes.indexOf(currentShape);
     if (currentIndex === shapes.length - 1) {
       void this.toggleLoupe(false);
       return;
@@ -671,10 +668,10 @@ export class ImageView {
     this.storeLoupeShape(shapes[currentIndex + 1]);
   };
 
-  private readonly storeLoupeShape = (value: 'circular' | 'small-circular' | 'circular-detail' | 'rectangular' | 'ruler' | 'vertical-ruler') => {
+  private readonly storeLoupeShape = (value: 'circular' | 'rectangular' | 'ruler' | 'vertical-ruler') => {
     try {
       this.document.defaultView?.localStorage.setItem('light-matter.loupeShape', value);
-      this.storeBoolean('loupeCircular', value === 'circular' || value === 'small-circular' || value === 'circular-detail');
+      this.storeBoolean('loupeCircular', value === 'circular');
     } catch {
       // The shape remains usable for the current session if storage is unavailable.
     }
@@ -764,11 +761,7 @@ export class ImageView {
     // Include the physical display scale and outer loupe size, but keep pixel
     // magnification independent from the loupe's visual size.
     const shape = this.loupeShape();
-    const viewportHalfExtent = shape === 'ruler' || shape === 'vertical-ruler'
-      ? 280
-      : shape === 'small-circular'
-        ? 70
-        : 140;
+    const viewportHalfExtent = shape === 'ruler' || shape === 'vertical-ruler' ? 280 : 140;
     const effectiveZoom = this.loupePixelSize() * geometry.scaleFactor / this.loupeSizeScale();
     const requestedRadius = Math.ceil(viewportHalfExtent / Math.max(effectiveZoom, 0.01)) + 16;
     const radius = Math.max(3, Math.min(2048, requestedRadius));
