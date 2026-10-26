@@ -353,7 +353,7 @@ export class ImageView {
   protected readonly setDebugImageSwitching = (enabled: boolean): void => { try { this.document.defaultView?.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* storage may be unavailable */ } this.debugImageSwitching.set(enabled); };
   protected readonly hdrImageAdjustmentActive = computed(() =>
     this.mainImageBrightness() !== 1 || this.imageContrast() !== 1 ||
-    this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1 || this.colorIntensity() !== 1 || this.blackPoint() !== 0 || this.whitePoint() !== 1
+    this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1 || this.colorIntensity() !== 1 || this.blackPoint() !== 0 || this.whitePoint() !== 1 || this.highlightHdrPixels()
   );
   protected readonly setMainBrightness = (v: string | number): void => {
     this.mainImageBrightness.set(Math.max(0, Math.min(2, Number(v))));
@@ -388,11 +388,16 @@ export class ImageView {
     this.refreshHdrImageAdjustments();
   };
   protected readonly setBlackPoint = (v: string | number): void => {
-    this.blackPoint.set(Math.max(0, Math.min(0.49, Number(v))));
+    this.blackPoint.set(Math.max(0, Math.min(this.whitePoint() - 0.01, Number(v))));
     this.refreshHdrImageAdjustments();
   };
   protected readonly setWhitePoint = (v: string | number): void => {
-    this.whitePoint.set(Math.max(0.51, Math.min(2, Number(v))));
+    this.whitePoint.set(Math.max(this.blackPoint() + 0.01, Math.min(2, Number(v))));
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly highlightHdrPixels = signal(false);
+  protected readonly setHdrPixelHighlight = (enabled: boolean): void => {
+    this.highlightHdrPixels.set(enabled);
     this.refreshHdrImageAdjustments();
   };
   protected readonly resetCorrections = (): void => {
@@ -1206,7 +1211,8 @@ export class ImageView {
         blue: this.blueChannelLevel(),
         saturation: this.colorIntensity(),
         blackPoint: this.blackPoint(),
-        whitePoint: this.whitePoint()
+        whitePoint: this.whitePoint(),
+        highlightHdrPixels: this.highlightHdrPixels()
       }
     );
     if (request === this.hdrImageAdjustmentRequest && this.hdrImageAdjustmentActive()) {
