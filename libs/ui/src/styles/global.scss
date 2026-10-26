@@ -5,10 +5,6 @@
 @use "global/palette2";
 @use "global/typography";
 
-:root {
-  --hdr-logo-main-gradient: linear-gradient(90deg, #ff4fc8 0%, #c45bff 20%, #4aa7ff 40%, #45e0c0 58%, #d8ed4d 75%, #ffad42 90%, #ff5b4a 100%);
-  --hdr-logo-accent-gradient: linear-gradient(90deg, #d9008d 0%, #8b36b5 22%, #1679db 45%, #16a56b 64%, #e5d51b 80%, #ff7a00 100%);
-}
 
 @include cdk.overlay();
 
