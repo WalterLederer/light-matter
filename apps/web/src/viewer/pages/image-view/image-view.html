@@ -265,8 +265,9 @@
               <div class="loupe-info-subheading">HDR</div>
               @if (loupeSample(); as sample) {
                 <div class="loupe-rgb-summary">
-                  <canvas class="loupe-rgb-swatch loupe-hdr-swatch loupe-hdr-swatch-canvas"
-                          aria-label="HDR pixel color rendered from the FP16 capture"></canvas>
+                  <span class="loupe-rgb-swatch loupe-hdr-swatch-container" aria-label="HDR pixel color rendered from the FP16 capture">
+                    <canvas class="loupe-hdr-swatch-canvas" aria-hidden="true"></canvas>
+                  </span>
                   <span class="loupe-rgb-values">R:0x{{ sample.center.rHex }} G:0x{{ sample.center.gHex }} B:0x{{ sample.center.bHex }}</span>
                 </div>
               } @else if (loupeCaptureError(); as captureError) {
