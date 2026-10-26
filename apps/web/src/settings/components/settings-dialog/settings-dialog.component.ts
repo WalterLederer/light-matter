@@ -14,7 +14,7 @@ import { ByteSizePipe } from '../../../ui/pipes/byte-size/byte-size.pipe';
   host: { '[class.busy]': 'isClearing()' },
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class SettingsDialogComponent {
+export class SettingsPanelComponent {
   /* DI */
   readonly cacheManager = inject(CacheManager);
 
