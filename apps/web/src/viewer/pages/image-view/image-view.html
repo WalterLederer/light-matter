@@ -227,10 +227,18 @@
           <label class="channel-control"><span><b>Color intensity</b><span>{{(colorIntensity()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="3" step=".01" [value]="colorIntensity()" (input)="setColorIntensity($any($event.target).value)" title="0% = black and white; 100% = original colors; 300% = strongly boosted colors"/></label>
           <div class="rgb-correction-controls" aria-label="RGB channel levels">
             <div class="correction-subheading">RGB</div>
-            <label class="channel-control rgb-red"><span><b>R</b><span>{{(redChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="redChannelLevel()" (input)="setRedChannelLevel($any($event.target).value)"/><span class="rgb-invert-options"><input type="checkbox" [checked]="invertRedChannel()" (change)="setInvertRedChannel($any($event.target).checked)" aria-label="Invert red channel"/> Invert R</span></label>
-            <label class="channel-control rgb-green"><span><b>G</b><span>{{(greenChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="greenChannelLevel()" (input)="setGreenChannelLevel($any($event.target).value)"/><span class="rgb-invert-options"><input type="checkbox" [checked]="invertGreenChannel()" (change)="setInvertGreenChannel($any($event.target).checked)" aria-label="Invert green channel"/> Invert G</span></label>
-            <label class="channel-control rgb-blue"><span><b>B</b><span>{{(blueChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="blueChannelLevel()" (input)="setBlueChannelLevel($any($event.target).value)"/><span class="rgb-invert-options"><input type="checkbox" [checked]="invertBlueChannel()" (change)="setInvertBlueChannel($any($event.target).checked)" aria-label="Invert blue channel"/> Invert B</span></label>
-            <label class="rgb-invert-all"><input type="checkbox" [checked]="invertAllRgbChannels()" (change)="setInvertAllRgbChannels($any($event.target).checked)"/> Invert all RGB channels</label>
+            <label class="channel-control rgb-red"><span><b>R</b><span>{{(redChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="redChannelLevel()" (input)="setRedChannelLevel($any($event.target).value)"/></label>
+            <label class="channel-control rgb-green"><span><b>G</b><span>{{(greenChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="greenChannelLevel()" (input)="setGreenChannelLevel($any($event.target).value)"/></label>
+            <label class="channel-control rgb-blue"><span><b>B</b><span>{{(blueChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="blueChannelLevel()" (input)="setBlueChannelLevel($any($event.target).value)"/></label>
+          </div>
+          <div class="rgb-inversion-controls">
+            <div class="correction-subheading">Inverse</div>
+            <div class="rgb-inversion-row">
+              <label><input type="checkbox" [checked]="invertRedChannel()" (change)="setInvertRedChannel($any($event.target).checked)"/> R</label>
+              <label><input type="checkbox" [checked]="invertGreenChannel()" (change)="setInvertGreenChannel($any($event.target).checked)"/> G</label>
+              <label><input type="checkbox" [checked]="invertBlueChannel()" (change)="setInvertBlueChannel($any($event.target).checked)"/> B</label>
+              <label><input type="checkbox" [checked]="invertAllRgbChannels()" (change)="setInvertAllRgbChannels($any($event.target).checked)"/> All</label>
+            </div>
           </div>
           <div class="tone-curve-controls">
             <div class="correction-subheading">Tone curve</div>
@@ -238,8 +246,8 @@
               <path class="tone-curve-grid" d="M4 4V68H116M4 36H116M60 4V68" />
               <path class="tone-curve-line" [attr.d]="'M4 68 H' + (4 + blackPoint() * 56) + ' L' + (4 + whitePoint() * 56) + ' 4 H116'" />
             </svg>
-            <label class="channel-control"><span><b>Black point</b><span>{{(blackPoint()*100).toFixed(0)}}%</span></span><input type="range" min="0" [max]="whitePoint() - 0.01" step=".005" [value]="blackPoint()" (input)="setBlackPoint($any($event.target).value)"/></label>
-            <label class="channel-control"><span><b>White point</b><span>{{(whitePoint()*100).toFixed(0)}}%</span></span><input type="range" [min]="blackPoint() + 0.01" max="2" step=".01" [value]="whitePoint()" (input)="setWhitePoint($any($event.target).value)"/></label>
+            <label class="channel-control"><span><span>Black point</span><span>{{(blackPoint()*100).toFixed(0)}}%</span></span><input type="range" min="0" [max]="whitePoint() - 0.01" step=".005" [value]="blackPoint()" (input)="setBlackPoint($any($event.target).value)"/></label>
+            <label class="channel-control"><span><span>White point</span><span>{{(whitePoint()*100).toFixed(0)}}%</span></span><input type="range" [min]="blackPoint() + 0.01" max="2" step=".01" [value]="whitePoint()" (input)="setWhitePoint($any($event.target).value)"/></label>
           </div>
           <label class="hdr-highlight-toggle"><input type="checkbox" [checked]="highlightHdrPixels()" (change)="setHdrPixelHighlight($any($event.target).checked)"/> Highlight HDR pixels</label>
           @if (highlightHdrPixels()) {
