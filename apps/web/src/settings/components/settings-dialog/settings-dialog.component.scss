@@ -346,9 +346,9 @@ section {
 }
 
 .format-list {
-  // Let the dialog grow to fit the table; the dialog itself scrolls only
-  // when its total height reaches the viewport limit.
-  overflow: visible;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
 
   table {
     width: 100%;
