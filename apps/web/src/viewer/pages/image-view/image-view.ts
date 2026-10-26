@@ -1469,7 +1469,7 @@ export class ImageView {
           return;
         }
 
-        if (event.key === 'r' || event.key === 'R') {
+        if (event.key === 'v' || event.key === 'V') {
           this.cycleComparisonMode();
           return;
         }
@@ -1500,6 +1500,10 @@ export class ImageView {
 
           case 'h':
             this.toggleHistogram();
+            break;
+
+          case 'g':
+            this.toggleSidebarSection('general');
             break;
 
           case 'arrowleft':
