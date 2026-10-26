@@ -149,10 +149,9 @@
     justify-items: stretch;
   }
 
-  .dual-side-by-side-labels.dual-stacked-labels .comparison-logo {
-    width: 100%;
-    max-width: none;
-    height: 45px;
+  .dual-side-by-side-labels.dual-stacked-labels .comparison-logo-image {
+    width: min(100%, 112px);
+    max-height: 112px;
   }
 
   .comparison-logo {
