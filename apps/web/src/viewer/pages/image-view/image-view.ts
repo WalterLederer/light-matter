@@ -640,7 +640,6 @@ export class ImageView {
           this.pixelColor.set(null);
           this.loupeSdrPixelCanvas = null;
           this.loupeSdrPixelContext = null;
-          this.loupeSdrPixelImage = null;
         }),
         tap(path => {
           if (this.histogramVisible()) {
