@@ -38,8 +38,8 @@
   justify-content: space-between;
   gap: var(--dim-large);
   padding: var(--dim-medium);
-  border: 1px solid var(--color-content-default-low);
-  border-radius: var(--border-radius-medium);
+  border: 0;
+  border-radius: 0;
 }
 
 .setting-section-title {
@@ -57,8 +57,8 @@
   justify-content: space-between;
   gap: var(--dim-large);
   padding: var(--dim-medium);
-  border: 1px solid var(--color-content-default-low);
-  border-radius: var(--border-radius-medium);
+  border: 0;
+  border-radius: 0;
 
   .cache-path-details {
     display: grid;
@@ -149,8 +149,8 @@ section {
   justify-content: space-between;
   gap: var(--dim-large);
   padding: var(--dim-medium);
-  border: 1px solid var(--color-content-default-low);
-  border-radius: var(--border-radius-medium);
+  border: 0;
+  border-radius: 0;
 
   > div {
     display: grid;
@@ -308,9 +308,9 @@ section {
   margin-bottom: var(--dim-medium);
 
   > summary {
-    padding: var(--dim-medium);
-    border: 1px solid var(--color-content-default-low);
-    border-radius: var(--border-radius-medium);
+    padding: var(--dim-medium) 0;
+    border: 0;
+    border-radius: 0;
     font-weight: 700;
     cursor: pointer;
     user-select: none;
@@ -323,9 +323,9 @@ section {
 
 .format-details {
   margin-top: var(--dim-large);
-  padding: var(--dim-medium);
-  border: 1px solid var(--color-content-default-low);
-  border-radius: var(--border-radius-medium);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
 
   > details > summary {
     cursor: pointer;
