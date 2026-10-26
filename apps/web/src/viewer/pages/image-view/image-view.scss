@@ -386,6 +386,8 @@
       white-space: nowrap;
     }
 
+    .location-heading-label {display:inline-flex;align-items:center;gap:7px}
+    .loupe-collapse-indicator {display:inline-block;width:12px;text-align:center;font-size:14px;line-height:1;opacity:.8}
     .location-heading {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto;
