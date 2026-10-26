@@ -1238,11 +1238,6 @@ export class ImageView {
     this.setLoupeSize(Number((this.loupeSizeScale() + direction * 0.1).toFixed(1)));
   };
 
-  protected readonly adjustLoupeZoom = (direction: 1 | -1) => {
-    const next = Math.max(0.1, Math.min(64, Number((this.loupeSlider.value * (direction > 0 ? 1.25 : 0.8)).toFixed(2))));
-    this.loupeSlider.setValue(next);
-  };
-
   protected readonly adjustZoom = (direction: 1 | -1) => {
     this.imageLocation$
       .pipe(take(1))
