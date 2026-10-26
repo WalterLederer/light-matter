@@ -859,10 +859,23 @@
     display: block;
     flex: 1 1 auto;
     width: 100%;
-    height: 3px;
+    height: 4px;
     overflow: hidden;
     border-radius: 2px;
     background: rgb(127 127 127 / 30%);
+  }
+
+  /* Keep R/G/B identifiable even before a pixel sample is available. */
+  .image-controls-sidebar .coordinate-rgb-channels .loupe-rgb-channel:nth-child(1) .loupe-rgb-track {
+    background: rgb(255 66 66 / 35%);
+  }
+
+  .image-controls-sidebar .coordinate-rgb-channels .loupe-rgb-channel:nth-child(2) .loupe-rgb-track {
+    background: rgb(54 207 112 / 35%);
+  }
+
+  .image-controls-sidebar .coordinate-rgb-channels .loupe-rgb-channel:nth-child(3) .loupe-rgb-track {
+    background: rgb(67 140 255 / 35%);
   }
 
   .image-controls-sidebar .coordinate-rgb-channels .loupe-rgb-fill {
