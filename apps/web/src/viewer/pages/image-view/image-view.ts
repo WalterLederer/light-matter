@@ -265,6 +265,10 @@ export class ImageView {
   protected readonly redChannelLevel = signal(1);
   protected readonly greenChannelLevel = signal(1);
   protected readonly blueChannelLevel = signal(1);
+  protected readonly invertRedChannel = signal(false);
+  protected readonly invertGreenChannel = signal(false);
+  protected readonly invertBlueChannel = signal(false);
+  protected readonly invertAllRgbChannels = signal(false);
   protected readonly colorIntensity = signal(1);
   protected readonly blackPoint = signal(0);
   protected readonly whitePoint = signal(1);
@@ -353,7 +357,9 @@ export class ImageView {
   protected readonly setDebugImageSwitching = (enabled: boolean): void => { try { this.document.defaultView?.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* storage may be unavailable */ } this.debugImageSwitching.set(enabled); };
   protected readonly hdrImageAdjustmentActive = computed(() =>
     this.mainImageBrightness() !== 1 || this.imageContrast() !== 1 ||
-    this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1 || this.colorIntensity() !== 1 || this.blackPoint() !== 0 || this.whitePoint() !== 1 || this.highlightHdrPixels()
+    this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1 ||
+    this.invertRedChannel() || this.invertGreenChannel() || this.invertBlueChannel() || this.invertAllRgbChannels() ||
+    this.colorIntensity() !== 1 || this.blackPoint() !== 0 || this.whitePoint() !== 1 || this.highlightHdrPixels()
   );
   protected readonly setMainBrightness = (v: string | number): void => {
     this.mainImageBrightness.set(Math.max(0, Math.min(2, Number(v))));
@@ -379,8 +385,13 @@ export class ImageView {
     this.blueChannelLevel.set(Math.max(0, Math.min(2, Number(v))));
     this.refreshHdrImageAdjustments();
   };
+  protected readonly setInvertRedChannel = (enabled: boolean): void => { this.invertRedChannel.set(enabled); this.refreshHdrImageAdjustments(); };
+  protected readonly setInvertGreenChannel = (enabled: boolean): void => { this.invertGreenChannel.set(enabled); this.refreshHdrImageAdjustments(); };
+  protected readonly setInvertBlueChannel = (enabled: boolean): void => { this.invertBlueChannel.set(enabled); this.refreshHdrImageAdjustments(); };
+  protected readonly setInvertAllRgbChannels = (enabled: boolean): void => { this.invertAllRgbChannels.set(enabled); this.refreshHdrImageAdjustments(); };
   protected readonly resetRgbChannels = (): void => {
     this.redChannelLevel.set(1); this.greenChannelLevel.set(1); this.blueChannelLevel.set(1);
+    this.invertRedChannel.set(false); this.invertGreenChannel.set(false); this.invertBlueChannel.set(false); this.invertAllRgbChannels.set(false);
     this.refreshHdrImageAdjustments();
   };
   protected readonly setColorIntensity = (v: string | number): void => {
@@ -412,6 +423,10 @@ export class ImageView {
     this.redChannelLevel.set(1);
     this.greenChannelLevel.set(1);
     this.blueChannelLevel.set(1);
+    this.invertRedChannel.set(false);
+    this.invertGreenChannel.set(false);
+    this.invertBlueChannel.set(false);
+    this.invertAllRgbChannels.set(false);
     this.colorIntensity.set(1);
     this.blackPoint.set(0);
     this.whitePoint.set(1);
@@ -1232,6 +1247,10 @@ export class ImageView {
         red: this.redChannelLevel(),
         green: this.greenChannelLevel(),
         blue: this.blueChannelLevel(),
+        invertRed: this.invertRedChannel(),
+        invertGreen: this.invertGreenChannel(),
+        invertBlue: this.invertBlueChannel(),
+        invertAll: this.invertAllRgbChannels(),
         saturation: this.colorIntensity(),
         blackPoint: this.blackPoint(),
         whitePoint: this.whitePoint(),
