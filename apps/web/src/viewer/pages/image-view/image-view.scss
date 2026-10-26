@@ -882,5 +882,14 @@
  .image-controls-sidebar {color:#202124;background:#f7f7f7;border-left-color:rgb(0 0 0 / 14%);box-shadow:-4px 0 16px rgb(0 0 0 / 12%)}
  .image-controls-sidebar button {background:rgb(0 0 0 / 4%);border-color:rgb(0 0 0 / 16%)}
  .image-controls-sidebar .section-heading {background:transparent}
+ .image-controls-sidebar .location-info-box {color:#202124;background:#fff;border-color:rgb(0 0 0 / 20%);box-shadow:0 4px 16px rgb(0 0 0 / 12%)}
+ .image-controls-sidebar .loupe-info-heading,
+ .image-controls-sidebar .loupe-coordinates,
+ .image-controls-sidebar .loupe-rgb-values,
+ .image-controls-sidebar .loupe-hdr-linear,
+ .image-controls-sidebar .loupe-info-subheading {color:#202124}
+ .image-controls-sidebar .loupe-sdr-info,
+ .image-controls-sidebar .loupe-hdr-info {border-top-color:rgb(0 0 0 / 16%)}
+ .image-controls-sidebar .loupe-key-hint {color:#404040;border-top-color:rgb(0 0 0 / 16%)}
  .show-controls-sidebar {background:#f7f7f7;color:#202124;border-color:rgb(0 0 0 / 20%)}
 }
