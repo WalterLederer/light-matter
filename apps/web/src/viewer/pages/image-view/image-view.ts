@@ -221,6 +221,37 @@ export class ImageView {
     pixels: Array<{ x: number; y: number; color: string }>;
   } | null>(null);
 
+  /** Decode the current center pixel directly from the captured FP16 buffer.
+   * This keeps the numeric readout and bars tied to the live capture data,
+   * rather than potentially stale convenience fields on the returned sample.
+   */
+  protected readonly loupeHdrRgb = computed(() => {
+    const sample = this.loupeSample();
+    if (!sample || sample.data.length < 4) return null;
+    const x = Math.max(0, Math.min(sample.regionWidth - 1, Math.round(sample.centerX)));
+    const y = Math.max(0, Math.min(sample.regionHeight - 1, Math.round(sample.centerY)));
+    const offset = (y * sample.regionWidth + x) * 4;
+    if (offset + 2 >= sample.data.length) return null;
+
+    const toFloat = (bits: number): number => {
+      const sign = (bits & 0x8000) ? -1 : 1;
+      const exponent = (bits >>> 10) & 0x1f;
+      const fraction = bits & 0x03ff;
+      if (exponent === 0) return sign * Math.pow(2, -14) * (fraction / 1024);
+      if (exponent === 0x1f) return fraction === 0 ? sign * Infinity : NaN;
+      return sign * Math.pow(2, exponent - 15) * (1 + fraction / 1024);
+    };
+    const rBits = sample.data[offset];
+    const gBits = sample.data[offset + 1];
+    const bBits = sample.data[offset + 2];
+    return {
+      r: toFloat(rBits), g: toFloat(gBits), b: toFloat(bBits),
+      rHex: '0x' + rBits.toString(16).padStart(4, '0').toUpperCase(),
+      gHex: '0x' + gBits.toString(16).padStart(4, '0').toUpperCase(),
+      bHex: '0x' + bBits.toString(16).padStart(4, '0').toUpperCase()
+    };
+  });
+
   protected readonly loupePixelSize = signal(24);
 
   /** Overall visual size of the loupe, independent of pixel magnification. */
