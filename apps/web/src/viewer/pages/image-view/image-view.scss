@@ -113,14 +113,6 @@
       left: 218px;
     }
 
-    &.small-circular .loupe-handle {
-      top: 118px;
-      left: 109px;
-      width: 47px;
-      height: 11px;
-      border-radius: 3px 6px 6px 3px;
-      transform-origin: 5px 5.5px;
-    }
 
     &.ruler .loupe-handle {
       display: none;
@@ -153,10 +145,6 @@
         height: 280px;
       }
 
-      &.small-circular {
-        top: 0;
-        left: 0;
-      }
 
       &.bright .loupe-led {
         border: 1px solid rgb(20 24 30 / 70%);
@@ -184,10 +172,6 @@
       }
     }
 
-    &.small-circular .loupe-led-ring {
-      top: 70px;
-      left: 70px;
-    }
 
     .loupe-image-viewport {
       position: relative;
@@ -251,10 +235,6 @@
         clip-path: circle(50% at 50% 50%);
       }
 
-      &.small-circular {
-        width: 140px;
-        height: 140px;
-      }
     }
 
 
@@ -661,14 +641,6 @@
     }
   }
 
-  .exif-close-button {
-    position: absolute;
-    top: var(--dim-small);
-    right: var(--dim-small);
-    z-index: 1;
-    color: var(--color-content-default-highest);
-    background: var(--color-surface-default-high);
-  }
 
   &.decoding,
   &.decoding * {
@@ -853,7 +825,6 @@
 
 
 :host {
- .image-view-filter-definitions {position:absolute;width:0;height:0;overflow:hidden}
  .show-controls-sidebar {position:fixed;z-index:41;right:8px;top:8px;padding:8px;border-radius:4px;background:#202124;color:#fff;border:1px solid rgb(255 255 255 / 25%);cursor:pointer}
  .image-controls-sidebar {position:fixed;z-index:40;top:0;right:0;bottom:0;width:340px;min-width:280px;max-width:70vw;overflow-y:auto;overflow-x:hidden;box-sizing:border-box;padding:12px;color:#f5f5f5;background:#202124;border-left:1px solid rgb(255 255 255 / 16%);box-shadow:-4px 0 16px rgb(0 0 0 / 25%);font-size:13px}
  .image-controls-sidebar .sidebar-resize-handle {position:absolute;z-index:2;top:0;bottom:0;left:0;width:8px;cursor:ew-resize;touch-action:none}
