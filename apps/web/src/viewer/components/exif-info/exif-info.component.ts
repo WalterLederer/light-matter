@@ -45,7 +45,7 @@ export class ExifInfoComponent {
     const value = this.path();
     // Windows drive-letter and UNC paths must be copied with native backslashes.
     if (/^[a-zA-Z]:[\\/]/.test(value) || value.startsWith('\\\\') || value.startsWith('//')) {
-      return value.replace(/[\\/]+/g, '\\\\');
+      return value.replace(/\//g, '\\');
     }
     // For non-Windows paths, preserve Unix-style separators.
     return value.replace(/\\/g, '/');
