@@ -265,7 +265,7 @@ export class ImageView {
   protected readonly redChannelLevel = signal(1);
   protected readonly greenChannelLevel = signal(1);
   protected readonly blueChannelLevel = signal(1);
-  protected readonly controlsSidebarVisible = signal(true);
+  protected readonly controlsSidebarVisible = signal(false);
   private readonly readStoredSidebarWidth = (): number => {
     try {
       const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.imageSidebarWidth'));
