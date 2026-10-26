@@ -20,6 +20,7 @@ import { HistogramService } from '../../../ipc/histogram';
 import { ProcessManager } from '../../../ipc/process-manager';
 import { SettingsDialogComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
 import { Configuration } from '../../../system/services/configuration/configuration';
+import { ThemeService } from '../../../system/services/theme/theme.service';
 import { Keyboard } from '../../../system/services/keyboard/keyboard';
 import { ExifInfoComponent } from '../../components/exif-info/exif-info.component';
 import { ImageRendererComponent } from '../../components/image-renderer/image-renderer.component';
@@ -77,6 +78,8 @@ export class ImageView {
   private readonly dialog = inject(Dialog);
 
   private readonly configuration = inject(Configuration);
+
+  protected readonly themeService = inject(ThemeService);
 
   private readonly readStoredBoolean = (key: string, fallback: boolean): boolean => {
     try {
@@ -214,9 +217,9 @@ export class ImageView {
 
   protected readonly mainImageBrightness = signal(1);
   protected readonly imageContrast = signal(1);
-  protected readonly redChannelVisible = signal(true);
-  protected readonly greenChannelVisible = signal(true);
-  protected readonly blueChannelVisible = signal(true);
+  protected readonly redChannelLevel = signal(1);
+  protected readonly greenChannelLevel = signal(1);
+  protected readonly blueChannelLevel = signal(1);
   protected readonly controlsSidebarVisible = signal(true);
   protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, loupe: true, mode: true, histogram: false, info: false, general: false });
   protected readonly sidebarSectionExpanded = (key: string): boolean => this.sidebarSections()[key] === true;
@@ -232,17 +235,21 @@ export class ImageView {
   protected readonly toggleControlsSidebar = (): void => this.controlsSidebarVisible.update(value => !value);
   protected readonly setDebugImageSwitching = (enabled: boolean): void => { try { this.document.defaultView?.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* storage may be unavailable */ } this.debugImageSwitching.set(enabled); };
   protected readonly openGeneralSettings = (): void => { void SettingsDialogComponent.open(this.dialog); };
-  protected readonly imageChannelFilterActive = computed(() => this.imageContrast() !== 1 || !this.redChannelVisible() || !this.greenChannelVisible() || !this.blueChannelVisible());
+  protected readonly imageChannelFilterActive = computed(() => this.imageContrast() !== 1 || this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1);
   protected readonly imageChannelFilterMatrix = computed(() => {
     const c = this.imageContrast();
-    const row = (on: boolean, channel: number) => [0,1,2].map(i => on && i === channel ? c : 0).concat([0, on ? 0.5 * (1-c) : 0]).join(' ');
-    return [row(this.redChannelVisible(),0), row(this.greenChannelVisible(),1), row(this.blueChannelVisible(),2), '0 0 0 1 0'].join(' ');
+    const offset = 0.5 * (1 - c);
+    const row = (level: number, channel: number) => [0,1,2].map(i => i === channel ? level * c : 0).concat([offset]).join(' ');
+    return [row(this.redChannelLevel(),0), row(this.greenChannelLevel(),1), row(this.blueChannelLevel(),2), '0 0 0 1 0'].join(' ');
   });
   protected readonly setMainBrightness = (v: string | number): void => this.mainImageBrightness.set(Math.max(0, Math.min(2, Number(v))));
   protected readonly resetMainBrightness = (): void => this.mainImageBrightness.set(1);
   protected readonly setImageContrast = (v: string | number): void => this.imageContrast.set(Math.max(0, Math.min(2, Number(v))));
   protected readonly resetImageAdjustments = (): void => { this.mainImageBrightness.set(1); this.imageContrast.set(1); };
-  protected readonly resetRgbChannels = (): void => { this.redChannelVisible.set(true); this.greenChannelVisible.set(true); this.blueChannelVisible.set(true); };
+  protected readonly setRedChannelLevel = (v: string | number): void => this.redChannelLevel.set(Math.max(0, Math.min(2, Number(v))));
+  protected readonly setGreenChannelLevel = (v: string | number): void => this.greenChannelLevel.set(Math.max(0, Math.min(2, Number(v))));
+  protected readonly setBlueChannelLevel = (v: string | number): void => this.blueChannelLevel.set(Math.max(0, Math.min(2, Number(v))));
+  protected readonly resetRgbChannels = (): void => { this.redChannelLevel.set(1); this.greenChannelLevel.set(1); this.blueChannelLevel.set(1); };
   protected readonly setLoupeBrightness = (v: string | number): void => this.loupeBrightness.set(Math.max(0, Math.min(2, Number(v))));
   protected readonly setLoupeShape = (shape: 'circular' | 'rectangular' | 'ruler' | 'vertical-ruler'): void => {
     this.loupeShape.set(shape); this.storeLoupeShape(shape); this.hdrLoupeActive.set(false); this.hdrLoupeRenderer.dispose();

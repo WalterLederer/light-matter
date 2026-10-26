@@ -896,14 +896,24 @@
  .image-controls-sidebar {position:fixed;z-index:40;top:0;right:0;bottom:0;width:300px;max-width:90vw;overflow-y:auto;box-sizing:border-box;padding:12px;color:#f5f5f5;background:#202124;border-left:1px solid rgb(255 255 255 / 16%);box-shadow:-4px 0 16px rgb(0 0 0 / 25%);font-size:13px}
  .histogram-overlay {right:312px;left:auto;max-width:calc(100vw - 330px);max-height:calc(100vh - 24px);overflow:auto}
  .image-controls-sidebar header {display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;font-size:15px}
+ .sidebar-header-actions {display:flex;align-items:center;gap:6px}
  .image-controls-sidebar button {cursor:pointer;color:inherit;background:rgb(255 255 255 / 7%);border:1px solid rgb(255 255 255 / 18%);border-radius:4px;padding:4px 8px;min-height:28px}
  .image-controls-sidebar button.active {outline:2px solid #65a9ff;background:rgb(90 150 220 / 20%)}
  .image-controls-sidebar button:disabled {opacity:.4;cursor:default}
  .image-controls-sidebar section {border-top:1px solid rgb(255 255 255 / 15%);padding:8px 0;display:flex;flex-direction:column;gap:7px}
  .image-controls-sidebar .section-heading {width:100%;border:0;background:transparent;text-align:left;font-weight:650}
  .image-controls-sidebar label {display:flex;align-items:center;gap:8px}
+ .image-controls-sidebar .channel-control {display:flex;flex-direction:column;align-items:stretch;gap:3px}
+ .image-controls-sidebar .channel-control > span {display:flex;justify-content:space-between;align-items:center}
+ .image-controls-sidebar .channel-control > span > span {font-variant-numeric:tabular-nums;opacity:.8}
  .image-controls-sidebar input[type=range] {width:100%;accent-color:#65a9ff}
  .control-row {display:flex;align-items:center;gap:6px}.control-row ui-slider {flex:1;min-width:0}
  .shape-row,.mode-row {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.shape-row {grid-template-columns:repeat(4,minmax(0,1fr))}.shape-row button {font-size:20px}
  .red {color:#ff6868}.green {color:#68dc85}.blue {color:#6ba9ff}.path {overflow-wrap:anywhere;font-size:11px;opacity:.75}
+}
+:host-context(html[data-theme='light']) {
+ .image-controls-sidebar {color:#202124;background:#f7f7f7;border-left-color:rgb(0 0 0 / 14%);box-shadow:-4px 0 16px rgb(0 0 0 / 12%)}
+ .image-controls-sidebar button {background:rgb(0 0 0 / 4%);border-color:rgb(0 0 0 / 16%)}
+ .image-controls-sidebar .section-heading {background:transparent}
+ .show-controls-sidebar {background:#f7f7f7;color:#202124;border-color:rgb(0 0 0 / 20%)}
 }

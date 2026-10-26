@@ -51,7 +51,7 @@
 }
 @if (controlsSidebarVisible()) {
   <aside class="gallery-controls-sidebar" aria-label="Allgemeine Einstellungen">
-    <header><strong>Allgemeine Einstellungen</strong><button type="button" aria-label="Seitenleiste schließen" (click)="toggleControlsSidebar()">×</button></header>
+    <header><strong>Allgemeine Einstellungen</strong><div class="sidebar-header-actions"><button type="button" (click)="themeService.toggle()">{{themeService.current()==='dark'?'☀ Light':'☾ Dark'}}</button><button type="button" aria-label="Seitenleiste schließen" (click)="toggleControlsSidebar()">×</button></div></header>
     <section><button class="section-heading" (click)="toggleGeneralSection('cache')">Cache {{generalSectionExpanded('cache')?'−':'+'}}</button>
       @if (generalSectionExpanded('cache')) { <p>{{cacheInfo().entries}} Dateien · {{cacheInfo().bytes}} Bytes</p><p class="path">{{cacheInfo().path}}</p><button (click)="openCacheFolder()">Cache-Ordner öffnen</button><button (click)="openSettings()">Cache verwalten…</button> }
     </section>
@@ -59,7 +59,7 @@
       @if (generalSectionExpanded('locations')) { <span>Konfigurationsdatei</span><p class="path">{{configPath() || 'Wird geladen…'}}</p><button (click)="openConfigFile()">Einstellungen öffnen</button><button (click)="openSettings()">Weitere Speicherorte…</button> }
     </section>
     <section><button class="section-heading" (click)="toggleGeneralSection('debug')">Debug {{generalSectionExpanded('debug')?'−':'+'}}</button>
-      @if (generalSectionExpanded('debug')) { <label><input type="checkbox" [checked]="debugImageSwitching()" (change)="setDebugImageSwitching($any($event.target).checked)"/> Debug: Bildwechsel</label><p class="path">Zusätzliche Phaseninformationen beim Laden und Wechseln von Bildern.</p><button (click)="openSettings()">Weitere Debug-Optionen…</button> }
+      @if (generalSectionExpanded('debug')) { <p class="path">Zusätzliche Diagnoseoptionen sind im Einstellungsdialog verfügbar.</p><button (click)="openSettings()">Weitere Debug-Optionen…</button> }
     </section>
     @if (generalSettingsError()) { <p class="general-settings-error">{{generalSettingsError()}}</p> }
     <button (click)="refreshGeneralSettings()">Aktualisieren</button>

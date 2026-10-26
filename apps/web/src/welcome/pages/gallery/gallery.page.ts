@@ -26,6 +26,7 @@ import { Dialogs } from '../../../ipc/dialogs';
 import { ProcessManager } from '../../../ipc/process-manager';
 import { CacheManager } from '../../../ipc/cache-manager';
 import { Configuration } from '../../../system/services/configuration/configuration';
+import { ThemeService } from '../../../system/services/theme/theme.service';
 import { take } from 'rxjs';
 import { SettingsDialogComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
 import { DefaultPipe } from '../../../system/pipes/default/default.pipe';
@@ -63,6 +64,8 @@ export class GalleryPage {
 
   private readonly configuration = inject(Configuration);
 
+  protected readonly themeService = inject(ThemeService);
+
   private readonly dialogs = inject(Dialogs);
 
   private readonly dialog = inject(Dialog);
@@ -90,12 +93,9 @@ export class GalleryPage {
     this.configuration.updateSystemConfig({ gallerySidebarSections: sections });
   };
   protected readonly toggleControlsSidebar = (): void => this.controlsSidebarVisible.update(value => !value);
-  protected readonly debugImageSwitching = signal(this.readDebugImageSwitching());
   protected readonly cacheInfo = signal<CacheInfo>({ path: '', entries: 0, bytes: 0, fullSize: { entries: 0, bytes: 0 }, thumbnails: { entries: 0, bytes: 0 } });
   protected readonly configPath = signal('');
   protected readonly generalSettingsError = signal<string | null>(null);
-  private readDebugImageSwitching(): boolean { try { return globalThis.localStorage.getItem('light-matter.debugImageSwitching') === 'true'; } catch { return false; } }
-  protected readonly setDebugImageSwitching = (enabled: boolean): void => { this.debugImageSwitching.set(enabled); try { globalThis.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* session-only fallback */ } };
   protected readonly refreshGeneralSettings = async (): Promise<void> => {
     try { this.cacheInfo.set(await this.cacheManager.cacheInfo()); this.configPath.set((await this.processManager.getSystemPaths()).appConfig); this.generalSettingsError.set(null); }
     catch (error) { this.generalSettingsError.set(error instanceof Error ? error.message : String(error)); }
