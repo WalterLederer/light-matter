@@ -357,7 +357,7 @@ export class HdrImageBrightnessRenderer {
     region: HdrLoupeRegion,
     brightness: number,
     sourceKey: string | number,
-    adjustments: { contrast: number; red: number; green: number; blue: number; saturation: number; blackPoint: number; whitePoint: number; highlightHdrPixels?: boolean; hdrHighlightThreshold?: number } = { contrast: 1, red: 1, green: 1, blue: 1, saturation: 1, blackPoint: 0, whitePoint: 1, highlightHdrPixels: false, hdrHighlightThreshold: 1 }
+    adjustments: { contrast: number; red: number; green: number; blue: number; invertRed?: boolean; invertGreen?: boolean; invertBlue?: boolean; invertAll?: boolean; saturation: number; blackPoint: number; whitePoint: number; highlightHdrPixels?: boolean; hdrHighlightThreshold?: number } = { contrast: 1, red: 1, green: 1, blue: 1, saturation: 1, blackPoint: 0, whitePoint: 1, highlightHdrPixels: false, hdrHighlightThreshold: 1 }
   ): Promise<void> {
     const task = this.queue.then(() => this.renderInternal(canvas, region, brightness, sourceKey, adjustments));
     this.queue = task.catch(() => undefined);
@@ -369,7 +369,7 @@ export class HdrImageBrightnessRenderer {
     region: HdrLoupeRegion,
     brightness: number,
     sourceKey: string | number,
-    adjustments: { contrast: number; red: number; green: number; blue: number; saturation: number; blackPoint: number; whitePoint: number; highlightHdrPixels?: boolean; hdrHighlightThreshold?: number }
+    adjustments: { contrast: number; red: number; green: number; blue: number; invertRed?: boolean; invertGreen?: boolean; invertBlue?: boolean; invertAll?: boolean; saturation: number; blackPoint: number; whitePoint: number; highlightHdrPixels?: boolean; hdrHighlightThreshold?: number }
   ): Promise<void> {
     const width = Math.max(1, Math.round(canvas.clientWidth || canvas.parentElement?.clientWidth || region.width));
     const height = Math.max(1, Math.round(canvas.clientHeight || canvas.parentElement?.clientHeight || region.height));
@@ -404,7 +404,9 @@ export class HdrImageBrightnessRenderer {
       brightness, adjustments.contrast, adjustments.red, adjustments.green,
       adjustments.blue, adjustments.saturation, adjustments.blackPoint, adjustments.whitePoint,
       adjustments.highlightHdrPixels ? 1 : 0, 1, 0, 1,
-      adjustments.hdrHighlightThreshold ?? 1, 0, 0, 0
+      adjustments.hdrHighlightThreshold ?? 1,
+      adjustments.invertRed ? 1 : 0, adjustments.invertGreen ? 1 : 0, adjustments.invertBlue ? 1 : 0, adjustments.invertAll ? 1 : 0,
+      0, 0, 0
     ]));
     const bindGroup = device.createBindGroup({
       layout: this.pipeline!.getBindGroupLayout(0),
@@ -449,7 +451,7 @@ export class HdrImageBrightnessRenderer {
       toneMapping: { mode: 'extended' }
     });
     const module = device.createShaderModule({ code: `
-      struct Params { brightness: f32, contrast: f32, red: f32, green: f32, blue: f32, saturation: f32, blackPoint: f32, whitePoint: f32, highlightEnabled: f32, highlightR: f32, highlightG: f32, highlightB: f32, highlightThreshold: f32, pad0: f32, pad1: f32, pad2: f32 };
+      struct Params { brightness: f32, contrast: f32, red: f32, green: f32, blue: f32, saturation: f32, blackPoint: f32, whitePoint: f32, highlightEnabled: f32, highlightR: f32, highlightG: f32, highlightB: f32, highlightThreshold: f32, invertRed: f32, invertGreen: f32, invertBlue: f32, invertAll: f32, pad0: f32, pad1: f32, pad2: f32 };
       @group(0) @binding(0) var imageTexture: texture_2d<f32>;
       @group(0) @binding(1) var<uniform> params: Params;
       struct VertexOutput { @builtin(position) position: vec4<f32>, @location(0) uv: vec2<f32> };
@@ -486,6 +488,9 @@ export class HdrImageBrightnessRenderer {
         encodedColor = vec3<f32>(luminance) + (encodedColor - vec3<f32>(luminance)) * params.saturation;
         encodedColor = (encodedColor - vec3<f32>(params.blackPoint)) / max(params.whitePoint - params.blackPoint, 0.01);
         encodedColor *= vec3<f32>(params.red, params.green, params.blue);
+        if (params.invertRed > 0.5 || params.invertAll > 0.5) { encodedColor.r = 1.0 - encodedColor.r; }
+        if (params.invertGreen > 0.5 || params.invertAll > 0.5) { encodedColor.g = 1.0 - encodedColor.g; }
+        if (params.invertBlue > 0.5 || params.invertAll > 0.5) { encodedColor.b = 1.0 - encodedColor.b; }
         return vec4<f32>(encodedColor, 1.0);
       }
     ` });
@@ -496,7 +501,7 @@ export class HdrImageBrightnessRenderer {
       fragment: { module, entryPoint: 'fs', targets: [{ format: 'rgba16float' }] },
       primitive: { topology: 'triangle-list' }
     });
-    this.uniformBuffer = device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.uniformBuffer = device.createBuffer({ size: 80, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.context = context;
     this.canvas = canvas;
   }
