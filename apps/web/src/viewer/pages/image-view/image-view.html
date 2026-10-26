@@ -281,7 +281,7 @@
                   <span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="hdr.b / 50 * 100"></span></span>
                 </div>
               </div>
-              <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">{{ hdr.r | number:'1.0-4' }}, {{ hdr.g | number:'1.0-4' }}, {{ hdr.b | number:'1.0-4' }}</span><span class="loupe-scrgb-label">scRGB</span></div>
+              <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">{{ hdr.r | number:'1.0-4' }}</span><span class="loupe-scrgb-values">{{ hdr.g | number:'1.0-4' }}</span><span class="loupe-scrgb-values">{{ hdr.b | number:'1.0-4' }}</span><span class="loupe-scrgb-label">scRGB</span></div>
             } @else if (loupeCaptureError(); as captureError) {
               <div class="loupe-capture-error" role="status">HDR pixel info unavailable: {{ captureError }}</div>
             } @else {
@@ -290,7 +290,7 @@
                 <div class="loupe-channel-meter"><span class="loupe-channel-value">—</span><span class="loupe-rgb-track"></span></div>
                 <div class="loupe-channel-meter"><span class="loupe-channel-value">—</span><span class="loupe-rgb-track"></span></div>
               </div>
-              <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">—, —, —</span><span class="loupe-scrgb-label">scRGB</span></div>
+              <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">—</span><span class="loupe-scrgb-values">—</span><span class="loupe-scrgb-values">—</span><span class="loupe-scrgb-label">scRGB</span></div>
             }
           </section>
           
