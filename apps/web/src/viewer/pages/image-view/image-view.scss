@@ -328,19 +328,6 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .location-info-box.collapsed {
-      gap: 0;
-      padding: 5px 8px;
-      border-color: rgb(255 255 255 / 12%);
-      background: rgb(12 14 18 / 12%);
-      box-shadow: none;
-    }
-
-    .location-info-box.collapsed .loupe-info-heading {
-      color: rgb(255 255 255 / 98%);
-      text-shadow: 0 1px 3px rgb(0 0 0 / 95%);
-    }
-
     .loupe-info-subheading {
       color: rgb(220 220 220 / 92%);
       font: 600 10px/1.2 sans-serif;
@@ -384,20 +371,6 @@
       font: 11px/1.35 Consolas, "Courier New", monospace;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
-    }
-
-    .location-heading-label {display:inline-flex;align-items:center;gap:7px}
-    .loupe-collapse-indicator {display:inline-block;width:12px;text-align:center;font-size:14px;line-height:1;opacity:.8}
-    .location-heading {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .location-heading .loupe-coordinates {
-      justify-self: end;
-      text-align: right;
     }
 
     .loupe-brightness-correction {
