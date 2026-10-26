@@ -396,10 +396,16 @@ export class ImageView {
     this.refreshHdrImageAdjustments();
   };
   protected readonly highlightHdrPixels = signal(false);
+  protected readonly hdrHighlightThreshold = signal(1);
   protected readonly setHdrPixelHighlight = (enabled: boolean): void => {
     this.highlightHdrPixels.set(enabled);
     this.refreshHdrImageAdjustments();
   };
+  protected readonly setHdrHighlightThreshold = (value: string | number): void => {
+    this.hdrHighlightThreshold.set(Math.max(1, Math.min(125, Number(value))));
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly hdrHighlightThresholdNits = (): number => Math.round(this.hdrHighlightThreshold() * 80);
   protected readonly resetCorrections = (): void => {
     this.mainImageBrightness.set(1);
     this.imageContrast.set(1);
@@ -1157,18 +1163,28 @@ export class ImageView {
       await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       if (request !== this.hdrImageAdjustmentRequest || !this.hdrImageAdjustmentActive()) return;
       const host = this.document.querySelector<HTMLElement>('app-image-renderer');
-      const bounds = host?.getBoundingClientRect();
-      if (!host || !bounds || bounds.width < 1 || bounds.height < 1) return;
+      const image = host?.querySelector<HTMLElement>('img.hdr-image:not(.hidden-variant)');
+      const hostBounds = host?.getBoundingClientRect();
+      const imageBounds = image?.getBoundingClientRect();
+      if (!host || !hostBounds || !imageBounds) return;
+      const bounds = {
+        left: Math.max(hostBounds.left, imageBounds.left),
+        top: Math.max(hostBounds.top, imageBounds.top),
+        right: Math.min(hostBounds.right, imageBounds.right),
+        bottom: Math.min(hostBounds.bottom, imageBounds.bottom)
+      };
+      if (bounds.right <= bounds.left || bounds.bottom <= bounds.top) return;
+      const visibleBounds = { left: bounds.left, top: bounds.top, width: bounds.right - bounds.left, height: bounds.bottom - bounds.top };
       const geometry = wasLoupeEnabled && this.loupeCaptureGeometry()
         ? this.loupeCaptureGeometry()!
         : await desktop.Loupe.capture();
       if (request !== this.hdrImageAdjustmentRequest || !this.hdrImageAdjustmentActive()) return;
       const scale = geometry.scaleFactor;
-      const captureLeft = (geometry.contentX + bounds.left - geometry.x) * scale;
-      const captureTop = (geometry.contentY + bounds.top - geometry.y) * scale;
-      const region = await desktop.Loupe.region(captureLeft, captureTop, bounds.width * scale, bounds.height * scale);
+      const captureLeft = (geometry.contentX + visibleBounds.left - geometry.x) * scale;
+      const captureTop = (geometry.contentY + visibleBounds.top - geometry.y) * scale;
+      const region = await desktop.Loupe.region(captureLeft, captureTop, visibleBounds.width * scale, visibleBounds.height * scale);
       if (!region || request !== this.hdrImageAdjustmentRequest || !this.hdrImageAdjustmentActive()) return;
-      this.hdrImageAdjustmentBounds.set({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height });
+      this.hdrImageAdjustmentBounds.set(visibleBounds);
       this.hdrImageAdjustmentRegion = {
         width: region.regionWidth,
         height: region.regionHeight,
@@ -1195,9 +1211,16 @@ export class ImageView {
     const region = this.hdrImageAdjustmentRegion;
     if (!canvas || !region || !this.hdrImageAdjustmentActive()) return;
     const host = this.document.querySelector<HTMLElement>('app-image-renderer');
-    const bounds = host?.getBoundingClientRect();
-    if (!bounds || bounds.width < 1 || bounds.height < 1) return;
-    this.hdrImageAdjustmentBounds.set({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height });
+    const image = host?.querySelector<HTMLElement>('img.hdr-image:not(.hidden-variant)');
+    const hostBounds = host?.getBoundingClientRect();
+    const imageBounds = image?.getBoundingClientRect();
+    if (!hostBounds || !imageBounds) return;
+    const left = Math.max(hostBounds.left, imageBounds.left);
+    const top = Math.max(hostBounds.top, imageBounds.top);
+    const right = Math.min(hostBounds.right, imageBounds.right);
+    const bottom = Math.min(hostBounds.bottom, imageBounds.bottom);
+    if (right <= left || bottom <= top) return;
+    this.hdrImageAdjustmentBounds.set({ left, top, width: right - left, height: bottom - top });
     const request = this.hdrImageAdjustmentRequest;
     await this.hdrImageAdjustmentRenderer.render(
       canvas,
@@ -1212,7 +1235,8 @@ export class ImageView {
         saturation: this.colorIntensity(),
         blackPoint: this.blackPoint(),
         whitePoint: this.whitePoint(),
-        highlightHdrPixels: this.highlightHdrPixels()
+        highlightHdrPixels: this.highlightHdrPixels(),
+        hdrHighlightThreshold: this.hdrHighlightThreshold()
       }
     );
     if (request === this.hdrImageAdjustmentRequest && this.hdrImageAdjustmentActive()) {
