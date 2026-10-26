@@ -1121,7 +1121,7 @@
  .image-controls-sidebar .hdr-threshold-control input[type="range"] {width:100%;accent-color:#ff35df}
 
 
-:host .image-controls-sidebar .rgb-invert-options {display:flex;align-items:center;gap:5px;font-size:12px;opacity:.9}
-:host .image-controls-sidebar .rgb-invert-options input[type=checkbox],
-:host .image-controls-sidebar .rgb-invert-all input[type=checkbox] {width:auto;margin:0;accent-color:#65a9ff}
-:host .image-controls-sidebar .rgb-invert-all {display:flex;align-items:center;gap:7px;padding:4px 0;font-weight:600}
+.image-controls-sidebar .rgb-inversion-controls {display:flex;flex-direction:column;gap:4px}
+.image-controls-sidebar .rgb-inversion-row {display:flex;align-items:center;gap:16px;flex-wrap:nowrap;padding:1px 0 4px}
+.image-controls-sidebar .rgb-inversion-row label {display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:12px;font-weight:400}
+.image-controls-sidebar .rgb-inversion-row input[type=checkbox] {width:auto;margin:0;accent-color:#65a9ff}
