@@ -235,7 +235,7 @@
             <div class="correction-subheading">Gradationskurve</div>
             <svg class="gradation-curve" viewBox="0 0 120 72" role="img" aria-label="Tone curve with adjustable black and white points">
               <path class="gradation-grid" d="M4 4V68H116M4 36H116M60 4V68" />
-              <path class="gradation-line" [attr.d]="'M4 ' + (68 - blackPoint() * 32) + ' L116 ' + (68 - whitePoint() * 32)" />
+              <path class="gradation-line" [attr.d]="'M4 68 H' + (4 + blackPoint() * 56) + ' L' + (4 + whitePoint() * 56) + ' 4 H116'" />
             </svg>
             <label class="channel-control"><span><b>Black point</b><span>{{(blackPoint()*100).toFixed(0)}}%</span></span><input type="range" min="0" max=".49" step=".005" [value]="blackPoint()" (input)="setBlackPoint($any($event.target).value)"/></label>
             <label class="channel-control"><span><b>White point</b><span>{{(whitePoint()*100).toFixed(0)}}%</span></span><input type="range" min=".51" max="2" step=".01" [value]="whitePoint()" (input)="setWhitePoint($any($event.target).value)"/></label>
