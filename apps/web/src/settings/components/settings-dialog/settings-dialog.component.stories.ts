@@ -1,9 +1,9 @@
 import { Meta, StoryObj } from '@storybook/angular';
 import { SettingsPanelComponent } from './settings-dialog.component';
 
-const meta: Meta<SettingsDialogComponent> = {
+const meta: Meta<SettingsPanelComponent> = {
   title: 'Components/SettingsPanel',
-  component: SettingsDialogComponent,
+  component: SettingsPanelComponent,
 
   args: {},
 
@@ -12,7 +12,7 @@ const meta: Meta<SettingsDialogComponent> = {
 
 export default meta;
 
-type Story = StoryObj<SettingsDialogComponent>;
+type Story = StoryObj<SettingsPanelComponent>;
 
 export const Primary: Story = {
   render: props => {
