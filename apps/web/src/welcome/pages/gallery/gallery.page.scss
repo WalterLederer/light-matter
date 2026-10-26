@@ -18,7 +18,7 @@ ui-side-panel {
   .gallery-controls-sidebar { position:fixed; z-index:40; top:0; right:0; bottom:0; width:300px; max-width:90vw; overflow-y:auto; box-sizing:border-box; padding:12px; color:#f5f5f5; background:#202124; border-left:1px solid rgb(255 255 255 / 16%); box-shadow:-4px 0 16px rgb(0 0 0 / 25%); font-size:13px; }
   .gallery-controls-sidebar header { display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; font-size:15px; }
   .gallery-controls-sidebar .appearance-settings { border-top:0; padding-top:0; }
-  .gallery-controls-sidebar .theme-toggle-button { display:flex; align-items:center; justify-content:flex-start; gap:12px; width:100%; min-height:52px; padding:10px 14px; font-size:15px; line-height:1.3; white-space:normal; overflow:visible; }
+  .gallery-controls-sidebar .theme-toggle-button { display:flex; align-items:center; justify-content:flex-start; gap:12px; width:100%; min-height:52px; padding:10px 14px; font-size:13px; line-height:1.3; white-space:normal; overflow:visible; }
   .gallery-controls-sidebar .theme-toggle-icon { display:inline-flex; align-items:center; justify-content:center; flex:0 0 32px; width:32px; height:32px; font-size:27px; line-height:1; overflow:visible; }
   .gallery-controls-sidebar .sidebar-header-actions { display:flex; align-items:center; gap:6px; }
   .gallery-controls-sidebar button { cursor:pointer; color:inherit; background:rgb(255 255 255 / 7%); border:1px solid rgb(255 255 255 / 18%); border-radius:4px; padding:4px 8px; min-height:28px; }
