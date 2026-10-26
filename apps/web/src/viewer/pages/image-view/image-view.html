@@ -83,73 +83,7 @@
              draggable="false" />
         <div class="loupe-crosshair" aria-hidden="true"></div>
       </div>
-      <section class="loupe-info-box location-info-box" [class.collapsed]="!locationInfoExpanded()" aria-label="Location pixel information">
-        <div class="loupe-info-heading location-heading">
-          <span class="location-heading-label"><span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? 'v' : '>' }}</span><u>L</u>ocation</span>
-          <span class="loupe-coordinates">
-            @if (loupeSample(); as sample) {
-              X: {{ sample.x }}/{{ dimensions.width || '—' }} · Y: {{ sample.y }}/{{ dimensions.height || '—' }}
-            } @else {
-              X: —/{{ dimensions.width || '—' }} · Y: —/{{ dimensions.height || '—' }}
-            }
-          </span>
-        </div>
-        @if (locationInfoExpanded()) {
-        <div class="loupe-brightness-correction" aria-label="Brightness correction">
-          <span>Brightness correction</span>
-          <span class="loupe-brightness-value" [class.positive]="loupeBrightness() > 1" [class.negative]="loupeBrightness() < 1">
-            {{ loupeBrightness() > 1 ? '+' : '' }}{{ ((loupeBrightness() - 1) * 100).toFixed(0) }}%
-          </span>
-        </div>
-        <section class="loupe-sdr-info" aria-label="SDR pixel information">
-          <div class="loupe-pixel-row">
-            <div class="loupe-info-subheading">SDR</div>
-            @if (pixelColor(); as rgb) {
-              <div class="loupe-rgb-summary">
-                <span class="loupe-rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'SDR RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
-                <span class="loupe-rgb-values">R:0x{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }} G:0x{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }} B:0x{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
-              </div>
-              <div class="loupe-rgb-channels" aria-label="SDR RGB channel levels">
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
-              </div>
-            } @else {
-              <div class="loupe-rgb-summary">
-                <span class="loupe-rgb-swatch" aria-label="No SDR pixel selected"></span>
-                <span class="loupe-rgb-values">R:-- G:-- B:--</span>
-              </div>
-              <div class="loupe-rgb-channels" aria-hidden="true">
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
-                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
-              </div>
-            }
-          </div>
-        </section>
-        <section class="loupe-hdr-info" aria-label="HDR pixel information">
-          <div class="loupe-pixel-row">
-            <div class="loupe-info-subheading">HDR</div>
-            @if (loupeSample(); as sample) {
-              <div class="loupe-rgb-summary">
-                <span class="loupe-rgb-swatch" [style.backgroundColor]="sample.center.color" aria-label="HDR pixel color"></span>
-                <span class="loupe-rgb-values">R:0x{{ sample.center.rHex }} G:0x{{ sample.center.gHex }} B:0x{{ sample.center.bHex }}</span>
-              </div>
-            } @else if (loupeCaptureError(); as captureError) {
-              <div class="loupe-capture-error" role="status">HDR pixel info unavailable: {{ captureError }}</div>
-            } @else {
-              <div class="loupe-rgb-values">R:-- G:-- B:--</div>
-            }
-          </div>
-          @if (loupeSample(); as sample) {
-            <div class="loupe-hdr-linear">scRGB {{ sample.center.r | number:'1.0-4' }}, {{ sample.center.g | number:'1.0-4' }}, {{ sample.center.b | number:'1.0-4' }}</div>
-          } @else if (!loupeCaptureError()) {
-            <div class="loupe-hdr-linear">scRGB —, —, —</div>
-          }
-        </section>
-        <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>S</u>: Shape · <u>L</u>: Location · + / −: Zoom · ↑ / ↓: Brightness · PgUp / PgDn: Loupe size · <u>H</u>: Histogram</div>
-        }
-      </section>
+      
     </aside>
     }
   }
@@ -299,6 +233,75 @@
       </section>
       <section><button class="section-heading" (click)="toggleSidebarSection('loupe')"><span class="section-chevron">{{sidebarSectionExpanded('loupe') ? 'v' : '>'}}</span>Magnifier</button>
         @if(sidebarSectionExpanded('loupe')) { <label><input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)"/> Enable magnifier (M)</label><div class="shape-row"><button [class.active]="loupeShape()==='circular'" title="Circle" (click)="setLoupeShape('circular')">◯</button><button [class.active]="loupeShape()==='rectangular'" title="Rectangle" (click)="setLoupeShape('rectangular')">▭</button><button [class.active]="loupeShape()==='ruler'" title="Horizontal ruler" (click)="setLoupeShape('ruler')">↔</button><button [class.active]="loupeShape()==='vertical-ruler'" title="Vertical ruler" (click)="setLoupeShape('vertical-ruler')">↕</button></div><label>Magnifier brightness</label><input type="range" min="0" max="2" step=".01" [value]="loupeBrightness()" (input)="setLoupeBrightness($any($event.target).value)"/><button (click)="toggleLoupeRenderer()">Magnifier renderer: {{loupeRendererMode()==='webgpu'?'WebGPU (HDR)':'CSS (SDR)'}}</button> }
+      @if (sidebarSectionExpanded('loupe') && loupeEnabled()) {
+        <section class="loupe-info-box location-info-box" [class.collapsed]="!locationInfoExpanded()" aria-label="Location pixel information">
+        <div class="loupe-info-heading location-heading">
+          <span class="location-heading-label"><span class="loupe-collapse-indicator">{{ locationInfoExpanded() ? 'v' : '>' }}</span><u>L</u>ocation</span>
+          <span class="loupe-coordinates">
+            @if (loupeSample(); as sample) {
+              X: {{ sample.x }}/{{ dimensions.width || '—' }} · Y: {{ sample.y }}/{{ dimensions.height || '—' }}
+            } @else {
+              X: —/{{ dimensions.width || '—' }} · Y: —/{{ dimensions.height || '—' }}
+            }
+          </span>
+        </div>
+        @if (locationInfoExpanded()) {
+        <div class="loupe-brightness-correction" aria-label="Brightness correction">
+          <span>Brightness correction</span>
+          <span class="loupe-brightness-value" [class.positive]="loupeBrightness() > 1" [class.negative]="loupeBrightness() < 1">
+            {{ loupeBrightness() > 1 ? '+' : '' }}{{ ((loupeBrightness() - 1) * 100).toFixed(0) }}%
+          </span>
+        </div>
+        <section class="loupe-sdr-info" aria-label="SDR pixel information">
+          <div class="loupe-pixel-row">
+            <div class="loupe-info-subheading">SDR</div>
+            @if (pixelColor(); as rgb) {
+              <div class="loupe-rgb-summary">
+                <span class="loupe-rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'SDR RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
+                <span class="loupe-rgb-values">R:0x{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }} G:0x{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }} B:0x{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
+              </div>
+              <div class="loupe-rgb-channels" aria-label="SDR RGB channel levels">
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
+              </div>
+            } @else {
+              <div class="loupe-rgb-summary">
+                <span class="loupe-rgb-swatch" aria-label="No SDR pixel selected"></span>
+                <span class="loupe-rgb-values">R:-- G:-- B:--</span>
+              </div>
+              <div class="loupe-rgb-channels" aria-hidden="true">
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
+                <span class="loupe-rgb-channel"><span class="loupe-rgb-track"></span></span>
+              </div>
+            }
+          </div>
+        </section>
+        <section class="loupe-hdr-info" aria-label="HDR pixel information">
+          <div class="loupe-pixel-row">
+            <div class="loupe-info-subheading">HDR</div>
+            @if (loupeSample(); as sample) {
+              <div class="loupe-rgb-summary">
+                <span class="loupe-rgb-swatch" [style.backgroundColor]="sample.center.color" aria-label="HDR pixel color"></span>
+                <span class="loupe-rgb-values">R:0x{{ sample.center.rHex }} G:0x{{ sample.center.gHex }} B:0x{{ sample.center.bHex }}</span>
+              </div>
+            } @else if (loupeCaptureError(); as captureError) {
+              <div class="loupe-capture-error" role="status">HDR pixel info unavailable: {{ captureError }}</div>
+            } @else {
+              <div class="loupe-rgb-values">R:-- G:-- B:--</div>
+            }
+          </div>
+          @if (loupeSample(); as sample) {
+            <div class="loupe-hdr-linear">scRGB {{ sample.center.r | number:'1.0-4' }}, {{ sample.center.g | number:'1.0-4' }}, {{ sample.center.b | number:'1.0-4' }}</div>
+          } @else if (!loupeCaptureError()) {
+            <div class="loupe-hdr-linear">scRGB —, —, —</div>
+          }
+        </section>
+        <div class="loupe-key-hint"><u>M</u>: Magnifier · <u>S</u>: Shape · <u>L</u>: Location · + / −: Zoom · ↑ / ↓: Brightness · PgUp / PgDn: Loupe size · <u>H</u>: Histogram</div>
+        }
+      </section>
+        }
       </section>
       <section><button class="section-heading" (click)="toggleSidebarSection('brightness')"><span class="section-chevron">{{sidebarSectionExpanded('brightness') ? 'v' : '>'}}</span>Brightness &amp; Contrast</button>
         @if(sidebarSectionExpanded('brightness')) { <label>Brightness {{((mainImageBrightness()-1)*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/><label>Contrast {{(imageContrast()*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/><button (click)="resetImageAdjustments()">Reset</button> }
