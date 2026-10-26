@@ -4,9 +4,9 @@ import { ProcessManager } from '../../../ipc/process-manager';
 
 import { SettingsPanelComponent } from './settings-dialog.component';
 
-describe('SettingsDialogComponent', () => {
-  let component: SettingsDialogComponent;
-  let fixture: ComponentFixture<SettingsDialogComponent>;
+describe('SettingsPanelComponent', () => {
+  let component: SettingsPanelComponent;
+  let fixture: ComponentFixture<SettingsPanelComponent>;
 
   const cacheManager = {
     cacheInfo: jest.fn().mockResolvedValue({ path: '', entries: 0, bytes: 0, fullSize: { entries: 0, bytes: 0 }, thumbnails: { entries: 0, bytes: 0 } }),
@@ -25,7 +25,7 @@ describe('SettingsDialogComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ SettingsDialogComponent ],
+      imports: [ SettingsPanelComponent ],
       providers: [
         { provide: CacheManager, useValue: cacheManager },
         { provide: ProcessManager, useValue: processManager }
@@ -33,7 +33,7 @@ describe('SettingsDialogComponent', () => {
     })
       .compileComponents();
 
-    fixture = TestBed.createComponent(SettingsDialogComponent);
+    fixture = TestBed.createComponent(SettingsPanelComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
