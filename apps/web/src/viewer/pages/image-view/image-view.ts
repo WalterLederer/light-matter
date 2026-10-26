@@ -39,6 +39,7 @@ const HDR_WEBGPU_BRIGHTNESS_CORRECTION = 0.4;
   imports: [
     AsyncPipe,
     ImageRendererComponent,
+    SettingsDialogComponent,
     ToolMenuComponent,
     ActionButtonComponent,
     IconComponent,
@@ -305,7 +306,6 @@ export class ImageView {
   };
   protected readonly toggleControlsSidebar = (): void => this.controlsSidebarVisible.update(value => !value);
   protected readonly setDebugImageSwitching = (enabled: boolean): void => { try { this.document.defaultView?.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* storage may be unavailable */ } this.debugImageSwitching.set(enabled); };
-  protected readonly openGeneralSettings = (): void => { void SettingsDialogComponent.open(this.dialog); };
   protected readonly hdrImageAdjustmentActive = computed(() =>
     this.mainImageBrightness() !== 1 || this.imageContrast() !== 1 ||
     this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1
