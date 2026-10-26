@@ -1,4 +1,5 @@
 import { CdkMenu, CdkMenuItem } from '@angular/cdk/menu';
+import { Dialog } from '@angular/cdk/dialog';
 import { AsyncPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
@@ -20,6 +21,7 @@ import { defaultThumbnailSize, FileInfo, SortDirection, SortType, ThumbnailSize 
 import { ImageGridComponent } from '../../../gallery/components/image-grid/image-grid.component';
 import { GalleryLocations } from '../../../gallery/services/gallery-locations/gallery-locations';
 import { GalleryState } from '../../../gallery/services/gallery-state/gallery-state';
+import { ProcessManager } from '../../../ipc/process-manager';
 import { defaultSortMode, treeNode } from '../../../gallery/services/gallery-state/gallery-state.types';
 import { Dialogs } from '../../../ipc/dialogs';
 import { ThemeService } from '../../../system/services/theme/theme.service';
@@ -57,6 +59,10 @@ export class GalleryPage {
   protected readonly themeService = inject(ThemeService);
 
   private readonly dialogs = inject(Dialogs);
+
+  private readonly dialog = inject(Dialog);
+
+  private readonly processManager = inject(ProcessManager);
 
   private readonly galleryLocations = inject(GalleryLocations);
 
