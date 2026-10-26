@@ -1024,6 +1024,9 @@
   }
 
   .image-controls-sidebar .loupe-info-subheading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     flex: 0 0 auto;
     font: 600 16px/1.2 sans-serif;
     letter-spacing: 0.05em;
@@ -1039,9 +1042,9 @@
 
   .image-controls-sidebar .loupe-rgb-swatch {
     display: inline-block;
-    flex: 0 0 15px;
-    width: 15px;
-    height: 14px;
+    flex: 0 0 20px;
+    width: 20px;
+    height: 18px;
     border: 1px solid rgb(255 255 255 / 65%);
     border-radius: 2px;
     box-sizing: border-box;
