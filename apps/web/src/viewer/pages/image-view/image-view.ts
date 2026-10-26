@@ -24,7 +24,7 @@ import { ThemeService } from '../../../system/services/theme/theme.service';
 import { Keyboard } from '../../../system/services/keyboard/keyboard';
 import { ExifInfoComponent } from '../../components/exif-info/exif-info.component';
 import { ImageRendererComponent } from '../../components/image-renderer/image-renderer.component';
-import { HdrLoupeRenderer } from './hdr-loupe-renderer';
+import { HdrImageBrightnessRenderer, HdrLoupeRenderer, HdrLoupeRegion } from './hdr-loupe-renderer';
 import { imageDynamicRange } from '../../utils/image-dynamic-range';
 import { ImagePositioningService } from '../../services/image-positioning/image-positioning.service';
 import {
@@ -160,6 +160,13 @@ export class ImageView {
 
   protected readonly onImageLoadingChange = (loading: boolean): void => {
     this.isDecoding.set(loading);
+    if (loading) {
+      this.hdrImageAdjustmentRequest++;
+      this.hdrImageAdjustmentPending.set(false);
+      this.hdrImageAdjustmentRegion = null;
+      this.hdrImageAdjustmentReady.set(false);
+      this.hdrImageAdjustmentRenderer.dispose();
+    }
     this.loadDuration.set(null);
     this.imageDecodeDuration.set(null);
     this.imageTotalDuration.set(null);
@@ -180,6 +187,15 @@ export class ImageView {
 
   private readonly hdrLoupeRenderer = new HdrLoupeRenderer();
   private readonly hdrFullImageRenderer = new HdrLoupeRenderer();
+  private readonly hdrImageAdjustmentRenderer = new HdrImageBrightnessRenderer();
+  protected readonly hdrImageAdjustmentPending = signal(false);
+  protected readonly hdrImageAdjustmentReady = signal(false);
+  protected readonly hdrImageAdjustmentBounds = signal({ left: 0, top: 0, width: 0, height: 0 });
+  private hdrImageAdjustmentRegion: HdrLoupeRegion | null = null;
+  private hdrImageAdjustmentSourceKey = '';
+  private hdrImageAdjustmentRequest = 0;
+  private hdrImageAdjustmentCapturePromise: Promise<void> | null = null;
+  private hdrImageAdjustmentRecaptureQueued = false;
 
   private readonly readStoredLoupeShape = (): 'circular' | 'rectangular' | 'ruler' | 'vertical-ruler' => {
     try {
@@ -235,21 +251,38 @@ export class ImageView {
   protected readonly toggleControlsSidebar = (): void => this.controlsSidebarVisible.update(value => !value);
   protected readonly setDebugImageSwitching = (enabled: boolean): void => { try { this.document.defaultView?.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* storage may be unavailable */ } this.debugImageSwitching.set(enabled); };
   protected readonly openGeneralSettings = (): void => { void SettingsDialogComponent.open(this.dialog); };
-  protected readonly imageChannelFilterActive = computed(() => this.imageContrast() !== 1 || this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1);
-  protected readonly imageChannelFilterMatrix = computed(() => {
-    const c = this.imageContrast();
-    const offset = 0.5 * (1 - c);
-    const row = (level: number, channel: number) => [0,1,2].map(i => i === channel ? level * c : 0).concat([offset]).join(' ');
-    return [row(this.redChannelLevel(),0), row(this.greenChannelLevel(),1), row(this.blueChannelLevel(),2), '0 0 0 1 0'].join(' ');
-  });
-  protected readonly setMainBrightness = (v: string | number): void => this.mainImageBrightness.set(Math.max(0, Math.min(2, Number(v))));
-  protected readonly resetMainBrightness = (): void => this.mainImageBrightness.set(1);
-  protected readonly setImageContrast = (v: string | number): void => this.imageContrast.set(Math.max(0, Math.min(2, Number(v))));
-  protected readonly resetImageAdjustments = (): void => { this.mainImageBrightness.set(1); this.imageContrast.set(1); };
-  protected readonly setRedChannelLevel = (v: string | number): void => this.redChannelLevel.set(Math.max(0, Math.min(2, Number(v))));
-  protected readonly setGreenChannelLevel = (v: string | number): void => this.greenChannelLevel.set(Math.max(0, Math.min(2, Number(v))));
-  protected readonly setBlueChannelLevel = (v: string | number): void => this.blueChannelLevel.set(Math.max(0, Math.min(2, Number(v))));
-  protected readonly resetRgbChannels = (): void => { this.redChannelLevel.set(1); this.greenChannelLevel.set(1); this.blueChannelLevel.set(1); };
+  protected readonly hdrImageAdjustmentActive = computed(() =>
+    this.mainImageBrightness() !== 1 || this.imageContrast() !== 1 ||
+    this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1
+  );
+  protected readonly setMainBrightness = (v: string | number): void => {
+    this.mainImageBrightness.set(Math.max(0, Math.min(2, Number(v))));
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly resetMainBrightness = (): void => this.setMainBrightness(1);
+  protected readonly setImageContrast = (v: string | number): void => {
+    this.imageContrast.set(Math.max(0, Math.min(2, Number(v))));
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly resetImageAdjustments = (): void => {
+    this.mainImageBrightness.set(1); this.imageContrast.set(1); this.refreshHdrImageAdjustments();
+  };
+  protected readonly setRedChannelLevel = (v: string | number): void => {
+    this.redChannelLevel.set(Math.max(0, Math.min(2, Number(v))));
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly setGreenChannelLevel = (v: string | number): void => {
+    this.greenChannelLevel.set(Math.max(0, Math.min(2, Number(v))));
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly setBlueChannelLevel = (v: string | number): void => {
+    this.blueChannelLevel.set(Math.max(0, Math.min(2, Number(v))));
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly resetRgbChannels = (): void => {
+    this.redChannelLevel.set(1); this.greenChannelLevel.set(1); this.blueChannelLevel.set(1);
+    this.refreshHdrImageAdjustments();
+  };
   protected readonly setLoupeBrightness = (v: string | number): void => this.loupeBrightness.set(Math.max(0, Math.min(2, Number(v))));
   protected readonly setLoupeShape = (shape: 'circular' | 'rectangular' | 'ruler' | 'vertical-ruler'): void => {
     this.loupeShape.set(shape); this.storeLoupeShape(shape); this.hdrLoupeActive.set(false); this.hdrLoupeRenderer.dispose();
@@ -512,6 +545,9 @@ export class ImageView {
       this.loupeCaptureRequest++;
       this.loupeSampleRequest++;
       this.hdrLoupeRenderer.dispose();
+      this.hdrFullImageRenderer.dispose();
+      this.hdrImageAdjustmentRenderer.dispose();
+      this.hdrImageAdjustmentRequest++;
       this.desktop?.Loupe.release().catch(() => undefined);
     });
 
@@ -523,6 +559,10 @@ export class ImageView {
         map(image => image.path),
         distinctUntilChanged(),
         tap(() => {
+          this.hdrImageAdjustmentRequest++;
+          this.hdrImageAdjustmentRegion = null;
+          this.hdrImageAdjustmentReady.set(false);
+          this.hdrImageAdjustmentRenderer.dispose();
           // Keep the previous image's metadata until the new image's EXIF read
           // completes. Clearing it here can temporarily classify a gain-map JPEG
           // as SDR, switching the renderer's comparison mode during navigation
@@ -569,7 +609,17 @@ export class ImageView {
     this.zoomSlider
       .valueChanges
       .pipe(takeUntilDestroyed())
-      .subscribe(value => this.imagePositioningService.setZoom(value / 100));
+      .subscribe(value => {
+        this.imagePositioningService.setZoom(value / 100);
+        if (this.hdrImageAdjustmentActive()) void this.renderHdrImageAdjustments(true);
+      });
+
+    const view = this.document.defaultView;
+    if (view) {
+      fromEvent(view, 'resize').pipe(takeUntilDestroyed()).subscribe(() => {
+        if (this.hdrImageAdjustmentActive()) void this.renderHdrImageAdjustments(true);
+      });
+    }
   }
 
   /* Event handlers */
@@ -587,6 +637,7 @@ export class ImageView {
   protected readonly setComparisonMode = (mode: 'hdr' | 'sdr' | 'side-by-side' | 'stacked') => {
     this.comparisonMode.set(mode);
     this.configuration.updateSystemConfig({ comparisonMode: mode });
+    if (this.hdrImageAdjustmentActive()) void this.renderHdrImageAdjustments(true);
   };
 
   protected readonly cycleComparisonMode = () => {
@@ -612,6 +663,7 @@ export class ImageView {
     const split = Math.max(1, Math.min(99, Number(value) || 50));
     this.comparisonSplit.set(split);
     this.configuration.updateSystemConfig({ comparisonSplit: split });
+    if (this.hdrImageAdjustmentActive()) void this.renderHdrImageAdjustments(true);
   };
 
   protected readonly toggleHistogram = () => {
@@ -647,12 +699,15 @@ export class ImageView {
   };
 
   protected readonly fitToWindow = () => {
-    if (!this.loupeEnabled()) this.imagePositioningService.setZoom('fit');
+    if (!this.loupeEnabled()) {
+      this.imagePositioningService.setZoom('fit');
+      if (this.hdrImageAdjustmentActive()) void this.renderHdrImageAdjustments(true);
+    }
   };
 
   protected readonly resetImageBrightness = () => {
     if (this.loupeEnabled()) this.loupeBrightness.set(1);
-    else this.mainImageBrightness.set(1);
+    else this.setMainBrightness(1);
   };
 
   protected readonly toggleLoupeShape = () => {
@@ -848,8 +903,131 @@ export class ImageView {
     this.loupeSample.set(null);
   };
 
+  private readonly refreshHdrImageAdjustments = (): void => {
+    if (!this.hdrImageAdjustmentActive()) {
+      this.hdrImageAdjustmentRequest++;
+      this.hdrImageAdjustmentRecaptureQueued = false;
+      this.hdrImageAdjustmentPending.set(false);
+      this.hdrImageAdjustmentReady.set(false);
+      this.hdrImageAdjustmentRegion = null;
+      this.hdrImageAdjustmentRenderer.dispose();
+      return;
+    }
+    void this.renderHdrImageAdjustments();
+  };
+
+  private readonly renderHdrImageAdjustments = async (recapture = false): Promise<void> => {
+    if (!this.hdrImageAdjustmentActive()) return;
+    if (recapture) {
+      this.hdrImageAdjustmentRegion = null;
+      this.hdrImageAdjustmentReady.set(false);
+      if (this.hdrImageAdjustmentCapturePromise) {
+        this.hdrImageAdjustmentRecaptureQueued = true;
+        return this.hdrImageAdjustmentCapturePromise;
+      }
+    }
+    if (!this.hdrImageAdjustmentRegion) {
+      if (this.hdrImageAdjustmentCapturePromise) return this.hdrImageAdjustmentCapturePromise;
+      const wrapped = this.captureHdrImageAdjustmentSource().finally(() => {
+        if (this.hdrImageAdjustmentCapturePromise === wrapped) this.hdrImageAdjustmentCapturePromise = null;
+        if (this.hdrImageAdjustmentRecaptureQueued && this.hdrImageAdjustmentActive()) {
+          this.hdrImageAdjustmentRecaptureQueued = false;
+          void this.renderHdrImageAdjustments(true);
+        }
+      });
+      this.hdrImageAdjustmentCapturePromise = wrapped;
+      return wrapped;
+    }
+    try {
+      await this.drawHdrImageAdjustments();
+    } catch (error) {
+      console.error('HDR image adjustment render failed:', error);
+      this.hdrImageAdjustmentReady.set(false);
+      this.hdrImageAdjustmentPending.set(false);
+      this.loupeCaptureError.set(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  private readonly captureHdrImageAdjustmentSource = async (): Promise<void> => {
+    const desktop = this.desktop;
+    if (!desktop || !this.hdrImageAdjustmentActive()) return;
+    const request = ++this.hdrImageAdjustmentRequest;
+    const wasLoupeEnabled = this.loupeEnabled();
+    this.hdrImageAdjustmentPending.set(true);
+    this.hdrImageAdjustmentReady.set(false);
+    try {
+      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      if (request !== this.hdrImageAdjustmentRequest || !this.hdrImageAdjustmentActive()) return;
+      const host = this.document.querySelector<HTMLElement>('app-image-renderer');
+      const bounds = host?.getBoundingClientRect();
+      if (!host || !bounds || bounds.width < 1 || bounds.height < 1) return;
+      const geometry = wasLoupeEnabled && this.loupeCaptureGeometry()
+        ? this.loupeCaptureGeometry()!
+        : await desktop.Loupe.capture();
+      if (request !== this.hdrImageAdjustmentRequest || !this.hdrImageAdjustmentActive()) return;
+      const scale = geometry.scaleFactor;
+      const captureLeft = (geometry.contentX + bounds.left - geometry.x) * scale;
+      const captureTop = (geometry.contentY + bounds.top - geometry.y) * scale;
+      const region = await desktop.Loupe.region(captureLeft, captureTop, bounds.width * scale, bounds.height * scale);
+      if (!region || request !== this.hdrImageAdjustmentRequest || !this.hdrImageAdjustmentActive()) return;
+      this.hdrImageAdjustmentBounds.set({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height });
+      this.hdrImageAdjustmentRegion = {
+        width: region.regionWidth,
+        height: region.regionHeight,
+        centerX: region.regionWidth / 2,
+        centerY: region.regionHeight / 2,
+        data: region.data
+      };
+      this.hdrImageAdjustmentSourceKey = 'capture-' + request + ':' + this.debugSelectedImagePath;
+      await this.drawHdrImageAdjustments();
+    } catch (error) {
+      console.error('HDR image adjustment capture/render failed:', error);
+      this.hdrImageAdjustmentReady.set(false);
+      this.loupeCaptureError.set(error instanceof Error ? error.message : String(error));
+    } finally {
+      if (!wasLoupeEnabled) await desktop.Loupe.release().catch(() => undefined);
+      if (request === this.hdrImageAdjustmentRequest && !this.hdrImageAdjustmentReady()) {
+        this.hdrImageAdjustmentPending.set(false);
+      }
+    }
+  };
+
+  private readonly drawHdrImageAdjustments = async (): Promise<void> => {
+    const canvas = this.document.querySelector<HTMLCanvasElement>('.hdr-image-adjustment-canvas');
+    const region = this.hdrImageAdjustmentRegion;
+    if (!canvas || !region || !this.hdrImageAdjustmentActive()) return;
+    const host = this.document.querySelector<HTMLElement>('app-image-renderer');
+    const bounds = host?.getBoundingClientRect();
+    if (!bounds || bounds.width < 1 || bounds.height < 1) return;
+    this.hdrImageAdjustmentBounds.set({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height });
+    const request = this.hdrImageAdjustmentRequest;
+    await this.hdrImageAdjustmentRenderer.render(
+      canvas,
+      region,
+      this.mainImageBrightness(),
+      this.hdrImageAdjustmentSourceKey,
+      {
+        contrast: this.imageContrast(),
+        red: this.redChannelLevel(),
+        green: this.greenChannelLevel(),
+        blue: this.blueChannelLevel()
+      }
+    );
+    if (request === this.hdrImageAdjustmentRequest && this.hdrImageAdjustmentActive()) {
+      this.hdrImageAdjustmentReady.set(true);
+      this.hdrImageAdjustmentPending.set(false);
+      this.loupeCaptureError.set(null);
+    }
+  };
+
   protected readonly onImageRendered = () => {
-    if (this.loupeEnabled() && !this.isDecoding()) void this.captureLoupeAfterRender();
+    if (this.loupeEnabled() && !this.isDecoding()) {
+      void this.captureLoupeAfterRender().finally(() => {
+        if (this.hdrImageAdjustmentActive() && !this.isDecoding()) void this.renderHdrImageAdjustments(true);
+      });
+    } else if (this.hdrImageAdjustmentActive() && !this.isDecoding()) {
+      void this.renderHdrImageAdjustments(true);
+    }
   };
 
   private readonly captureLoupeAfterRender = async () => {
@@ -965,7 +1143,7 @@ export class ImageView {
   protected readonly adjustActiveBrightness = (direction: 1 | -1) => {
     if (!this.loupeEnabled()) {
       const next = Math.max(0.03, Math.min(9, Number((this.mainImageBrightness() + direction * 0.1).toFixed(2))));
-      this.mainImageBrightness.set(next);
+      this.setMainBrightness(next);
       return;
     }
     const next = Math.max(0.03, Math.min(9, Number((this.loupeBrightness() + direction * 0.1).toFixed(2))));

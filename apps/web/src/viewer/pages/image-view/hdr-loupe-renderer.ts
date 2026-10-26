@@ -340,13 +340,25 @@ export class HdrImageBrightnessRenderer {
   private sourceHeight = 0;
   private queue: Promise<void> = Promise.resolve();
 
-  render(canvas: HTMLCanvasElement, region: HdrLoupeRegion, brightness: number, sourceKey: string | number): Promise<void> {
-    const task = this.queue.then(() => this.renderInternal(canvas, region, brightness, sourceKey));
+  render(
+    canvas: HTMLCanvasElement,
+    region: HdrLoupeRegion,
+    brightness: number,
+    sourceKey: string | number,
+    adjustments: { contrast: number; red: number; green: number; blue: number } = { contrast: 1, red: 1, green: 1, blue: 1 }
+  ): Promise<void> {
+    const task = this.queue.then(() => this.renderInternal(canvas, region, brightness, sourceKey, adjustments));
     this.queue = task.catch(() => undefined);
     return task;
   }
 
-  private async renderInternal(canvas: HTMLCanvasElement, region: HdrLoupeRegion, brightness: number, sourceKey: string | number): Promise<void> {
+  private async renderInternal(
+    canvas: HTMLCanvasElement,
+    region: HdrLoupeRegion,
+    brightness: number,
+    sourceKey: string | number,
+    adjustments: { contrast: number; red: number; green: number; blue: number }
+  ): Promise<void> {
     const width = Math.max(1, Math.round(canvas.clientWidth || canvas.parentElement?.clientWidth || region.width));
     const height = Math.max(1, Math.round(canvas.clientHeight || canvas.parentElement?.clientHeight || region.height));
     if (canvas.width !== width) canvas.width = width;
@@ -376,7 +388,10 @@ export class HdrImageBrightnessRenderer {
       this.sourceHeight = region.height;
     }
 
-    device.queue.writeBuffer(this.uniformBuffer!, 0, new Float32Array([brightness, width, height, 0]));
+    device.queue.writeBuffer(this.uniformBuffer!, 0, new Float32Array([
+      brightness, adjustments.contrast, adjustments.red, adjustments.green,
+      adjustments.blue, width, height, 0
+    ]));
     const bindGroup = device.createBindGroup({
       layout: this.pipeline!.getBindGroupLayout(0),
       entries: [
@@ -420,7 +435,7 @@ export class HdrImageBrightnessRenderer {
       toneMapping: { mode: 'extended' }
     });
     const module = device.createShaderModule({ code: `
-      struct Params { brightness: f32, outputWidth: f32, outputHeight: f32, _pad: f32 };
+      struct Params { brightness: f32, contrast: f32, red: f32, green: f32, blue: f32, outputWidth: f32, outputHeight: f32, _pad: f32 };
       @group(0) @binding(0) var imageTexture: texture_2d<f32>;
       @group(0) @binding(1) var<uniform> params: Params;
       struct VertexOutput { @builtin(position) position: vec4<f32>, @location(0) uv: vec2<f32> };
@@ -440,12 +455,14 @@ export class HdrImageBrightnessRenderer {
         let dims = vec2<f32>(textureDimensions(imageTexture));
         let coords = vec2<i32>(clamp(input.uv * dims, vec2<f32>(0.0), dims - vec2<f32>(1.0)));
         let linearColor = textureLoad(imageTexture, coords, 0).rgb * params.brightness;
-        return vec4<f32>(
+        var encodedColor = vec3<f32>(
           linearToExtendedSrgb(linearColor.r),
           linearToExtendedSrgb(linearColor.g),
-          linearToExtendedSrgb(linearColor.b),
-          1.0
+          linearToExtendedSrgb(linearColor.b)
         );
+        encodedColor = (encodedColor - vec3<f32>(0.5)) * params.contrast + vec3<f32>(0.5);
+        encodedColor *= vec3<f32>(params.red, params.green, params.blue);
+        return vec4<f32>(encodedColor, 1.0);
       }
     ` });
     this.device = device;
@@ -455,7 +472,7 @@ export class HdrImageBrightnessRenderer {
       fragment: { module, entryPoint: 'fs', targets: [{ format: 'rgba16float' }] },
       primitive: { topology: 'triangle-list' }
     });
-    this.uniformBuffer = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.uniformBuffer = device.createBuffer({ size: 32, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.context = context;
     this.canvas = canvas;
   }

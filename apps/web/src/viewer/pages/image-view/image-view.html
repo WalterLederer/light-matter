@@ -8,13 +8,11 @@
 @let isHdrImage = imageDynamicRange(selected?.path ?? '', imageTags(), imageBitDepth()) === 'HDR';
 
 @if (selected !== null) {
-  <svg class="image-view-filter-definitions" aria-hidden="true" focusable="false"><filter id="image-view-channel-filter" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" [attr.values]="imageChannelFilterMatrix()" /></filter></svg>
   <app-image-renderer [url]="selected.url"
                       [debugImageSwitching]="debugImageSwitching()"
                       (debugSwitchingPhase)="onDebugSwitchingPhase($event)"
-                      [displayBrightness]="loupeEnabled() ? 1 : mainImageBrightness()"
+                      [displayBrightness]="1"
                       [brightnessRendererMode]="loupeRendererMode()"
-                      [style.filter]="imageChannelFilterActive() ? 'url(#image-view-channel-filter)' : null"
                       [comparisonMode]="isHdrImage ? comparisonMode() : 'sdr'"
                       [comparisonSplit]="comparisonSplit()"
                       (comparisonSplitChange)="previewComparisonSplit($event)"
@@ -32,16 +30,26 @@
                       (mousemove)="onLoupeMouseMove($event)"
                       (mouseleave)="onLoupeMouseLeave()" />
 
+  @if (hdrImageAdjustmentActive()) {
+    <canvas class="hdr-image-adjustment-canvas"
+            [class.capture-pending]="hdrImageAdjustmentPending() || !hdrImageAdjustmentReady()"
+            [style.left.px]="hdrImageAdjustmentBounds().left"
+            [style.top.px]="hdrImageAdjustmentBounds().top"
+            [style.width.px]="hdrImageAdjustmentBounds().width"
+            [style.height.px]="hdrImageAdjustmentBounds().height"
+            aria-label="HDR image adjustments" aria-hidden="true"></canvas>
+  }
+
   @if (loupeEnabled() && selected !== null) {
     @if (loupeFullImageView()) {
-      <aside class="hdr-loupe-full-frame" [class.capture-pending]="loupeCapturePending()"
+      <aside class="hdr-loupe-full-frame" [class.capture-pending]="loupeCapturePending() || hdrImageAdjustmentPending()"
              [style.left.px]="loupeFullImageBounds().left" [style.top.px]="loupeFullImageBounds().top"
              [style.width.px]="loupeFullImageBounds().width" [style.height.px]="loupeFullImageBounds().height"
              aria-label="Full main-image FP16 loupe view" aria-live="off">
         <canvas class="hdr-loupe-full-frame-canvas" aria-hidden="true"></canvas>
       </aside>
     } @else {
-    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending()" [class.circular]="loupeShape() === 'circular'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" [style.transform]="'scale(' + loupeSizeScale() + ')'" aria-label="HDR cursor loupe" aria-live="off">
+    <aside class="hdr-loupe-overlay" [class.capture-pending]="loupeCapturePending() || hdrImageAdjustmentPending()" [class.circular]="loupeShape() === 'circular'" [class.rectangular]="loupeShape() === 'rectangular'" [class.ruler]="loupeShape() === 'ruler'" [style.left.px]="loupePosition().x" [style.top.px]="loupePosition().y" [style.transform]="'scale(' + loupeSizeScale() + ')'" aria-label="HDR cursor loupe" aria-live="off">
       @if (loupeShape() !== 'ruler' && loupeShape() !== 'vertical-ruler') {
         <div class="loupe-handle" aria-hidden="true"></div>
       }
@@ -288,14 +296,14 @@
       <section><button class="section-heading" (click)="toggleSidebarSection('zoom')">Zoom {{sidebarSectionExpanded('zoom')?'−':'+'}}</button>
         @if (sidebarSectionExpanded('zoom')) { <div class="control-row"><button (click)="adjustZoom(-1)">−</button>@if(loupeEnabled()){<ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64"/>} @else {<ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/>}<button (click)="adjustZoom(1)">+</button></div><button (click)="fitToWindow()" [disabled]="loupeEnabled()">An Fenster anpassen</button> }
       </section>
+      <section><button class="section-heading" (click)="toggleSidebarSection('loupe')">Lupe {{sidebarSectionExpanded('loupe')?'−':'+'}}</button>
+        @if(sidebarSectionExpanded('loupe')) { <label><input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)"/> Lupe aktivieren (M)</label><div class="shape-row"><button [class.active]="loupeShape()==='circular'" title="Kreis" (click)="setLoupeShape('circular')">◯</button><button [class.active]="loupeShape()==='rectangular'" title="Rechteck" (click)="setLoupeShape('rectangular')">▭</button><button [class.active]="loupeShape()==='ruler'" title="Horizontales Lineal" (click)="setLoupeShape('ruler')">↔</button><button [class.active]="loupeShape()==='vertical-ruler'" title="Vertikales Lineal" (click)="setLoupeShape('vertical-ruler')">↕</button></div><label>Lupenhelligkeit</label><input type="range" min="0" max="2" step=".01" [value]="loupeBrightness()" (input)="setLoupeBrightness($any($event.target).value)"/><button (click)="toggleLoupeRenderer()">Lupen-Renderer: {{loupeRendererMode()==='webgpu'?'WebGPU':'CSS'}}</button> }
+      </section>
       <section><button class="section-heading" (click)="toggleSidebarSection('brightness')">Helligkeit &amp; Kontrast {{sidebarSectionExpanded('brightness')?'−':'+'}}</button>
-        @if(sidebarSectionExpanded('brightness')) { <label>Helligkeit {{((mainImageBrightness()-1)*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/><label>Kontrast {{(imageContrast()*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/><button (click)="resetImageAdjustments()">Zurücksetzen</button><button (click)="toggleLoupeRenderer()">{{loupeRendererMode()==='webgpu'?'GPU':'CSS'}}</button> }
+        @if(sidebarSectionExpanded('brightness')) { <label>Helligkeit {{((mainImageBrightness()-1)*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/><label>Kontrast {{(imageContrast()*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/><button (click)="resetImageAdjustments()">Zurücksetzen</button> }
       </section>
       <section><button class="section-heading" (click)="toggleSidebarSection('rgb')">RGB-Kanäle {{sidebarSectionExpanded('rgb')?'−':'+'}}</button>
         @if(sidebarSectionExpanded('rgb')) { <label class="channel-control"><span><b class="red">R</b> Rot <span>{{(redChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="redChannelLevel()" (input)="setRedChannelLevel($any($event.target).value)"/></label><label class="channel-control"><span><b class="green">G</b> Grün <span>{{(greenChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="greenChannelLevel()" (input)="setGreenChannelLevel($any($event.target).value)"/></label><label class="channel-control"><span><b class="blue">B</b> Blau <span>{{(blueChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="blueChannelLevel()" (input)="setBlueChannelLevel($any($event.target).value)"/></label><button (click)="resetRgbChannels()">Alle Kanäle zurücksetzen</button> }
-      </section>
-      <section><button class="section-heading" (click)="toggleSidebarSection('loupe')">Lupe {{sidebarSectionExpanded('loupe')?'−':'+'}}</button>
-        @if(sidebarSectionExpanded('loupe')) { <label><input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)"/> Lupe aktivieren (M)</label><div class="shape-row"><button [class.active]="loupeShape()==='circular'" title="Kreis" (click)="setLoupeShape('circular')">◯</button><button [class.active]="loupeShape()==='rectangular'" title="Rechteck" (click)="setLoupeShape('rectangular')">▭</button><button [class.active]="loupeShape()==='ruler'" title="Horizontales Lineal" (click)="setLoupeShape('ruler')">↔</button><button [class.active]="loupeShape()==='vertical-ruler'" title="Vertikales Lineal" (click)="setLoupeShape('vertical-ruler')">↕</button></div><label>Lupenhelligkeit</label><input type="range" min="0" max="2" step=".01" [value]="loupeBrightness()" (input)="setLoupeBrightness($any($event.target).value)"/> }
       </section>
       <section><button class="section-heading" (click)="toggleSidebarSection('mode')">Ansichtsmodus {{sidebarSectionExpanded('mode')?'−':'+'}}</button>
         @if(sidebarSectionExpanded('mode')) { <div class="mode-row"><button [class.active]="comparisonMode()==='hdr'" [disabled]="!isHdrImage" (click)="setComparisonMode('hdr')">HDR</button><button [class.active]="comparisonMode()==='sdr'" (click)="setComparisonMode('sdr')">SDR</button><button [class.active]="comparisonMode()==='side-by-side'" [disabled]="!isHdrImage" (click)="setComparisonMode('side-by-side')">◧ Nebeneinander</button><button [class.active]="comparisonMode()==='stacked'" [disabled]="!isHdrImage" (click)="setComparisonMode('stacked')">▤ Übereinander</button></div>@if(isHdrImage&&(comparisonMode()==='side-by-side'||comparisonMode()==='stacked')){<label>Teilung {{comparisonSplit()}}%</label><input type="range" min="1" max="99" [value]="comparisonSplit()" (input)="previewComparisonSplit($any($event.target).value)" (change)="setComparisonSplit($any($event.target).value)"/>} }
