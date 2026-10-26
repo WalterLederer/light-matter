@@ -919,7 +919,7 @@ export class ImageView {
     });
     if (!image) {
       this.pixelColor.set(null);
-      this.loupeSourcePoint.set(null);
+      this.loupeSourcePoint.set({ x: 0, y: 0 });
       return;
     }
 
