@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { ExifTags } from 'internal-api';
 import { ByteSizePipe } from '../../../ui/pipes/byte-size/byte-size.pipe';
 import { ImageDimensions } from '../../services/image-positioning/image-positioning.types';
@@ -38,6 +38,32 @@ export class ExifInfoComponent {
   readonly requiresConversion = input(false);
 
   readonly path = input('');
+
+  readonly copyPathStatus = signal('');
+
+  readonly normalizedPath = () => {
+    const value = this.path();
+    // Windows drive-letter and UNC paths must be copied with native backslashes.
+    if (/^[a-zA-Z]:[\\/]/.test(value) || value.startsWith('\\\\') || value.startsWith('//')) {
+      return value.replace(/[\\/]+/g, '\\\\');
+    }
+    // For non-Windows paths, preserve Unix-style separators.
+    return value.replace(/\\/g, '/');
+  };
+
+  readonly copyFullPath = async (): Promise<void> => {
+    const path = this.normalizedPath();
+    if (!path) return;
+    try {
+      await navigator.clipboard.writeText(path);
+      this.copyPathStatus.set('Copied');
+      window.setTimeout(() => this.copyPathStatus.set(''), 1800);
+    } catch (error) {
+      console.error('Failed to copy image path to clipboard', error);
+      this.copyPathStatus.set('Copy failed');
+      window.setTimeout(() => this.copyPathStatus.set(''), 2500);
+    }
+  };
 
   readonly dynamicRangeDiagnostics = () => {
     const data = this.exif();
