@@ -915,6 +915,52 @@
     background: #438cff;
   }
 
+  .image-controls-sidebar .loupe-channel-meters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .image-controls-sidebar .loupe-channel-meter {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .image-controls-sidebar .loupe-channel-value {
+    display: block;
+    min-width: 0;
+    color: inherit;
+    font: 12px/1.2 Consolas, "Courier New", monospace;
+    text-align: center;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .image-controls-sidebar .loupe-channel-meter .loupe-rgb-track {
+    display: block;
+    width: 100%;
+    height: 12px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: rgb(127 127 127 / 30%);
+  }
+
+  .image-controls-sidebar .loupe-channel-meter .loupe-rgb-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+  }
+
+  .image-controls-sidebar .loupe-channel-meter .loupe-rgb-fill.red { background: #ff4242; }
+  .image-controls-sidebar .loupe-channel-meter .loupe-rgb-fill.green { background: #36cf70; }
+  .image-controls-sidebar .loupe-channel-meter .loupe-rgb-fill.blue { background: #438cff; }
+
   /* HDR bars use scRGB linear values: 1.0 is reference white (80 nits),
      and 50 represents 4000 nits. The marker shows the HDR boundary. */
   .image-controls-sidebar .hdr-rgb-channels .hdr-rgb-track {
