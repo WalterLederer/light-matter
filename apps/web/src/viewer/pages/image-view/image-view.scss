@@ -965,6 +965,33 @@
   .image-controls-sidebar .loupe-channel-meter .loupe-rgb-fill.green { background: #36cf70; }
   .image-controls-sidebar .loupe-channel-meter .loupe-rgb-fill.blue { background: #438cff; }
 
+  .image-controls-sidebar .loupe-hdr-linear {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: 4px 8px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    color: inherit;
+    font: 14px/1.2 Consolas, "Courier New", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .image-controls-sidebar .loupe-scrgb-values {
+    display: block;
+    min-width: 0;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .image-controls-sidebar .loupe-scrgb-label {
+    grid-column: 1 / -1;
+    display: block;
+    text-align: center;
+    font: 14px/1.2 sans-serif;
+  }
+
   /* HDR bars use scRGB linear values: 1.0 is reference white (80 nits),
      and 50 represents 4000 nits. The marker shows the HDR boundary. */
   .image-controls-sidebar .hdr-rgb-channels .hdr-rgb-track {
