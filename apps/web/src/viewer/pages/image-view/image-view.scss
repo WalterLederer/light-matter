@@ -850,6 +850,22 @@
     margin: 0 0 0 auto;
   }
 
+  .image-controls-sidebar .loupe-pixel-row .coordinate-rgb-channels {
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  .image-controls-sidebar .loupe-hdr-swatch {
+    background-color: var(--hdr-swatch-sdr-color, #000);
+    dynamic-range-limit: no-limit;
+  }
+
+  @supports (background-color: color(srgb-linear 1 1 1)) {
+    .image-controls-sidebar .loupe-hdr-swatch {
+      background-color: var(--hdr-swatch-hdr-color, var(--hdr-swatch-sdr-color, #000));
+    }
+  }
+
   .image-controls-sidebar .coordinate-rgb-channels .loupe-rgb-channel {
     display: flex;
     height: 4px;
