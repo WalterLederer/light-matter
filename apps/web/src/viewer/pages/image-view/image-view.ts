@@ -776,6 +776,11 @@ export class ImageView {
   /** Restore a neutral viewing state without changing the selected image or comparison mode. */
   protected readonly resetViewAndAdjustments = (): void => {
     if (this.loupeEnabled()) void this.toggleLoupe(false);
+    if (this.sidebarSectionExpanded('loupe')) {
+      const sections = { ...this.sidebarSections(), loupe: false };
+      this.sidebarSections.set(sections);
+      this.configuration.updateSystemConfig({ imageSidebarSections: sections });
+    }
     this.loupeBrightness.set(1);
     this.mainImageBrightness.set(1);
     this.imageContrast.set(1);
@@ -797,7 +802,8 @@ export class ImageView {
     if (!this.loupeEnabled()) {
       this.loupeShape.set('circular');
       this.storeLoupeShape('circular');
-      void this.toggleLoupe(true);
+      if (!this.sidebarSectionExpanded('loupe')) this.toggleSidebarSection('loupe');
+      else void this.toggleLoupe(true);
       return;
     }
 
@@ -1495,7 +1501,7 @@ export class ImageView {
 
         if (event.key === 'm' || event.key === 'M') {
           event.preventDefault();
-          void this.toggleLoupe(!this.loupeEnabled());
+          this.toggleSidebarSection('loupe');
           return;
         }
 
