@@ -240,50 +240,56 @@
             </span>
           </div>
           <section class="loupe-sdr-info" aria-label="SDR pixel information">
-            <div class="loupe-pixel-row">
-              <div class="loupe-info-subheading">SDR</div>
-              @if (pixelColor(); as rgb) {
-                <div class="loupe-rgb-summary">
-                  <span class="loupe-rgb-swatch" [style.backgroundColor]="'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')'" [attr.aria-label]="'SDR RGB ' + rgb.r + ', ' + rgb.g + ', ' + rgb.b"></span>
-                  <span class="loupe-rgb-values">R:0x{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }} G:0x{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }} B:0x{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
+            <div class="loupe-info-subheading">SDR</div>
+            @if (pixelColor(); as rgb) {
+              <div class="loupe-channel-meters" aria-label="SDR RGB channel values and levels">
+                <div class="loupe-channel-meter">
+                  <span class="loupe-channel-value">0x{{ rgb.r.toString(16).padStart(2, '0').toUpperCase() }}</span>
+                  <span class="loupe-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span>
                 </div>
-                <div class="loupe-rgb-channels coordinate-rgb-channels" aria-label="SDR RGB channel levels">
-                  <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="rgb.r / 255 * 100"></span></span></span>
-                  <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span></span>
-                  <span class="loupe-rgb-channel"><span class="loupe-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span></span>
+                <div class="loupe-channel-meter">
+                  <span class="loupe-channel-value">0x{{ rgb.g.toString(16).padStart(2, '0').toUpperCase() }}</span>
+                  <span class="loupe-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="rgb.g / 255 * 100"></span></span>
                 </div>
-              } @else {
-                <div class="loupe-rgb-summary">
-                  <span class="loupe-rgb-swatch" aria-label="No SDR pixel selected"></span>
-                  <span class="loupe-rgb-values">R:-- G:-- B:--</span>
+                <div class="loupe-channel-meter">
+                  <span class="loupe-channel-value">0x{{ rgb.b.toString(16).padStart(2, '0').toUpperCase() }}</span>
+                  <span class="loupe-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="rgb.b / 255 * 100"></span></span>
                 </div>
-              }
-            </div>
+              </div>
+            } @else {
+              <div class="loupe-channel-meters">
+                <div class="loupe-channel-meter"><span class="loupe-channel-value">—</span><span class="loupe-rgb-track"></span></div>
+                <div class="loupe-channel-meter"><span class="loupe-channel-value">—</span><span class="loupe-rgb-track"></span></div>
+                <div class="loupe-channel-meter"><span class="loupe-channel-value">—</span><span class="loupe-rgb-track"></span></div>
+              </div>
+            }
           </section>
           <section class="loupe-hdr-info" aria-label="HDR pixel information">
-            <div class="loupe-pixel-row">
-              <div class="loupe-info-subheading">HDR</div>
-              @if (loupeSample(); as sample) {
-                <div class="loupe-rgb-summary">
-                  <span class="loupe-rgb-swatch loupe-hdr-swatch-container" aria-label="HDR pixel color rendered from the FP16 capture">
-                    <canvas class="loupe-hdr-swatch-canvas" aria-hidden="true"></canvas>
-                  </span>
-                  <span class="loupe-rgb-values">R:{{ sample.center.rHex }} G:{{ sample.center.gHex }} B:{{ sample.center.bHex }}</span>
+            <div class="loupe-info-subheading">HDR</div>
+            @if (loupeHdrRgb(); as hdr) {
+              <div class="loupe-channel-meters hdr-rgb-channels" aria-label="HDR RGB channel values and levels; scRGB 1.0 reference-white boundary; scale to 4000 nits">
+                <div class="loupe-channel-meter">
+                  <span class="loupe-channel-value">{{ hdr.rHex }}</span>
+                  <span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="Math.max(0, Math.min(100, hdr.r / 50 * 100))"></span></span>
                 </div>
-                <div class="loupe-rgb-channels coordinate-rgb-channels hdr-rgb-channels" aria-label="HDR RGB channel levels; scRGB 1.0 reference-white boundary; scale to 1000 nits">
-                  <span class="loupe-rgb-channel"><span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="sample.center.r / 50 * 100"></span></span></span>
-                  <span class="loupe-rgb-channel"><span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="sample.center.g / 50 * 100"></span></span></span>
-                  <span class="loupe-rgb-channel"><span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="sample.center.b / 50 * 100"></span></span></span>
+                <div class="loupe-channel-meter">
+                  <span class="loupe-channel-value">{{ hdr.gHex }}</span>
+                  <span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="Math.max(0, Math.min(100, hdr.g / 50 * 100))"></span></span>
                 </div>
-              } @else if (loupeCaptureError(); as captureError) {
-                <div class="loupe-capture-error" role="status">HDR pixel info unavailable: {{ captureError }}</div>
-              } @else {
-                <div class="loupe-rgb-values">R:-- G:-- B:--</div>
-              }
-            </div>
-            @if (loupeSample(); as sample) {
-              <div class="loupe-hdr-linear">scRGB {{ sample.center.r | number:'1.0-4' }}, {{ sample.center.g | number:'1.0-4' }}, {{ sample.center.b | number:'1.0-4' }}</div>
-            } @else if (!loupeCaptureError()) {
+                <div class="loupe-channel-meter">
+                  <span class="loupe-channel-value">{{ hdr.bHex }}</span>
+                  <span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="Math.max(0, Math.min(100, hdr.b / 50 * 100))"></span></span>
+                </div>
+              </div>
+              <div class="loupe-hdr-linear">scRGB {{ hdr.r | number:'1.0-4' }}, {{ hdr.g | number:'1.0-4' }}, {{ hdr.b | number:'1.0-4' }}</div>
+            } @else if (loupeCaptureError(); as captureError) {
+              <div class="loupe-capture-error" role="status">HDR pixel info unavailable: {{ captureError }}</div>
+            } @else {
+              <div class="loupe-channel-meters">
+                <div class="loupe-channel-meter"><span class="loupe-channel-value">—</span><span class="loupe-rgb-track"></span></div>
+                <div class="loupe-channel-meter"><span class="loupe-channel-value">—</span><span class="loupe-rgb-track"></span></div>
+                <div class="loupe-channel-meter"><span class="loupe-channel-value">—</span><span class="loupe-rgb-track"></span></div>
+              </div>
               <div class="loupe-hdr-linear">scRGB —, —, —</div>
             }
           </section>
