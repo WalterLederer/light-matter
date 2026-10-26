@@ -220,7 +220,7 @@
       <section><button class="section-heading" (click)="toggleSidebarSection('zoom')"><span class="section-chevron">{{sidebarSectionExpanded('zoom') ? 'v' : '>'}}</span>Zoom</button>
         @if (sidebarSectionExpanded('zoom')) { <div class="control-row"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div><button (click)="fitToWindow()">Fit to window</button> }
       </section>
-      <section><button class="section-heading" (click)="toggleSidebarSection('corrections')"><span class="section-chevron">{{sidebarSectionExpanded('corrections') ? 'v' : '>'}}</span>Korrekturen</button>
+      <section><button class="section-heading" (click)="toggleSidebarSection('corrections')"><span class="section-chevron">{{sidebarSectionExpanded('corrections') ? 'v' : '>'}}</span>Corrections</button>
         @if(sidebarSectionExpanded('corrections')) {
           <label class="channel-control"><span><b>Brightness</b><span>{{((mainImageBrightness()-1)*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/></label>
           <label class="channel-control"><span><b>Contrast</b><span>{{(imageContrast()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/></label>
@@ -235,7 +235,7 @@
             <div class="correction-subheading">Tone curve</div>
             <svg class="tone-curve" viewBox="0 0 120 72" role="img" aria-label="Tone curve with adjustable black and white points">
               <path class="tone-curve-grid" d="M4 4V68H116M4 36H116M60 4V68" />
-              <path class="tone-curve-line" [attr.d]="'M4 68 H' + (4 + blackPoint() * 112) + ' L' + (4 + whitePoint() * 112) + ' 4 H116'" />
+              <path class="tone-curve-line" [attr.d]="'M4 68 H' + (4 + blackPoint() * 56) + ' L' + (4 + whitePoint() * 56) + ' 4 H116'" />
             </svg>
             <label class="channel-control"><span><b>Black point</b><span>{{(blackPoint()*100).toFixed(0)}}%</span></span><input type="range" min="0" [max]="whitePoint() - 0.01" step=".005" [value]="blackPoint()" (input)="setBlackPoint($any($event.target).value)"/></label>
             <label class="channel-control"><span><b>White point</b><span>{{(whitePoint()*100).toFixed(0)}}%</span></span><input type="range" [min]="blackPoint() + 0.01" max="2" step=".01" [value]="whitePoint()" (input)="setWhitePoint($any($event.target).value)"/></label>
