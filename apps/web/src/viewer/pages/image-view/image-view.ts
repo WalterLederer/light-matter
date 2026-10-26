@@ -246,9 +246,9 @@ export class ImageView {
     const bBits = sample.data[offset + 2];
     return {
       r: toFloat(rBits), g: toFloat(gBits), b: toFloat(bBits),
-      rHex: '0x' + rBits.toString(16).padStart(4, '0').toUpperCase(),
-      gHex: '0x' + gBits.toString(16).padStart(4, '0').toUpperCase(),
-      bHex: '0x' + bBits.toString(16).padStart(4, '0').toUpperCase()
+      rHex: rBits.toString(16).padStart(4, '0').toUpperCase(),
+      gHex: gBits.toString(16).padStart(4, '0').toUpperCase(),
+      bHex: bBits.toString(16).padStart(4, '0').toUpperCase()
     };
   });
 
