@@ -9,11 +9,13 @@
 @let isHdrImage = imageDynamicRange(selected?.path ?? '', imageTags(), imageBitDepth()) === 'HDR';
 
 @if (selected !== null) {
+  <svg class="image-view-filter-definitions" aria-hidden="true" focusable="false"><filter id="image-view-channel-filter" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" [attr.values]="imageChannelFilterMatrix()" /></filter></svg>
   <app-image-renderer [url]="selected.url"
                       [debugImageSwitching]="debugImageSwitching()"
                       (debugSwitchingPhase)="onDebugSwitchingPhase($event)"
                       [displayBrightness]="loupeEnabled() ? 1 : mainImageBrightness()"
                       [brightnessRendererMode]="loupeRendererMode()"
+                      [style.filter]="imageChannelFilterActive() ? 'url(#image-view-channel-filter)' : null"
                       [comparisonMode]="isHdrImage ? comparisonMode() : 'sdr'"
                       [comparisonSplit]="comparisonSplit()"
                       (comparisonSplitChange)="previewComparisonSplit($event)"
@@ -274,28 +276,6 @@
           } @else if (imageLoadFailed()) {
             Failed to load image
           } @else {
-            <select class="dynamic-range-select"
-                    aria-label="Display mode"
-                    [value]="isHdrImage ? comparisonMode() : 'sdr'"
-                    (change)="setComparisonMode($any($event.target).value)">
-              <option value="hdr" [disabled]="!isHdrImage">HDR̲</option>
-              <option value="sdr">SDR̲</option>
-              <option value="side-by-side" [disabled]="!isHdrImage">SDR̲ + HDR̲ side by side</option>
-              <option value="stacked" [disabled]="!isHdrImage">SDR̲ + HDR̲ stacked</option>
-              <option value="dual-side-by-side" [disabled]="!isHdrImage">SDR̲ | HDR̲ full side by side</option>
-              <option value="dual-stacked" [disabled]="!isHdrImage">SDR̲ + HDR̲ full stacked</option>
-            </select>
-            @if (isHdrImage && (comparisonMode() === 'side-by-side' || comparisonMode() === 'stacked')) {
-              <input class="comparison-split-slider"
-                     type="range"
-                     min="1"
-                     max="99"
-                     aria-label="SDR/HDR split position"
-                     [value]="comparisonSplit()"
-                     (input)="previewComparisonSplit($any($event.target).value)"
-                     (change)="setComparisonSplit($any($event.target).value)" />
-              <span class="comparison-split-value">{{ comparisonSplit() }}%</span>
-            }
             <span class="status-metadata">
               @if (imagePosition !== null) {
                 · {{ imagePosition.position }} / {{ imagePosition.total }}
@@ -337,75 +317,29 @@
         </ui-action-button>
       </section>
 
-      <section class="status-control-groups" aria-label="Image controls">
-        <div class="status-control-group zoom-group" aria-label="Zoom">
-          <span class="status-group-label">ZOOM</span>
-          <label class="loupe-toggle" title="Toggle HDR cursor loupe (FP16 window capture)" [class.active]="loupeEnabled()">
-            <input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)" />
-            <span><u>M</u>agnifier</span>
-          </label>
-          <ui-action-button title="Fit to window"
-                            [disabled]="loupeEnabled() || location.zoom === 'fit'"
-                            (pressed)="fitToWindow()">
-            <ui-icon icon="scaleFit" size="large" [inherit]="true" />
-          </ui-action-button>
-          <button class="zoom-step-button" type="button"
-                  [title]="loupeEnabled() ? 'Reduce loupe magnification (-)' : 'Zoom out (-)'"
-                  [attr.aria-label]="loupeEnabled() ? 'Reduce loupe magnification' : 'Zoom out'"
-                  (click)="adjustZoom(-1)">−</button>
-          @if (loupeEnabled()) {
-            <ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64"
-                       title="Loupe magnification: adjust how much the area around the mouse pointer is enlarged." />
-            <button class="zoom-step-button loupe-zoom-reset" type="button"
-                    title="Reset loupe magnification to 1×"
-                    aria-label="Reset loupe magnification to 1×"
-                    (click)="resetLoupeZoom()">Reset</button>
-          } @else {
-            <ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"
-                       title="Image zoom: drag the slider to change the image magnification. Use Fit to Window to fit the image to the available area." />
-          }
-          <button class="zoom-step-button" type="button"
-                  [title]="loupeEnabled() ? 'Increase loupe magnification (+)' : 'Zoom in (+)'"
-                  [attr.aria-label]="loupeEnabled() ? 'Increase loupe magnification' : 'Zoom in'"
-                  (click)="adjustZoom(1)">+</button>
-          <ui-text class="no-shrink zoom-info">
-            @let zoomValue = location.zoom === 'fit' ? location.fitZoom : zoomSlider.value;
-            @if (loupeEnabled()) { {{ loupePixelSize() * 2 | number: '1.1-2' }}× } @else { {{ zoomValue | number: '1.0-0' }}% }
-          </ui-text>
-        </div>
-
-        <div class="status-control-group brightness-group" aria-label="Brightness">
-          <span class="status-group-label">BRIGHTNESS</span>
-          <button class="zoom-step-button renderer-mode-button" type="button"
-                  [class.active]="loupeRendererMode() === 'webgpu'"
-                  title="GPU uses WebGPU for main-image brightness and the HDR cursor loupe. CSS uses the CSS brightness filter for both views."
-                  (click)="toggleLoupeRenderer()">{{ loupeRendererMode() === 'webgpu' ? 'GPU' : 'CSS' }}</button>
-          <button class="zoom-step-button brightness-reset-button" type="button"
-                  title="Reset active brightness (↑ / ↓)"
-                  aria-label="Reset active brightness"
-                  [disabled]="(loupeEnabled() ? loupeBrightness() : mainImageBrightness()) === 1"
-                  (click)="resetImageBrightness()">↺</button>
-          @let activeBrightness = loupeEnabled() ? loupeBrightness() : mainImageBrightness();
-          @if (activeBrightness !== 1) {
-            <ui-text class="no-shrink brightness-info"
-                     [title]="loupeEnabled() ? 'Loupe brightness: ↑ increases and ↓ decreases. Click ↺ to restore normal brightness.' : 'Main image brightness: ↑ increases and ↓ decreases. Click ↺ to restore normal brightness.'">
-              {{ activeBrightness > 1 ? '+' : '' }}{{ ((activeBrightness - 1) * 100).toFixed(0) }}%
-            </ui-text>
-          } @else {
-            <ui-text class="no-shrink brightness-info">0%</ui-text>
-          }
-        </div>
-
-        <div class="status-control-group other-group" aria-label="View options">
-          <ui-action-button title="Toggle full screen mode (F)"
-                            [compact]="true"
-                            [variant]="fullScreen ? 'primary' : 'default'"
-                            (pressed)="toggleFullScreen()">
-            <ui-icon icon="fullScreenMaximize" size="large" [inherit]="true" />
-          </ui-action-button>
-        </div>
-      </section>
     </ui-tool-menu>
+  }
+  @if (!fullScreen && controlsSidebarVisible()) {
+    <aside class="image-controls-sidebar" aria-label="Bildsteuerung">
+      <header><strong>Bildsteuerung</strong><button type="button" aria-label="Seitenleiste schließen" (click)="toggleControlsSidebar()">×</button></header>
+      <section><button class="section-heading" (click)="toggleSidebarSection('zoom')">Zoom {{sidebarSectionExpanded('zoom')?'−':'+'}}</button>
+        @if (sidebarSectionExpanded('zoom')) { <label><input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)"/> Lupe (M)</label><div class="control-row"><button (click)="adjustZoom(-1)">−</button>@if(loupeEnabled()){<ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64"/>} @else {<ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/>}<button (click)="adjustZoom(1)">+</button></div><button (click)="fitToWindow()" [disabled]="loupeEnabled()">An Fenster anpassen</button> }
+      </section>
+      <section><button class="section-heading" (click)="toggleSidebarSection('brightness')">Helligkeit &amp; Kontrast {{sidebarSectionExpanded('brightness')?'−':'+'}}</button>
+        @if(sidebarSectionExpanded('brightness')) { <label>Helligkeit {{((mainImageBrightness()-1)*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/><label>Kontrast {{(imageContrast()*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/><button (click)="resetImageAdjustments()">Zurücksetzen</button><button (click)="toggleLoupeRenderer()">{{loupeRendererMode()==='webgpu'?'GPU':'CSS'}}</button> }
+      </section>
+      <section><button class="section-heading" (click)="toggleSidebarSection('rgb')">RGB-Kanäle {{sidebarSectionExpanded('rgb')?'−':'+'}}</button>
+        @if(sidebarSectionExpanded('rgb')) { <label><input type="checkbox" [checked]="redChannelVisible()" (change)="redChannelVisible.set($any($event.target).checked)"/> <b class="red">R</b> Rot</label><label><input type="checkbox" [checked]="greenChannelVisible()" (change)="greenChannelVisible.set($any($event.target).checked)"/> <b class="green">G</b> Grün</label><label><input type="checkbox" [checked]="blueChannelVisible()" (change)="blueChannelVisible.set($any($event.target).checked)"/> <b class="blue">B</b> Blau</label><button (click)="resetRgbChannels()">Alle Kanäle</button> }
+      </section>
+      <section><button class="section-heading" (click)="toggleSidebarSection('loupe')">Lupenform {{sidebarSectionExpanded('loupe')?'−':'+'}}</button>
+        @if(sidebarSectionExpanded('loupe')) { <div class="shape-row"><button [class.active]="loupeShape()==='circular'" title="Kreis" (click)="setLoupeShape('circular')">◯</button><button [class.active]="loupeShape()==='rectangular'" title="Rechteck" (click)="setLoupeShape('rectangular')">▭</button><button [class.active]="loupeShape()==='ruler'" title="Horizontales Lineal" (click)="setLoupeShape('ruler')">↔</button><button [class.active]="loupeShape()==='vertical-ruler'" title="Vertikales Lineal" (click)="setLoupeShape('vertical-ruler')">↕</button></div><label>Lupenhelligkeit</label><input type="range" min="0" max="2" step=".01" [value]="loupeBrightness()" (input)="setLoupeBrightness($any($event.target).value)"/> }
+      </section>
+      <section><button class="section-heading" (click)="toggleSidebarSection('mode')">Ansichtsmodus {{sidebarSectionExpanded('mode')?'−':'+'}}</button>
+        @if(sidebarSectionExpanded('mode')) { <div class="mode-row"><button [class.active]="comparisonMode()==='hdr'" [disabled]="!isHdrImage" (click)="setComparisonMode('hdr')">HDR</button><button [class.active]="comparisonMode()==='sdr'" (click)="setComparisonMode('sdr')">SDR</button><button [class.active]="comparisonMode()==='side-by-side'" [disabled]="!isHdrImage" (click)="setComparisonMode('side-by-side')">◧ Nebeneinander</button><button [class.active]="comparisonMode()==='stacked'" [disabled]="!isHdrImage" (click)="setComparisonMode('stacked')">▤ Übereinander</button></div>@if(isHdrImage&&(comparisonMode()==='side-by-side'||comparisonMode()==='stacked')){<label>Teilung {{comparisonSplit()}}%</label><input type="range" min="1" max="99" [value]="comparisonSplit()" (input)="previewComparisonSplit($any($event.target).value)" (change)="setComparisonSplit($any($event.target).value)"/>} }
+      </section>
+      <section><button class="section-heading" (click)="toggleSidebarSection('histogram')">Histogramm {{sidebarSectionExpanded('histogram')?'−':'+'}}</button>@if(sidebarSectionExpanded('histogram')){<button (click)="toggleHistogram()">{{histogramVisible()?'Histogramm schließen':'Histogramm berechnen und öffnen'}}</button>}</section>
+      <section><button class="section-heading" (click)="toggleSidebarSection('info')">Bildinformationen {{sidebarSectionExpanded('info')?'−':'+'}}</button>@if(sidebarSectionExpanded('info')){<button (click)="toggleExifInfo(selected.path)">{{exifVisible()?'Informationen schließen':'Informationen öffnen'}}</button><p>{{imageDimensions().width}} × {{imageDimensions().height}} px</p><p class="path">{{selected.path}}</p>}</section>
+    </aside>
   }
 
   @if (exifVisible()) {

@@ -215,6 +215,37 @@ export class ImageView {
   protected readonly loupeBrightness = signal(1);
 
   protected readonly mainImageBrightness = signal(1);
+  protected readonly imageContrast = signal(1);
+  protected readonly redChannelVisible = signal(true);
+  protected readonly greenChannelVisible = signal(true);
+  protected readonly blueChannelVisible = signal(true);
+  protected readonly controlsSidebarVisible = signal(true);
+  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, loupe: true, mode: true, histogram: false, info: false });
+  protected readonly sidebarSectionExpanded = (key: string): boolean => this.sidebarSections()[key] === true;
+  protected readonly toggleSidebarSection = (key: string): void => {
+    this.sidebarSections.update(current => ({ ...current, [key]: !current[key] }));
+    if (key === 'histogram') {
+      if (this.sidebarSections()[key] && !this.histogramVisible()) this.toggleHistogram();
+      else if (!this.sidebarSections()[key] && this.histogramVisible()) this.closeHistogram();
+    }
+  };
+  protected readonly toggleControlsSidebar = (): void => this.controlsSidebarVisible.update(value => !value);
+  protected readonly imageChannelFilterActive = computed(() => this.imageContrast() !== 1 || !this.redChannelVisible() || !this.greenChannelVisible() || !this.blueChannelVisible());
+  protected readonly imageChannelFilterMatrix = computed(() => {
+    const c = this.imageContrast();
+    const row = (on: boolean, channel: number) => [0,1,2].map(i => on && i === channel ? c : 0).concat([0, on ? 0.5 * (1-c) : 0]).join(' ');
+    return [row(this.redChannelVisible(),0), row(this.greenChannelVisible(),1), row(this.blueChannelVisible(),2), '0 0 0 1 0'].join(' ');
+  });
+  protected readonly setMainBrightness = (v: string | number): void => this.mainImageBrightness.set(Math.max(0, Math.min(2, Number(v))));
+  protected readonly resetMainBrightness = (): void => this.mainImageBrightness.set(1);
+  protected readonly setImageContrast = (v: string | number): void => this.imageContrast.set(Math.max(0, Math.min(2, Number(v))));
+  protected readonly resetImageAdjustments = (): void => { this.mainImageBrightness.set(1); this.imageContrast.set(1); };
+  protected readonly resetRgbChannels = (): void => { this.redChannelVisible.set(true); this.greenChannelVisible.set(true); this.blueChannelVisible.set(true); };
+  protected readonly setLoupeBrightness = (v: string | number): void => this.loupeBrightness.set(Math.max(0, Math.min(2, Number(v))));
+  protected readonly setLoupeShape = (shape: 'circular' | 'rectangular' | 'ruler' | 'vertical-ruler'): void => {
+    this.loupeShape.set(shape); this.storeLoupeShape(shape); this.hdrLoupeActive.set(false); this.hdrLoupeRenderer.dispose();
+    if (!this.loupeEnabled()) void this.toggleLoupe(true);
+  };
 
   /** Explicit renderer selection so CSS and WebGPU can be compared at identical settings. */
   protected readonly loupeRendererMode = signal<'css' | 'webgpu'>('webgpu');
