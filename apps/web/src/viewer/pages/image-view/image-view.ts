@@ -266,7 +266,7 @@ export class ImageView {
     view.addEventListener('pointercancel', onUp);
     this.sidebarResizeCleanup = onUp;
   };
-  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, loupe: true, mode: true, histogram: false, info: false, general: false });
+  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, loupe: true, loupeRenderer: false, mode: true, histogram: false, info: false, general: false });
   protected readonly sidebarSectionExpanded = (key: string): boolean => this.sidebarSections()[key] === true;
   protected readonly toggleSidebarSection = (key: string): void => {
     const sections = { ...this.sidebarSections(), [key]: !this.sidebarSectionExpanded(key) };
@@ -347,7 +347,11 @@ export class ImageView {
     this.redChannelLevel.set(1); this.greenChannelLevel.set(1); this.blueChannelLevel.set(1);
     this.refreshHdrImageAdjustments();
   };
-  protected readonly setLoupeBrightness = (v: string | number): void => this.loupeBrightness.set(Math.max(0, Math.min(2, Number(v))));
+  protected readonly setLoupeBrightness = (v: string | number): void => {
+    this.loupeBrightness.set(Math.max(0, Math.min(4, Number(v))));
+    const sample = this.loupeSample();
+    if (sample) void this.renderHdrLoupe(sample);
+  };
   protected readonly setLoupeShape = (shape: 'circular' | 'rectangular' | 'ruler' | 'vertical-ruler'): void => {
     this.loupeShape.set(shape); this.storeLoupeShape(shape); this.hdrLoupeActive.set(false); this.hdrLoupeRenderer.dispose();
     if (!this.loupeEnabled()) void this.toggleLoupe(true);
@@ -1213,15 +1217,8 @@ export class ImageView {
   };
 
   protected readonly adjustActiveBrightness = (direction: 1 | -1) => {
-    if (!this.loupeEnabled()) {
-      const next = Math.max(0.03, Math.min(9, Number((this.mainImageBrightness() + direction * 0.1).toFixed(2))));
-      this.setMainBrightness(next);
-      return;
-    }
-    const next = Math.max(0.03, Math.min(9, Number((this.loupeBrightness() + direction * 0.1).toFixed(2))));
-    this.loupeBrightness.set(next);
-    const sample = this.loupeSample();
-    if (sample) void this.renderHdrLoupe(sample);
+    const next = Math.max(0.03, Math.min(9, Number((this.mainImageBrightness() + direction * 0.1).toFixed(2))));
+    this.setMainBrightness(next);
   };
 
   protected readonly setLoupeSize = (value: string | number) => {
@@ -1505,13 +1502,7 @@ export class ImageView {
           return;
         }
 
-        if (event.key.toLowerCase() === 's') {
-          event.preventDefault();
-          this.toggleLoupeShape();
-          return;
-        }
-
-        switch (event.key.toLowerCase()) {
+            switch (event.key.toLowerCase()) {
           case 'i':
           case 'I':
             this.selectedImage$
