@@ -81,6 +81,11 @@ export class HdrLoupeRenderer {
 
   private async initialize(canvas: HTMLCanvasElement): Promise<void> {
     if (this.device && this.configuredCanvas === canvas) return;
+    // The HDR pixel swatch lives inside a conditional Angular block. When the
+    // sample disappears (mouse leaves / loupe toggles), Angular removes that
+    // canvas and creates a new one on the next sample. A WebGPU context belongs
+    // to its original canvas, so release it before initializing the replacement.
+    if (this.device || this.configuredCanvas || this.canvasContext) this.dispose();
     if (!navigator.gpu) throw new Error('WebGPU is unavailable. CSS mode must be selected explicitly.');
     const adapter = await navigator.gpu.requestAdapter();
     if (!adapter) throw new Error('No WebGPU adapter is available.');
@@ -305,6 +310,13 @@ export class HdrLoupeRenderer {
   }
 
   dispose(): void {
+    // Unconfigure before destroying the device, especially when Angular has
+    // detached the old conditional canvas and a replacement will be rendered.
+    try {
+      this.canvasContext?.unconfigure();
+    } catch {
+      // A lost or already-unconfigured context needs no further cleanup.
+    }
     this.sourceTexture?.destroy();
     this.uniformBuffer?.destroy();
     this.device?.destroy();
