@@ -1473,20 +1473,6 @@ export class ImageView {
           return;
         }
 
-        if (event.key === '+' || event.key === '=' || event.key === 'Add') {
-          event.preventDefault();
-          if (this.loupeEnabled()) this.adjustLoupeZoom(1);
-          else this.adjustZoom(1);
-          return;
-        }
-
-        if (event.key === '-' || event.key === '_' || event.key === 'Subtract') {
-          event.preventDefault();
-          if (this.loupeEnabled()) this.adjustLoupeZoom(-1);
-          else this.adjustZoom(-1);
-          return;
-        }
-
         if (event.key === 'v' || event.key === 'V') {
           this.cycleComparisonMode();
           return;
