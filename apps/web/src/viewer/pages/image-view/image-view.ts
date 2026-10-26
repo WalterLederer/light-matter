@@ -237,8 +237,6 @@ export class ImageView {
   protected readonly greenChannelLevel = signal(1);
   protected readonly blueChannelLevel = signal(1);
   protected readonly controlsSidebarVisible = signal(true);
-  protected readonly sidebarWidth = signal(this.readStoredSidebarWidth());
-  private sidebarResizeCleanup: (() => void) | null = null;
   private readonly readStoredSidebarWidth = (): number => {
     try {
       const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.imageSidebarWidth'));
@@ -247,6 +245,8 @@ export class ImageView {
       return 340;
     }
   };
+  protected readonly sidebarWidth = signal(this.readStoredSidebarWidth());
+  private sidebarResizeCleanup: (() => void) | null = null;
   protected readonly startSidebarResize = (event: PointerEvent): void => {
     if (event.button !== 0) return;
     event.preventDefault();
@@ -549,6 +549,9 @@ export class ImageView {
         this.comparisonMode.set(savedMode === 'dual-side-by-side' || savedMode === 'dual-stacked' ? 'hdr' : savedMode);
         this.comparisonSplit.set(config.system.comparisonSplit ?? 50);
         this.exifVisible.set(config.system.exifVisible === true);
+        if (config.system.exifVisible === true && config.system.imageSidebarSections?.info === undefined) {
+          this.sidebarSections.set({ ...this.sidebarSections(), info: true });
+        }
         if (this.exifVisible()) {
           this.exifState.set(this.imageTags() ?? false);
         }
