@@ -944,6 +944,14 @@ export class ImageView {
     this.updateLoupeSdrPixelColor(image, sourceX, sourceY);
   };
 
+  private readonly fallbackLoupeToCss = (error: unknown, context: string): void => {
+    console.error(context, error);
+    this.loupeRendererMode.set('css');
+    this.hdrLoupeActive.set(false);
+    this.hdrLoupeRenderer.dispose();
+    this.loupeCaptureError.set(error instanceof Error ? error.message : String(error));
+  };
+
   private readonly sampleLoupeAtPosition = (position: { screenX: number; screenY: number }, force = false) => {
     const geometry = this.loupeCaptureGeometry();
     const view = this.document.defaultView;
@@ -985,8 +993,7 @@ export class ImageView {
       })
       .catch(error => {
         if (request === this.loupeSampleRequest && this.loupeEnabled()) {
-          this.hdrLoupeActive.set(false);
-          this.loupeCaptureError.set(error instanceof Error ? error.message : String(error));
+          this.fallbackLoupeToCss(error, 'HDR loupe pixel capture failed; switching to CSS (SDR) mode.');
         }
       });
   };
@@ -1166,10 +1173,8 @@ export class ImageView {
       const lastMouse = this.lastMousePosition();
       if (lastMouse) this.sampleLoupeAtPosition(lastMouse, true);
     } catch (error) {
-      console.error('HDR loupe capture failed:', error);
       this.loupeCaptureGeometry.set(null);
-      this.loupeCaptureError.set(error instanceof Error ? error.message : String(error));
-      // Keep the visual magnifier enabled; only HDR pixel sampling is unavailable.
+      this.fallbackLoupeToCss(error, 'HDR loupe capture failed; switching to CSS (SDR) mode.');
     } finally {
       if (request === this.loupeCaptureRequest) this.loupeCapturePending.set(false);
     }
@@ -1204,9 +1209,7 @@ export class ImageView {
       }, brightness, zoom);
       this.hdrLoupeActive.set(this.loupeRendererMode() === 'webgpu');
     } catch (error) {
-      console.error('HDR WebGPU loupe render failed:', error);
-      this.hdrLoupeRenderer.dispose();
-      this.hdrLoupeActive.set(false);
+      this.fallbackLoupeToCss(error, 'HDR WebGPU loupe render failed; switching to CSS (SDR) mode.');
     }
   };
 
