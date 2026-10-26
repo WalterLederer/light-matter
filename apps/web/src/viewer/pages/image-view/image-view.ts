@@ -180,14 +180,11 @@ export class ImageView {
   protected readonly imageLoadFailed = signal(false);
 
   protected readonly loupeEnabled = signal(false);
-  protected readonly loupeFullImageView = signal(false);
-  protected readonly loupeFullImageBounds = signal({ left: 0, top: 0, width: 0, height: 0 });
 
   /** True only while the FP16 capture is successfully rendered through WebGPU. */
   protected readonly hdrLoupeActive = signal(false);
 
   private readonly hdrLoupeRenderer = new HdrLoupeRenderer();
-  private readonly hdrFullImageRenderer = new HdrLoupeRenderer();
   private readonly hdrImageAdjustmentRenderer = new HdrImageBrightnessRenderer();
   protected readonly hdrImageAdjustmentPending = signal(false);
   protected readonly hdrImageAdjustmentReady = signal(false);
@@ -210,8 +207,6 @@ export class ImageView {
   };
 
   protected readonly loupeShape = signal<'circular' | 'rectangular' | 'ruler' | 'vertical-ruler'>(this.readStoredLoupeShape());
-
-  protected readonly locationInfoExpanded = signal(this.readStoredBoolean('locationInfoExpanded', true));
 
   protected readonly loupeCapturePending = signal(false);
 
@@ -604,7 +599,6 @@ export class ImageView {
       this.loupeCaptureRequest++;
       this.loupeSampleRequest++;
       this.hdrLoupeRenderer.dispose();
-      this.hdrFullImageRenderer.dispose();
       this.hdrImageAdjustmentRenderer.dispose();
       this.hdrImageAdjustmentRequest++;
       this.desktop?.Loupe.release().catch(() => undefined);
@@ -815,23 +809,14 @@ export class ImageView {
     }
   };
 
-  protected readonly toggleLocationInfo = () => {
-    const value = !this.locationInfoExpanded();
-    this.locationInfoExpanded.set(value);
-    this.storeBoolean('locationInfoExpanded', value);
-  };
-
   protected readonly toggleLoupe = async (enabled: boolean) => {
     this.loupeEnabled.set(enabled);
-    this.loupeFullImageView.set(false);
-    this.hdrFullImageRenderer.dispose();
     this.loupeSample.set(null);
     this.loupeCaptureError.set(null);
     this.loupeSampleRequest++;
     if (!enabled) {
       this.hdrLoupeActive.set(false);
       this.hdrLoupeRenderer.dispose();
-      this.hdrFullImageRenderer.dispose();
       this.loupeCaptureRequest++;
       this.loupeCapturePending.set(false);
       this.loupeCaptureGeometry.set(null);
@@ -847,7 +832,7 @@ export class ImageView {
       const viewHeight = view.innerHeight;
       const shape = this.loupeShape();
       const loupeWidth = shape === 'ruler' ? 590 : 310;
-      const loupeHeight = (this.locationInfoExpanded() ? 430 : 310) + (shape === 'ruler' ? -180 : shape === 'vertical-ruler' ? 280 : 0);
+      const loupeHeight = (310) + (shape === 'ruler' ? -180 : shape === 'vertical-ruler' ? 280 : 0);
       const left = lastMouse.clientX > viewWidth - loupeWidth - 24 ? lastMouse.clientX - loupeWidth - 20 : lastMouse.clientX + 20;
       const top = lastMouse.clientY > viewHeight - loupeHeight - 24 ? lastMouse.clientY - loupeHeight - 20 : lastMouse.clientY + 20;
       this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
@@ -961,7 +946,7 @@ export class ImageView {
     const shape = this.loupeShape();
     const sizeScale = this.loupeSizeScale();
     const loupeWidth = (shape === 'ruler' ? 590 : shape === 'vertical-ruler' ? 130 : 310) * sizeScale;
-    const loupeHeight = ((this.locationInfoExpanded() ? 430 : 310) + (shape === 'ruler' ? -180 : shape === 'vertical-ruler' ? 280 : 0)) * sizeScale;
+    const loupeHeight = ((310) + (shape === 'ruler' ? -180 : shape === 'vertical-ruler' ? 280 : 0)) * sizeScale;
     const left = event.clientX > viewWidth - loupeWidth - 24 ? event.clientX - loupeWidth - 20 : event.clientX + 20;
     const top = event.clientY > viewHeight - loupeHeight - 24 ? event.clientY - loupeHeight - 20 : event.clientY + 20;
     this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
@@ -1129,12 +1114,6 @@ export class ImageView {
           y: geometry.height / geometry.windowHeight
         }
       });
-      if (this.loupeFullImageView()) {
-        await this.renderLoupeFullImage();
-      } else {
-        const lastMouse = this.lastMousePosition();
-        if (lastMouse) this.sampleLoupeAtPosition(lastMouse);
-      }
     } catch (error) {
       console.error('HDR loupe capture failed:', error);
       this.loupeCaptureGeometry.set(null);
@@ -1184,10 +1163,6 @@ export class ImageView {
     const next = this.loupeRendererMode() === 'css' ? 'webgpu' : 'css';
     this.loupeRendererMode.set(next);
     if (next === 'css') {
-      if (this.loupeFullImageView()) { this.loupeFullImageView.set(false); this.hdrFullImageRenderer.dispose(); }
-      this.hdrLoupeActive.set(false);
-      return;
-    }
 
     // Request a fresh FP16 sample instead of reusing a possibly stale sample.
     // The canvas is shown only after WebGPU successfully completes a render.
@@ -1219,29 +1194,12 @@ export class ImageView {
     }
     const next = Math.max(0.03, Math.min(9, Number((this.loupeBrightness() + direction * 0.1).toFixed(2))));
     this.loupeBrightness.set(next);
-    if (this.loupeFullImageView()) {
-      void this.renderLoupeFullImage();
-      return;
-    }
     const sample = this.loupeSample();
     if (sample) void this.renderHdrLoupe(sample);
   };
 
-  protected readonly adjustLoupeSize = (direction: 1 | -1) => {
-    if (direction > 0 && this.loupeSizeScale() >= 1.2) {
-      if (this.loupeRendererMode() !== 'webgpu') {
-        this.loupeCaptureError.set('Full-image FP16 view requires GPU/WebGPU mode.');
-        return;
-      }
-      // The normal loupe canvas is removed by the full-image template branch.
-      // Dispose its renderer now; PageDown will create a new canvas and renderer.
-      this.hdrLoupeRenderer.dispose();
-      this.loupeFullImageView.set(true);
-      void this.renderLoupeFullImage();
-      return;
-    }
-    const next = Math.max(0.5, Math.min(2, Number((this.loupeSizeScale() + direction * 0.1).toFixed(1))));
-    this.loupeSizeScale.set(next);
+  protected readonly setLoupeSize = (value: string | number) => {
+    this.loupeSizeScale.set(Math.max(0.5, Math.min(1.2, Number(value))));
     const mouse = this.lastMousePosition();
     if (this.loupeEnabled() && mouse) {
       this.onLoupeMouseMove(new MouseEvent('mousemove', {
@@ -1249,43 +1207,12 @@ export class ImageView {
         clientY: mouse.clientY,
         screenX: mouse.screenX,
         screenY: mouse.screenY
-      }));
+      }), true);
     }
   };
 
-  private readonly renderLoupeFullImage = async (): Promise<void> => {
-    const desktop = this.desktop;
-    const geometry = this.loupeCaptureGeometry();
-    const image = Array.from(this.document.querySelectorAll<HTMLImageElement>('.comparison-image:not(.hidden-variant)'))
-      .find(candidate => candidate.naturalWidth > 0 && candidate.naturalHeight > 0);
-    if (!desktop || !geometry || !image || !this.loupeEnabled() || !this.loupeFullImageView()) return;
-    if (this.loupeRendererMode() !== 'webgpu') { this.loupeCaptureError.set('Full-image FP16 view requires GPU/WebGPU mode.'); return; }
-    const bounds = image.getBoundingClientRect();
-    if (bounds.width < 1 || bounds.height < 1) return;
-    this.loupeFullImageBounds.set({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height });
-    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-    const canvas = this.document.querySelector<HTMLCanvasElement>('.hdr-loupe-full-frame-canvas');
-    if (!canvas || !this.loupeFullImageView() || !this.loupeEnabled()) return;
-    try {
-      const scale = geometry.scaleFactor;
-      const view = this.document.defaultView;
-      if (!view) return;
-      // DOM bounds are relative to the renderer content area. Use Electron's
-      // content origin in screen DIP coordinates, then subtract the captured
-      // display origin before converting to physical monitor pixels. This avoids
-      // including the title bar/window frame in the captured image rectangle.
-      const captureLeft = (geometry.contentX + bounds.left - geometry.x) * scale;
-      const captureTop = (geometry.contentY + bounds.top - geometry.y) * scale;
-      const region = await desktop.Loupe.region(captureLeft, captureTop, bounds.width * scale, bounds.height * scale);
-      if (!region || !this.loupeFullImageView() || !this.loupeEnabled()) return;
-      const zoom = Math.max(0.01, canvas.clientWidth / region.regionWidth);
-      await this.hdrFullImageRenderer.render(canvas, { width: region.regionWidth, height: region.regionHeight, centerX: region.regionWidth / 2, centerY: region.regionHeight / 2, data: region.data }, this.loupeBrightness() * HDR_WEBGPU_BRIGHTNESS_CORRECTION, zoom);
-      this.hdrLoupeActive.set(true); this.loupeCaptureError.set(null);
-    } catch (error) {
-      console.error('HDR full-image loupe render failed:', error);
-      this.hdrLoupeActive.set(false);
-      this.loupeCaptureError.set(error instanceof Error ? error.message : String(error));
-    }
+  protected readonly adjustLoupeSize = (direction: 1 | -1) => {
+    this.setLoupeSize(Number((this.loupeSizeScale() + direction * 0.1).toFixed(1)));
   };
 
   protected readonly adjustLoupeZoom = (direction: 1 | -1) => {
@@ -1523,41 +1450,6 @@ export class ImageView {
           return;
         }
 
-        if (this.loupeEnabled() && (event.key === 'PageUp' || event.key === 'PageDown')) {
-          event.preventDefault();
-          if (this.loupeFullImageView() && event.key === 'PageDown') {
-            // The regular loupe canvas was destroyed when Angular switched to
-            // the full-image branch. Release its WebGPU device/context so the
-            // newly-created canvas gets a fresh context on the next render.
-            this.hdrLoupeRenderer.dispose();
-            this.loupeFullImageView.set(false);
-            this.hdrFullImageRenderer.dispose();
-            this.hdrLoupeActive.set(false);
-            // Angular recreates the regular loupe canvas after the full-image
-            // branch is removed. Wait until that canvas exists before sampling
-            // and rendering; otherwise renderHdrLoupe sees no canvas and leaves
-            // the loupe black until the mouse moves again.
-            void new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
-              .then(() => {
-                if (!this.loupeEnabled() || this.loupeFullImageView()) return;
-                const mouse = this.lastMousePosition();
-                if (mouse) {
-                  // Re-run the complete mouse-move path, not just the capture
-                  // request: it also restores the source point and loupe layout
-                  // after the full-image overlay has intercepted pointer events.
-                  this.onLoupeMouseMove(new MouseEvent('mousemove', {
-                    clientX: mouse.clientX,
-                    clientY: mouse.clientY,
-                    screenX: mouse.screenX,
-                    screenY: mouse.screenY
-                  }), true);
-                }
-              });
-          } else if (this.loupeFullImageView()) { void this.renderLoupeFullImage(); }
-          else { this.adjustLoupeSize(event.key === 'PageUp' ? 1 : -1); }
-          return;
-        }
-
         if (event.key === '+' || event.key === '=' || event.key === 'Add') {
           event.preventDefault();
           if (this.loupeEnabled()) this.adjustLoupeZoom(1);
@@ -1590,12 +1482,6 @@ export class ImageView {
         if (event.key.toLowerCase() === 's') {
           event.preventDefault();
           this.toggleLoupeShape();
-          return;
-        }
-
-        if (this.loupeEnabled() && event.key.toLowerCase() === 'l') {
-          event.preventDefault();
-          this.toggleLocationInfo();
           return;
         }
 
