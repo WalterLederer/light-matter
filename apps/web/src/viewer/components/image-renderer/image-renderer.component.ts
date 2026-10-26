@@ -487,7 +487,9 @@ export class ImageRendererComponent implements OnInit, OnDestroy {
 
     try {
       this.pixelContext.clearRect(0, 0, 1, 1);
-      this.pixelContext.drawImage(imageElement, -x, -y);
+      // Sample the exact source pixel explicitly; negative destination offsets can
+      // be misleading when the displayed image is zoomed or transformed.
+      this.pixelContext.drawImage(imageElement, x, y, 1, 1, 0, 0, 1, 1);
       const pixel = this.pixelContext.getImageData(0, 0, 1, 1).data;
       const rgb = { r: pixel[0], g: pixel[1], b: pixel[2] };
       this.pixelDebugChange.emit(`OK ${imageElement.classList.contains('sdr-image') ? 'SDR' : 'HDR'} x=${x} y=${y} rgb=${rgb.r},${rgb.g},${rgb.b}`);
