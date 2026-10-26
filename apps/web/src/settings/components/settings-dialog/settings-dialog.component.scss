@@ -103,9 +103,20 @@
 
 :host {
   display: block;
-  width: min(94vw, 1100px);
-  max-height: 90vh;
-  overflow-y: auto;
+  width: 100%;
+  min-width: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+.settings-panel {
+  min-width: 0;
+  width: 100%;
+}
+
+.format-list {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 :host(.busy),
