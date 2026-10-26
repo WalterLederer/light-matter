@@ -7,7 +7,6 @@ import {
   ActionButtonComponent,
   ConfirmationDialogComponent,
   IconComponent,
-  InfoOverlayComponent,
   OverlayService,
   SliderComponent,
   TextComponent,
@@ -33,6 +32,8 @@ import {
 } from '../../services/image-positioning/image-positioning.types';
 import { ViewNavigator } from '../../services/view-navigator/view-navigator';
 
+const HDR_WEBGPU_BRIGHTNESS_CORRECTION = 0.4;
+
 @Component({
   selector: 'app-image-view',
   imports: [
@@ -45,8 +46,7 @@ import { ViewNavigator } from '../../services/view-navigator/view-navigator';
     SliderComponent,
     ReactiveFormsModule,
     DecimalPipe,
-    InfoOverlayComponent,
-    ExifInfoComponent
+      ExifInfoComponent
   ],
   templateUrl: './image-view.html',
   styleUrl: './image-view.scss',
@@ -237,6 +237,39 @@ export class ImageView {
   protected readonly greenChannelLevel = signal(1);
   protected readonly blueChannelLevel = signal(1);
   protected readonly controlsSidebarVisible = signal(true);
+  protected readonly sidebarWidth = signal(this.readStoredSidebarWidth());
+  private sidebarResizeCleanup: (() => void) | null = null;
+  private readonly readStoredSidebarWidth = (): number => {
+    try {
+      const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.imageSidebarWidth'));
+      return Number.isFinite(stored) && stored >= 280 ? Math.min(900, stored) : 340;
+    } catch {
+      return 340;
+    }
+  };
+  protected readonly startSidebarResize = (event: PointerEvent): void => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    this.sidebarResizeCleanup?.();
+    const view = this.document.defaultView;
+    if (!view) return;
+    const startX = event.clientX;
+    const startWidth = this.sidebarWidth();
+    const onMove = (moveEvent: PointerEvent): void => {
+      this.sidebarWidth.set(Math.max(280, Math.min(view.innerWidth * 0.7, startWidth + startX - moveEvent.clientX)));
+    };
+    const onUp = (): void => {
+      view.removeEventListener('pointermove', onMove);
+      view.removeEventListener('pointerup', onUp);
+      view.removeEventListener('pointercancel', onUp);
+      try { view.localStorage.setItem('light-matter.imageSidebarWidth', String(Math.round(this.sidebarWidth()))); } catch { /* Keep the current width for this session. */ }
+      this.sidebarResizeCleanup = null;
+    };
+    view.addEventListener('pointermove', onMove);
+    view.addEventListener('pointerup', onUp);
+    view.addEventListener('pointercancel', onUp);
+    this.sidebarResizeCleanup = onUp;
+  };
   protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, loupe: true, mode: true, histogram: false, info: false, general: false });
   protected readonly sidebarSectionExpanded = (key: string): boolean => this.sidebarSections()[key] === true;
   protected readonly toggleSidebarSection = (key: string): void => {
@@ -538,6 +571,7 @@ export class ImageView {
       });
 
     this.destroyRef.onDestroy(() => {
+      this.sidebarResizeCleanup?.();
       this.loupeResizeObserver?.disconnect();
       this.loupeResizeObserver = null;
       if (this.loupeResizeTimer !== null) clearTimeout(this.loupeResizeTimer);
@@ -1004,7 +1038,7 @@ export class ImageView {
     await this.hdrImageAdjustmentRenderer.render(
       canvas,
       region,
-      this.mainImageBrightness(),
+      this.mainImageBrightness() * HDR_WEBGPU_BRIGHTNESS_CORRECTION,
       this.hdrImageAdjustmentSourceKey,
       {
         contrast: this.imageContrast(),
@@ -1090,7 +1124,7 @@ export class ImageView {
     try {
       // The WebGPU loupe needs a 0.4 baseline to match normal image brightness.
       // Keep the correction control active by applying its relative value on top.
-      const brightness = this.loupeBrightness() * 0.4;
+      const brightness = this.loupeBrightness() * HDR_WEBGPU_BRIGHTNESS_CORRECTION;
       // Convert CSS/DIP loupe size to physical capture pixels using the official
       // Windows display scale factor (1.5 at 150% scaling in the current setup).
       const zoom = this.loupePixelSize() * (this.loupeCaptureGeometry()?.scaleFactor ?? 1) / this.loupeSizeScale();
@@ -1208,7 +1242,7 @@ export class ImageView {
       const region = await desktop.Loupe.region(captureLeft, captureTop, bounds.width * scale, bounds.height * scale);
       if (!region || !this.loupeFullImageView() || !this.loupeEnabled()) return;
       const zoom = Math.max(0.01, canvas.clientWidth / region.regionWidth);
-      await this.hdrFullImageRenderer.render(canvas, { width: region.regionWidth, height: region.regionHeight, centerX: region.regionWidth / 2, centerY: region.regionHeight / 2, data: region.data }, this.loupeBrightness() * 0.4, zoom);
+      await this.hdrFullImageRenderer.render(canvas, { width: region.regionWidth, height: region.regionHeight, centerX: region.regionWidth / 2, centerY: region.regionHeight / 2, data: region.data }, this.loupeBrightness() * HDR_WEBGPU_BRIGHTNESS_CORRECTION, zoom);
       this.hdrLoupeActive.set(true); this.loupeCaptureError.set(null);
     } catch (error) {
       console.error('HDR full-image loupe render failed:', error);
@@ -1239,11 +1273,12 @@ export class ImageView {
       });
   };
 
-  protected readonly toggleExifInfo = (path: string) => {
-    const exifVisible = !this.exifVisible();
-    this.exifVisible.set(exifVisible);
-    this.configuration.updateSystemConfig({ exifVisible });
-    this.exifState.set(exifVisible ? this.imageTags() ?? false : false);
+  protected readonly toggleExifInfo = (_path: string) => {
+    const sections = { ...this.sidebarSections(), info: !this.sidebarSectionExpanded('info') };
+    this.sidebarSections.set(sections);
+    this.configuration.updateSystemConfig({ imageSidebarSections: sections, exifVisible: sections.info });
+    this.exifVisible.set(sections.info);
+    this.exifState.set(sections.info ? this.imageTags() ?? false : false);
   };
 
   private readonly selectedImagePathForDebug = (): string => {

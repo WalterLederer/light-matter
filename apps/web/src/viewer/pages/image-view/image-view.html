@@ -163,7 +163,7 @@
   }
 
   @if (histogramVisible()) {
-    <section class="histogram-overlay" role="dialog" aria-label="SDR and HDR image histogram">
+    <section class="histogram-overlay" [style.right.px]="!fullScreen && controlsSidebarVisible() ? sidebarWidth() + 12 : 12" role="dialog" aria-label="SDR and HDR image histogram">
       <header>
         <strong>Histogram</strong>
         <button class="panel-close-button" type="button" title="Close histogram" aria-label="Close histogram" (click)="closeHistogram()">×</button>
@@ -288,48 +288,31 @@
     </ui-tool-menu>
   }
   @if (!fullScreen && !controlsSidebarVisible()) {
-    <button class="show-controls-sidebar" type="button" title="Bildsteuerung anzeigen" (click)="toggleControlsSidebar()">⚙</button>
+    <button class="show-controls-sidebar" type="button" title="Show image controls" aria-label="Show image controls" (click)="toggleControlsSidebar()">⚙</button>
   }
   @if (!fullScreen && controlsSidebarVisible()) {
-    <aside class="image-controls-sidebar" aria-label="Bildsteuerung">
-      <header><strong>Bildsteuerung</strong><div class="sidebar-header-actions"><button type="button" (click)="themeService.toggle()">{{themeService.current()==='dark'?'☀ Light':'☾ Dark'}}</button><button type="button" aria-label="Seitenleiste schließen" (click)="toggleControlsSidebar()">×</button></div></header>
+    <aside class="image-controls-sidebar" aria-label="Image controls" [style.width.px]="sidebarWidth()">
+      <header><strong>Image Controls</strong><div class="sidebar-header-actions"><button type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></div></header>
+      <div class="sidebar-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize sidebar" title="Drag to resize sidebar" (pointerdown)="startSidebarResize($event)"></div>
       <section><button class="section-heading" (click)="toggleSidebarSection('zoom')">Zoom {{sidebarSectionExpanded('zoom')?'−':'+'}}</button>
-        @if (sidebarSectionExpanded('zoom')) { <div class="control-row"><button (click)="adjustZoom(-1)">−</button>@if(loupeEnabled()){<ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64"/>} @else {<ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/>}<button (click)="adjustZoom(1)">+</button></div><button (click)="fitToWindow()" [disabled]="loupeEnabled()">An Fenster anpassen</button> }
+        @if (sidebarSectionExpanded('zoom')) { <div class="control-row"><button aria-label="Zoom out" (click)="adjustZoom(-1)">−</button>@if(loupeEnabled()){<ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64"/>} @else {<ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/>}<button aria-label="Zoom in" (click)="adjustZoom(1)">+</button></div><button (click)="fitToWindow()" [disabled]="loupeEnabled()">Fit to window</button> }
       </section>
-      <section><button class="section-heading" (click)="toggleSidebarSection('loupe')">Lupe {{sidebarSectionExpanded('loupe')?'−':'+'}}</button>
-        @if(sidebarSectionExpanded('loupe')) { <label><input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)"/> Lupe aktivieren (M)</label><div class="shape-row"><button [class.active]="loupeShape()==='circular'" title="Kreis" (click)="setLoupeShape('circular')">◯</button><button [class.active]="loupeShape()==='rectangular'" title="Rechteck" (click)="setLoupeShape('rectangular')">▭</button><button [class.active]="loupeShape()==='ruler'" title="Horizontales Lineal" (click)="setLoupeShape('ruler')">↔</button><button [class.active]="loupeShape()==='vertical-ruler'" title="Vertikales Lineal" (click)="setLoupeShape('vertical-ruler')">↕</button></div><label>Lupenhelligkeit</label><input type="range" min="0" max="2" step=".01" [value]="loupeBrightness()" (input)="setLoupeBrightness($any($event.target).value)"/><button (click)="toggleLoupeRenderer()">Lupen-Renderer: {{loupeRendererMode()==='webgpu'?'WebGPU':'CSS'}}</button> }
+      <section><button class="section-heading" (click)="toggleSidebarSection('loupe')">Magnifier {{sidebarSectionExpanded('loupe')?'−':'+'}}</button>
+        @if(sidebarSectionExpanded('loupe')) { <label><input type="checkbox" [checked]="loupeEnabled()" (change)="toggleLoupe($any($event.target).checked)"/> Enable magnifier (M)</label><div class="shape-row"><button [class.active]="loupeShape()==='circular'" title="Circle" (click)="setLoupeShape('circular')">◯</button><button [class.active]="loupeShape()==='rectangular'" title="Rectangle" (click)="setLoupeShape('rectangular')">▭</button><button [class.active]="loupeShape()==='ruler'" title="Horizontal ruler" (click)="setLoupeShape('ruler')">↔</button><button [class.active]="loupeShape()==='vertical-ruler'" title="Vertical ruler" (click)="setLoupeShape('vertical-ruler')">↕</button></div><label>Magnifier brightness</label><input type="range" min="0" max="2" step=".01" [value]="loupeBrightness()" (input)="setLoupeBrightness($any($event.target).value)"/><button (click)="toggleLoupeRenderer()">Magnifier renderer: {{loupeRendererMode()==='webgpu'?'WebGPU':'CSS'}}</button> }
       </section>
-      <section><button class="section-heading" (click)="toggleSidebarSection('brightness')">Helligkeit &amp; Kontrast {{sidebarSectionExpanded('brightness')?'−':'+'}}</button>
-        @if(sidebarSectionExpanded('brightness')) { <label>Helligkeit {{((mainImageBrightness()-1)*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/><label>Kontrast {{(imageContrast()*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/><button (click)="resetImageAdjustments()">Zurücksetzen</button> }
+      <section><button class="section-heading" (click)="toggleSidebarSection('brightness')">Brightness &amp; Contrast {{sidebarSectionExpanded('brightness')?'−':'+'}}</button>
+        @if(sidebarSectionExpanded('brightness')) { <label>Brightness {{((mainImageBrightness()-1)*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/><label>Contrast {{(imageContrast()*100).toFixed(0)}}%</label><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/><button (click)="resetImageAdjustments()">Reset</button> }
       </section>
-      <section><button class="section-heading" (click)="toggleSidebarSection('rgb')">RGB-Kanäle {{sidebarSectionExpanded('rgb')?'−':'+'}}</button>
-        @if(sidebarSectionExpanded('rgb')) { <label class="channel-control"><span><b class="red">R</b> Rot <span>{{(redChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="redChannelLevel()" (input)="setRedChannelLevel($any($event.target).value)"/></label><label class="channel-control"><span><b class="green">G</b> Grün <span>{{(greenChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="greenChannelLevel()" (input)="setGreenChannelLevel($any($event.target).value)"/></label><label class="channel-control"><span><b class="blue">B</b> Blau <span>{{(blueChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="blueChannelLevel()" (input)="setBlueChannelLevel($any($event.target).value)"/></label><button (click)="resetRgbChannels()">Alle Kanäle zurücksetzen</button> }
+      <section><button class="section-heading" (click)="toggleSidebarSection('rgb')">RGB channels {{sidebarSectionExpanded('rgb')?'−':'+'}}</button>
+        @if(sidebarSectionExpanded('rgb')) { <label class="channel-control"><span><b class="red">R</b> Red <span>{{(redChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="redChannelLevel()" (input)="setRedChannelLevel($any($event.target).value)"/></label><label class="channel-control"><span><b class="green">G</b> Green <span>{{(greenChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="greenChannelLevel()" (input)="setGreenChannelLevel($any($event.target).value)"/></label><label class="channel-control"><span><b class="blue">B</b> Blue <span>{{(blueChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="blueChannelLevel()" (input)="setBlueChannelLevel($any($event.target).value)"/></label><button (click)="resetRgbChannels()">Reset all channels</button> }
       </section>
-      <section><button class="section-heading" (click)="toggleSidebarSection('mode')">Ansichtsmodus {{sidebarSectionExpanded('mode')?'−':'+'}}</button>
-        @if(sidebarSectionExpanded('mode')) { <div class="mode-row"><button [class.active]="comparisonMode()==='hdr'" [disabled]="!isHdrImage" (click)="setComparisonMode('hdr')">HDR</button><button [class.active]="comparisonMode()==='sdr'" (click)="setComparisonMode('sdr')">SDR</button><button [class.active]="comparisonMode()==='side-by-side'" [disabled]="!isHdrImage" (click)="setComparisonMode('side-by-side')">◧ Nebeneinander</button><button [class.active]="comparisonMode()==='stacked'" [disabled]="!isHdrImage" (click)="setComparisonMode('stacked')">▤ Übereinander</button></div>@if(isHdrImage&&(comparisonMode()==='side-by-side'||comparisonMode()==='stacked')){<label>Teilung {{comparisonSplit()}}%</label><input type="range" min="1" max="99" [value]="comparisonSplit()" (input)="previewComparisonSplit($any($event.target).value)" (change)="setComparisonSplit($any($event.target).value)"/>} }
+      <section><button class="section-heading" (click)="toggleSidebarSection('mode')">View mode {{sidebarSectionExpanded('mode')?'−':'+'}}</button>
+        @if(sidebarSectionExpanded('mode')) { <div class="mode-row"><button [class.active]="comparisonMode()==='hdr'" [disabled]="!isHdrImage" (click)="setComparisonMode('hdr')">HDR</button><button [class.active]="comparisonMode()==='sdr'" (click)="setComparisonMode('sdr')">SDR</button><button [class.active]="comparisonMode()==='side-by-side'" [disabled]="!isHdrImage" (click)="setComparisonMode('side-by-side')">◧ Side by side</button><button [class.active]="comparisonMode()==='stacked'" [disabled]="!isHdrImage" (click)="setComparisonMode('stacked')">▤ Stacked</button></div>@if(isHdrImage&&(comparisonMode()==='side-by-side'||comparisonMode()==='stacked')){<label>Split {{comparisonSplit()}}%</label><input type="range" min="1" max="99" [value]="comparisonSplit()" (input)="previewComparisonSplit($any($event.target).value)" (change)="setComparisonSplit($any($event.target).value)"/>} }
       </section>
-      <section><button class="section-heading" (click)="toggleSidebarSection('histogram')">Histogramm {{sidebarSectionExpanded('histogram')?'−':'+'}}</button>@if(sidebarSectionExpanded('histogram')){<button (click)="toggleHistogram()">{{histogramVisible()?'Histogramm schließen':'Histogramm berechnen und öffnen'}}</button>}</section>
-      <section><button class="section-heading" (click)="toggleSidebarSection('info')">Bildinformationen {{sidebarSectionExpanded('info')?'−':'+'}}</button>@if(sidebarSectionExpanded('info')){<button (click)="toggleExifInfo(selected.path)">{{exifVisible()?'Informationen schließen':'Informationen öffnen'}}</button><p>{{imageDimensions().width}} × {{imageDimensions().height}} px</p><p class="path">{{selected.path}}</p>}</section>
-      <section><button class="section-heading" (click)="toggleSidebarSection('general')">Allgemeine Einstellungen {{sidebarSectionExpanded('general')?'−':'+'}}</button>@if(sidebarSectionExpanded('general')){<p class="path">Cache, Dateispeicherorte und weitere Debug-Optionen</p><button (click)="openGeneralSettings()">Cache &amp; Dateispeicherorte öffnen…</button>}</section>
+      <section><button class="section-heading" (click)="toggleSidebarSection('histogram')">Histogram {{sidebarSectionExpanded('histogram')?'−':'+'}}</button>@if(sidebarSectionExpanded('histogram')){<button (click)="toggleHistogram()">{{histogramVisible()?'Close histogram':'Calculate and open histogram'}}</button>}</section>
+      <section class="sidebar-image-information"><button class="section-heading" (click)="toggleSidebarSection('info')">Image information {{sidebarSectionExpanded('info')?'−':'+'}}</button>@if(sidebarSectionExpanded('info')){<app-exif-info [exif]="exif" [dimensions]="dimensions" [fileSize]="selected.size" [bitDepth]="imageBitDepth()" [path]="selected.path" [decoderName]="decoderForPath(selected.path)" [modifiedAt]="selected.modifiedAt" [loadDuration]="loadDuration()" [decodeDuration]="imageDecodeDuration()" [totalDuration]="imageTotalDuration()" [conversionDuration]="conversionDuration()" [fullSizeFromCache]="fullSizeFromCache()" [requiresConversion]="requiresConversion(selected.path)" />}</section>
+      <section><button class="section-heading" (click)="toggleSidebarSection('general')">General settings {{sidebarSectionExpanded('general')?'−':'+'}}</button>@if(sidebarSectionExpanded('general')){<p class="path">Cache, file locations, and additional diagnostics</p><button (click)="openGeneralSettings()">Open settings…</button>}</section>
     </aside>
   }
 
-  @if (exifVisible()) {
-    <ui-info-overlay>
-      <button class="panel-close-button exif-close-button" type="button" title="Close EXIF information" aria-label="Close EXIF information" (click)="toggleExifInfo(selected.path)">×</button>
-      <app-exif-info [exif]="exif"
-                     [dimensions]="dimensions"
-                     [fileSize]="selected.size"
-                     [bitDepth]="imageBitDepth()"
-                     [path]="selected.path"
-                     [decoderName]="decoderForPath(selected.path)"
-                     [modifiedAt]="selected.modifiedAt"
-                     [loadDuration]="loadDuration()"
-                     [decodeDuration]="imageDecodeDuration()"
-                     [totalDuration]="imageTotalDuration()"
-                     [conversionDuration]="conversionDuration()"
-                     [fullSizeFromCache]="fullSizeFromCache()"
-                     [requiresConversion]="requiresConversion(selected.path)" />
-    </ui-info-overlay>
-  }
-}
+remove info overlay}

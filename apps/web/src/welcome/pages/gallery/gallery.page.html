@@ -47,22 +47,29 @@
 </ui-side-panel>
 
 @if (!controlsSidebarVisible()) {
-  <button class="show-controls-sidebar" type="button" title="Allgemeine Einstellungen anzeigen" (click)="toggleControlsSidebar()">⚙</button>
+  <button class="show-controls-sidebar" type="button" title="Show general settings" (click)="toggleControlsSidebar()">⚙</button>
 }
 @if (controlsSidebarVisible()) {
-  <aside class="gallery-controls-sidebar" aria-label="Allgemeine Einstellungen">
-    <header><strong>Allgemeine Einstellungen</strong><div class="sidebar-header-actions"><button type="button" (click)="themeService.toggle()">{{themeService.current()==='dark'?'☀ Light':'☾ Dark'}}</button><button type="button" aria-label="Seitenleiste schließen" (click)="toggleControlsSidebar()">×</button></div></header>
+  <aside class="gallery-controls-sidebar" aria-label="General settings">
+    <header><strong>General settings</strong><div class="sidebar-header-actions"><button type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></div></header>
+    <section class="appearance-settings">
+      <strong>Appearance</strong>
+      <button class="theme-toggle-button" type="button" (click)="themeService.toggle()">
+        <span class="theme-toggle-icon" aria-hidden="true">{{themeService.current()==='dark'?'☀':'☾'}}</span>
+        <span>{{themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'}}</span>
+      </button>
+    </section>
     <section><button class="section-heading" (click)="toggleGeneralSection('cache')">Cache {{generalSectionExpanded('cache')?'−':'+'}}</button>
-      @if (generalSectionExpanded('cache')) { <p>{{cacheInfo().entries}} Dateien · {{cacheInfo().bytes}} Bytes</p><p class="path">{{cacheInfo().path}}</p><button (click)="openCacheFolder()">Cache-Ordner öffnen</button><button (click)="openSettings()">Cache verwalten…</button> }
+      @if (generalSectionExpanded('cache')) { <p>{{cacheInfo().entries}} files · {{cacheInfo().bytes}} bytes</p><p class="path">{{cacheInfo().path}}</p><button (click)="openCacheFolder()">Open cache folder</button><button (click)="openSettings()">Manage cache…</button> }
     </section>
-    <section><button class="section-heading" (click)="toggleGeneralSection('locations')">Dateispeicherorte {{generalSectionExpanded('locations')?'−':'+'}}</button>
-      @if (generalSectionExpanded('locations')) { <span>Konfigurationsdatei</span><p class="path">{{configPath() || 'Wird geladen…'}}</p><button (click)="openConfigFile()">Einstellungen öffnen</button><button (click)="openSettings()">Weitere Speicherorte…</button> }
+    <section><button class="section-heading" (click)="toggleGeneralSection('locations')">File locations {{generalSectionExpanded('locations')?'−':'+'}}</button>
+      @if (generalSectionExpanded('locations')) { <span>Configuration file</span><p class="path">{{configPath() || 'Loading…'}}</p><button (click)="openConfigFile()">Open settings file</button><button (click)="openSettings()">More locations…</button> }
     </section>
-    <section><button class="section-heading" (click)="toggleGeneralSection('debug')">Debug {{generalSectionExpanded('debug')?'−':'+'}}</button>
-      @if (generalSectionExpanded('debug')) { <p class="path">Zusätzliche Diagnoseoptionen sind im Einstellungsdialog verfügbar.</p><button (click)="openSettings()">Weitere Debug-Optionen…</button> }
+    <section><button class="section-heading" (click)="toggleGeneralSection('debug')">Diagnostics {{generalSectionExpanded('debug')?'−':'+'}}</button>
+      @if (generalSectionExpanded('debug')) { <p class="path">Additional diagnostic options are available in the settings dialog.</p><button (click)="openSettings()">More diagnostic options…</button> }
     </section>
     @if (generalSettingsError()) { <p class="general-settings-error">{{generalSettingsError()}}</p> }
-    <button (click)="refreshGeneralSettings()">Aktualisieren</button>
+    <button (click)="refreshGeneralSettings()">Refresh</button>
   </aside>
 }
 
