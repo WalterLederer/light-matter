@@ -9,6 +9,7 @@
 
 @if (selected !== null) {
   <app-image-renderer [url]="selected.url"
+                      [style.margin-right.px]="!fullScreen && controlsSidebarVisible() ? sidebarWidth() : 0"
                       [debugImageSwitching]="debugImageSwitching()"
                       (debugSwitchingPhase)="onDebugSwitchingPhase($event)"
                       [displayBrightness]="1"
