@@ -1,4 +1,3 @@
-import { Dialog } from '@angular/cdk/dialog';
 import { CdkMenu, CdkMenuItem } from '@angular/cdk/menu';
 import { AsyncPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
@@ -17,14 +16,12 @@ import {
   TreeNode,
   VerticalStackComponent
 } from '@light-matter/ui';
-import { CacheInfo, defaultThumbnailSize, FileInfo, SortDirection, SortType, ThumbnailSize } from 'internal-api';
+import { defaultThumbnailSize, FileInfo, SortDirection, SortType, ThumbnailSize } from 'internal-api';
 import { ImageGridComponent } from '../../../gallery/components/image-grid/image-grid.component';
 import { GalleryLocations } from '../../../gallery/services/gallery-locations/gallery-locations';
 import { GalleryState } from '../../../gallery/services/gallery-state/gallery-state';
 import { defaultSortMode, treeNode } from '../../../gallery/services/gallery-state/gallery-state.types';
 import { Dialogs } from '../../../ipc/dialogs';
-import { ProcessManager } from '../../../ipc/process-manager';
-import { CacheManager } from '../../../ipc/cache-manager';
 import { Configuration } from '../../../system/services/configuration/configuration';
 import { ThemeService } from '../../../system/services/theme/theme.service';
 import { take } from 'rxjs';
@@ -38,6 +35,7 @@ import { ViewNavigator } from '../../../viewer/services/view-navigator/view-navi
   imports: [
     AsyncPipe,
     ImageGridComponent,
+    SettingsDialogComponent,
     SidePanelComponent,
     TreeComponent,
     ActionButtonComponent,
@@ -58,17 +56,11 @@ export class GalleryPage {
   /* DI */
   private readonly galleryState = inject(GalleryState);
 
-  private readonly processManager = inject(ProcessManager);
-
-  private readonly cacheManager = inject(CacheManager);
-
   private readonly configuration = inject(Configuration);
 
   protected readonly themeService = inject(ThemeService);
 
   private readonly dialogs = inject(Dialogs);
-
-  private readonly dialog = inject(Dialog);
 
   private readonly galleryLocations = inject(GalleryLocations);
 
@@ -85,23 +77,29 @@ export class GalleryPage {
   protected readonly defaultThumbnailSize = defaultThumbnailSize;
 
   protected readonly controlsSidebarVisible = signal(true);
-  protected readonly generalSections = signal<Record<string, boolean>>({ cache: true, locations: true, debug: true });
-  protected readonly generalSectionExpanded = (key: string): boolean => this.generalSections()[key] === true;
-  protected readonly toggleGeneralSection = (key: string): void => {
-    const sections = { ...this.generalSections(), [key]: !this.generalSectionExpanded(key) };
-    this.generalSections.set(sections);
-    this.configuration.updateSystemConfig({ gallerySidebarSections: sections });
+  private readonly readStoredControlsSidebarWidth = (): number => {
+    try {
+      const stored = Number(globalThis.localStorage.getItem('light-matter.gallerySidebarWidth'));
+      return Number.isFinite(stored) && stored >= 280 ? stored : 320;
+    } catch { return 320; }
+  };
+  protected readonly controlsSidebarWidth = signal(this.readStoredControlsSidebarWidth());
+  protected readonly startControlsSidebarResize = (event: PointerEvent): void => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const view = globalThis.window;
+    const startX = event.clientX;
+    const startWidth = this.controlsSidebarWidth();
+    const move = (moveEvent: PointerEvent) => this.controlsSidebarWidth.set(Math.max(280, Math.min(view.innerWidth * 0.7, startWidth + startX - moveEvent.clientX)));
+    const end = () => {
+      view.removeEventListener('pointermove', move);
+      view.removeEventListener('pointerup', end);
+      try { view.localStorage.setItem('light-matter.gallerySidebarWidth', String(Math.round(this.controlsSidebarWidth()))); } catch { /* Keep session width. */ }
+    };
+    view.addEventListener('pointermove', move);
+    view.addEventListener('pointerup', end, { once: true });
   };
   protected readonly toggleControlsSidebar = (): void => this.controlsSidebarVisible.update(value => !value);
-  protected readonly cacheInfo = signal<CacheInfo>({ path: '', entries: 0, bytes: 0, fullSize: { entries: 0, bytes: 0 }, thumbnails: { entries: 0, bytes: 0 } });
-  protected readonly configPath = signal('');
-  protected readonly generalSettingsError = signal<string | null>(null);
-  protected readonly refreshGeneralSettings = async (): Promise<void> => {
-    try { this.cacheInfo.set(await this.cacheManager.cacheInfo()); this.configPath.set((await this.processManager.getSystemPaths()).appConfig); this.generalSettingsError.set(null); }
-    catch (error) { this.generalSettingsError.set(error instanceof Error ? error.message : String(error)); }
-  };
-  protected readonly openCacheFolder = async (): Promise<void> => { const error = await this.cacheManager.openCacheFolder(); if (error) this.generalSettingsError.set(error); };
-  protected readonly openConfigFile = async (): Promise<void> => { const error = await this.processManager.openConfigFile(); if (error) this.generalSettingsError.set(error); };
 
   /* State */
   readonly galleryRoot$ = this.galleryState.galleryRoot();
@@ -115,10 +113,6 @@ export class GalleryPage {
   readonly thumbSize$ = this.galleryState.thumbSize();
 
   constructor() {
-    this.configuration.config().pipe(take(1)).subscribe(config => {
-      this.generalSections.set({ cache: true, locations: true, debug: true, ...config.system.gallerySidebarSections });
-    });
-    void this.refreshGeneralSettings();
     this.processManager.getAppVersion()
       .then(version => this.processManager.setWindowTitle(`Light Matter - ${version}`))
       .catch(() => undefined);
@@ -149,8 +143,6 @@ export class GalleryPage {
         }
       )
       .subscribe(() => this.galleryLocations.removeLocation(data.id));
-
-  protected readonly openSettings = () => SettingsDialogComponent.open(this.dialog);
 
   protected readonly loadTreeNode = async (state: TreeLoadRequest<string>) => {
     const result = await this.galleryState.getDirContents(state.node.id);
