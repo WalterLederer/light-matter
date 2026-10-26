@@ -240,7 +240,7 @@
             </span>
           </div>
           <section class="loupe-sdr-info" aria-label="SDR pixel information">
-            <div class="loupe-info-subheading"><span class="loupe-rgb-swatch" [style.background-color]="pixelColor() ? 'rgb(' + pixelColor()?.r + ' ' + pixelColor()?.g + ' ' + pixelColor()?.b + ')' : 'transparent'" aria-hidden="true"></span> <span>SDR 0x</span></div>
+            <div class="loupe-info-subheading"><span class="loupe-rgb-swatch" [style.background-color]="pixelColor() ? 'rgb(' + pixelColor()?.r + ' ' + pixelColor()?.g + ' ' + pixelColor()?.b + ')' : 'transparent'" aria-hidden="true"></span><span>SDR 0x</span></div>
             @if (pixelColor(); as rgb) {
               <div class="loupe-channel-meters" aria-label="SDR RGB channel values and levels">
                 <div class="loupe-channel-meter">
@@ -265,7 +265,7 @@
             }
           </section>
           <section class="loupe-hdr-info" aria-label="HDR pixel information">
-            <div class="loupe-info-subheading"><span class="loupe-rgb-swatch" [style.background-color]="loupeHdrRgb() ? 'color(srgb-linear ' + loupeHdrRgb()!.r + ' ' + loupeHdrRgb()!.g + ' ' + loupeHdrRgb()!.b + ')' : 'transparent'" aria-hidden="true"></span> <span>HDR 0x</span></div>
+            <div class="loupe-info-subheading"><span class="loupe-rgb-swatch loupe-hdr-swatch-container" aria-hidden="true"><canvas class="loupe-hdr-swatch-canvas"></canvas></span><span>HDR 0x</span></div>
             @if (loupeHdrRgb(); as hdr) {
               <div class="loupe-channel-meters hdr-rgb-channels" aria-label="HDR RGB channel values and levels; scRGB 1.0 reference-white boundary; scale to 2000 nits">
                 <div class="loupe-channel-meter">
