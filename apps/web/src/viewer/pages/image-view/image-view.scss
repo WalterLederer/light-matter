@@ -822,6 +822,7 @@
 
   .image-controls-sidebar .location-heading {
     display: flex;
+    flex-wrap: wrap;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
@@ -886,6 +887,7 @@
 
   .image-controls-sidebar .coordinate-rgb-readout {
     display: flex;
+    flex: 1 0 100%;
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 2px 7px;
