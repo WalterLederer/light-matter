@@ -221,7 +221,9 @@ export class ImageView {
   protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, loupe: true, mode: true, histogram: false, info: false, general: false });
   protected readonly sidebarSectionExpanded = (key: string): boolean => this.sidebarSections()[key] === true;
   protected readonly toggleSidebarSection = (key: string): void => {
-    this.sidebarSections.update(current => ({ ...current, [key]: !current[key] }));
+    const sections = { ...this.sidebarSections(), [key]: !this.sidebarSectionExpanded(key) };
+    this.sidebarSections.set(sections);
+    this.configuration.updateSystemConfig({ imageSidebarSections: sections });
     if (key === 'histogram') {
       if (this.sidebarSections()[key] && !this.histogramVisible()) this.toggleHistogram();
       else if (!this.sidebarSections()[key] && this.histogramVisible()) this.closeHistogram();
@@ -468,6 +470,7 @@ export class ImageView {
     this.configuration.config()
       .pipe(take(1), takeUntilDestroyed())
       .subscribe(config => {
+        this.sidebarSections.set({ ...this.sidebarSections(), ...config.system.imageSidebarSections });
         this.histogramVisible.set(config.system.histogramVisible === true);
         const savedMode = config.system.comparisonMode ?? 'hdr';
         this.comparisonMode.set(savedMode === 'dual-side-by-side' || savedMode === 'dual-stacked' ? 'hdr' : savedMode);

@@ -56,6 +56,10 @@ export interface AppConfigV1System {
   exifVisible?: boolean;
   comparisonMode?: 'hdr' | 'sdr' | 'side-by-side' | 'stacked' | 'dual-side-by-side' | 'dual-stacked';
   comparisonSplit?: number;
+  /** Expanded/collapsed sections in the gallery's general-settings sidebar. */
+  gallerySidebarSections?: Record<string, boolean>;
+  /** Expanded/collapsed sections in the image-view controls sidebar. */
+  imageSidebarSections?: Record<string, boolean>;
   bounds?: {
     x: number;
     y: number;
@@ -84,6 +88,8 @@ export const isAppConfig: (input: unknown) => input is AppConfigV1 = (() => {
     && (undefined === input.exifVisible || 'boolean' === typeof input.exifVisible)
     && (undefined === input.comparisonMode || 'hdr' === input.comparisonMode || 'sdr' === input.comparisonMode || 'side-by-side' === input.comparisonMode || 'stacked' === input.comparisonMode || 'dual-side-by-side' === input.comparisonMode || 'dual-stacked' === input.comparisonMode)
     && (undefined === input.comparisonSplit || 'number' === typeof input.comparisonSplit && input.comparisonSplit >= 1 && input.comparisonSplit <= 99)
+    && (undefined === input.gallerySidebarSections || 'object' === typeof input.gallerySidebarSections && null !== input.gallerySidebarSections && Object.values(input.gallerySidebarSections).every((elem: any) => 'boolean' === typeof elem))
+    && (undefined === input.imageSidebarSections || 'object' === typeof input.imageSidebarSections && null !== input.imageSidebarSections && Object.values(input.imageSidebarSections).every((elem: any) => 'boolean' === typeof elem))
     && (undefined === input.bounds || 'object' === typeof input.bounds && null !== input.bounds && _io3(input.bounds));
   const _io3 = (input: any): boolean =>
     'number' === typeof input.x && 'number' === typeof input.y && 'number' === typeof input.width

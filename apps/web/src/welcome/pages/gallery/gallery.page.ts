@@ -25,6 +25,8 @@ import { defaultSortMode, treeNode } from '../../../gallery/services/gallery-sta
 import { Dialogs } from '../../../ipc/dialogs';
 import { ProcessManager } from '../../../ipc/process-manager';
 import { CacheManager } from '../../../ipc/cache-manager';
+import { Configuration } from '../../../system/services/configuration/configuration';
+import { take } from 'rxjs';
 import { SettingsDialogComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
 import { DefaultPipe } from '../../../system/pipes/default/default.pipe';
 import { ImageView } from '../../../viewer/pages/image-view/image-view';
@@ -59,6 +61,8 @@ export class GalleryPage {
 
   private readonly cacheManager = inject(CacheManager);
 
+  private readonly configuration = inject(Configuration);
+
   private readonly dialogs = inject(Dialogs);
 
   private readonly dialog = inject(Dialog);
@@ -80,7 +84,11 @@ export class GalleryPage {
   protected readonly controlsSidebarVisible = signal(true);
   protected readonly generalSections = signal<Record<string, boolean>>({ cache: true, locations: true, debug: true });
   protected readonly generalSectionExpanded = (key: string): boolean => this.generalSections()[key] === true;
-  protected readonly toggleGeneralSection = (key: string): void => this.generalSections.update(current => ({ ...current, [key]: !current[key] }));
+  protected readonly toggleGeneralSection = (key: string): void => {
+    const sections = { ...this.generalSections(), [key]: !this.generalSectionExpanded(key) };
+    this.generalSections.set(sections);
+    this.configuration.updateSystemConfig({ gallerySidebarSections: sections });
+  };
   protected readonly toggleControlsSidebar = (): void => this.controlsSidebarVisible.update(value => !value);
   protected readonly debugImageSwitching = signal(this.readDebugImageSwitching());
   protected readonly cacheInfo = signal<CacheInfo>({ path: '', entries: 0, bytes: 0, fullSize: { entries: 0, bytes: 0 }, thumbnails: { entries: 0, bytes: 0 } });
@@ -107,6 +115,9 @@ export class GalleryPage {
   readonly thumbSize$ = this.galleryState.thumbSize();
 
   constructor() {
+    this.configuration.config().pipe(take(1)).subscribe(config => {
+      this.generalSections.set({ cache: true, locations: true, debug: true, ...config.system.gallerySidebarSections });
+    });
     void this.refreshGeneralSettings();
     this.processManager.getAppVersion()
       .then(version => this.processManager.setWindowTitle(`Light Matter - ${version}`))
