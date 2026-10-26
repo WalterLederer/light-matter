@@ -50,7 +50,8 @@
   <button class="show-controls-sidebar" type="button" title="Show general settings" (click)="toggleControlsSidebar()">⚙</button>
 }
 @if (controlsSidebarVisible()) {
-  <aside class="gallery-controls-sidebar" aria-label="General settings">
+  <aside class="gallery-controls-sidebar" aria-label="General settings" [style.width.px]="controlsSidebarWidth()">
+     <div class="gallery-sidebar-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize general settings sidebar" title="Drag to resize sidebar" (pointerdown)="startControlsSidebarResize($event)"></div>
     <header><strong>General settings</strong><div class="sidebar-header-actions"><button type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></div></header>
     <section class="appearance-settings">
       <strong>Appearance</strong>
@@ -59,17 +60,7 @@
         <span>{{themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'}}</span>
       </button>
     </section>
-    <section><button class="section-heading" (click)="toggleGeneralSection('cache')">Cache {{generalSectionExpanded('cache')?'−':'+'}}</button>
-      @if (generalSectionExpanded('cache')) { <p>{{cacheInfo().entries}} files · {{cacheInfo().bytes}} bytes</p><p class="path">{{cacheInfo().path}}</p><button (click)="openCacheFolder()">Open cache folder</button><button (click)="openSettings()">Manage cache…</button> }
-    </section>
-    <section><button class="section-heading" (click)="toggleGeneralSection('locations')">File locations {{generalSectionExpanded('locations')?'−':'+'}}</button>
-      @if (generalSectionExpanded('locations')) { <span>Configuration file</span><p class="path">{{configPath() || 'Loading…'}}</p><button (click)="openConfigFile()">Open settings file</button><button (click)="openSettings()">More locations…</button> }
-    </section>
-    <section><button class="section-heading" (click)="toggleGeneralSection('debug')">Diagnostics {{generalSectionExpanded('debug')?'−':'+'}}</button>
-      @if (generalSectionExpanded('debug')) { <p class="path">Additional diagnostic options are available in the settings dialog.</p><button (click)="openSettings()">More diagnostic options…</button> }
-    </section>
-    @if (generalSettingsError()) { <p class="general-settings-error">{{generalSettingsError()}}</p> }
-    <button (click)="refreshGeneralSettings()">Refresh</button>
+    <app-settings-panel />
   </aside>
 }
 
