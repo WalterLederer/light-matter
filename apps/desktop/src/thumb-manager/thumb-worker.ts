@@ -571,10 +571,10 @@ if (parentPort) {
             height
           );
           using scrgb = cropped.copy({ interpretation: vips.Interpretation.scrgb });
-          scrgb.jpegsave(target, { Q: 80 });
+          scrgb.uhdrsave(target, { Q: 90 });
         } else {
           using scrgb = image.copy({ interpretation: vips.Interpretation.scrgb });
-          scrgb.jpegsave(target, { Q: 90 });
+          scrgb.uhdrsave(target, { Q: 90 });
         }
       } else if (sourceExtension === '.hdr') {
         using encodedHdr = vips.Image.newFromFile(source);
