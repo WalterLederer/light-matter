@@ -25,6 +25,7 @@ import { ProcessManager } from '../../../ipc/process-manager';
 import { defaultSortMode, treeNode } from '../../../gallery/services/gallery-state/gallery-state.types';
 import { Dialogs } from '../../../ipc/dialogs';
 import { ThemeService } from '../../../system/services/theme/theme.service';
+import { CapturePanelComponent } from '../../../capture/components/capture-panel/capture-panel.component';
 import { SettingsPanelComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
 import { DefaultPipe } from '../../../system/pipes/default/default.pipe';
 import { ImageView } from '../../../viewer/pages/image-view/image-view';
@@ -35,6 +36,7 @@ import { ViewNavigator } from '../../../viewer/services/view-navigator/view-navi
   imports: [
     AsyncPipe,
     ImageGridComponent,
+    CapturePanelComponent,
     SettingsPanelComponent,
     SidePanelComponent,
     TreeComponent,
