@@ -361,7 +361,7 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
     const sourceChannels = new Uint16Array(frame.buffer.buffer, frame.buffer.byteOffset, frame.buffer.byteLength / 2);
     let encoded: Buffer | Uint8Array;
     if (format === 'jxr') {
-      logPhase('pack RGB16F and encode JPEG XR');
+      logPhase('pack RGBA16F input and encode JPEG XR');
       // Keep the native RGBA16F layout. The Windows JPEG XR encoder reported
       // WINCODEC_ERR_INSUFFICIENTBUFFER when given a tightly packed RGB16F buffer.
       // Use the encoder's RGBA16F pixel format so channel order and row size agree.
@@ -371,7 +371,7 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
         const value = halfToFloat(sourceChannels[channelIndex]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
         rgba.writeUInt16LE(floatToHalf(value), channelIndex * 2);
       }
-      const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgba16F);
+      const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
       encoded = encoder.encode(rgba, frame.width, frame.height);
     } else {
       logPhase(`convert native RGBA16F to Float32 RGBA (${frame.width}x${frame.height}) without brightness correction`);
