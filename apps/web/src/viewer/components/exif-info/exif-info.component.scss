@@ -40,6 +40,15 @@
     user-select: none;
   }
 
+  /* Indent expandable rows inside Image information by nesting depth. */
+  > details > summary {
+    padding-left: 12px;
+  }
+
+  .measurement-details > summary {
+    padding-left: 24px;
+  }
+
   > details[open] > summary {
     margin-bottom: var(--dim-small);
   }
