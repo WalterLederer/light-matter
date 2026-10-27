@@ -16,7 +16,7 @@
           }
           @for (window of windows(); track window.handle) {
             <option [value]="'window:' + window.handle">
-              {{ window.title }} · {{ window.width }} × {{ window.height }}
+              {{ windowExecutableName(window) }} · {{ window.title }} · {{ window.width }} × {{ window.height }}
             </option>
           }
         </select>
