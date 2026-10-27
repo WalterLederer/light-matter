@@ -88,6 +88,7 @@
          [style.filter]="(brightnessRendererMode() === 'css' || gpuHdrBrightnessFailed()) && displayBrightness() !== 1 ? 'brightness(' + displayBrightness() + ')' : null"
          [src]="imageUrl"
          crossorigin="anonymous"
+         style="dynamic-range-limit: no-limit"
          (mousedown)="onMouseDown($event)">
       <canvas class="comparison-image hdr-image hdr-gpu-image"
          [style.visibility]="brightnessRendererMode() === 'webgpu' && displayBrightness() !== 1 && !gpuHdrBrightnessFailed() ? 'visible' : 'hidden'"
