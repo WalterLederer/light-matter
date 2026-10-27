@@ -39,6 +39,7 @@ export class CapturePanelComponent {
   protected readonly error = signal<string | null>(null);
   protected readonly toggleExpanded = (): void => this.expanded.update(value => !value);
   protected readonly changeTarget = (value: string): void => {
+    this.disposeHdrPreview();
     this.selectedTarget.set(value);
     this.previewFrame.set(null);
     this.previewSize.set('');
@@ -57,6 +58,7 @@ export class CapturePanelComponent {
         if (!this.destinationFolder()) this.destinationFolder.set(path);
       });
 
+    this.destroyRef.onDestroy(() => this.disposeHdrPreview());
     effect(() => {
       const frame = this.previewFrame();
       const canvas = this.previewCanvas()?.nativeElement;
