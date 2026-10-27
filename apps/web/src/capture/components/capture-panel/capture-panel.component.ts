@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CaptureMonitor, CaptureTarget, CaptureWindow } from 'internal-api';
 import { filter, firstValueFrom, take } from 'rxjs';
@@ -29,18 +29,6 @@ export class CapturePanelComponent {
   protected readonly capturing = signal(false);
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
-  protected readonly selectedLabel = computed(() => {
-    const value = this.selectedTarget();
-    if (value.startsWith('monitor:')) {
-      const index = Number(value.slice('monitor:'.length));
-      const monitor = this.monitors().find(item => item.index === index);
-      return monitor ? `Monitor ${monitor.index} · ${monitor.width} × ${monitor.height}` : 'Monitor';
-    }
-    const handle = Number(value.slice('window:'.length));
-    const window = this.windows().find(item => item.handle === handle);
-    return window ? window.title : 'Application window';
-  });
-
   constructor() {
     this.galleryState.selectedLocation()
       .pipe(
