@@ -217,6 +217,7 @@
     <aside class="image-controls-sidebar" aria-label="Image controls" [style.width.px]="sidebarWidth()">
       <header><strong>Image Controls</strong><div class="sidebar-header-actions"><button type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></div></header>
       <div class="sidebar-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize sidebar" title="Drag to resize sidebar" (pointerdown)="startSidebarResize($event)"></div>
+      <app-capture-panel />
       <section><button class="section-heading" (click)="toggleSidebarSection('zoom')"><span class="section-chevron">{{sidebarSectionExpanded('zoom') ? 'v' : '>'}}</span>Zoom</button>
         @if (sidebarSectionExpanded('zoom')) { <div class="control-row"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div><button (click)="fitToWindow()">Fit to window</button> }
       </section>
