@@ -240,6 +240,9 @@
               <label><input type="checkbox" [checked]="invertAllRgbChannels()" (change)="setInvertAllRgbChannels($any($event.target).checked)"/> All</label>
             </div>
           </div>
+          <section class="tone-curve-section">
+            <button class="section-heading" (click)="toggleSidebarSection('toneCurve')"><span class="section-chevron">{{sidebarSectionExpanded('toneCurve') ? 'v' : '>'}}</span>Tone curve</button>
+            @if (sidebarSectionExpanded('toneCurve')) {
           <div class="tone-curve-controls">
             <div class="correction-subheading">Tone curve</div>
             <svg class="tone-curve" viewBox="0 0 120 72" role="img" aria-label="Tone curve with adjustable black and white points">
@@ -249,6 +252,8 @@
             <label class="channel-control"><span><span>Black point</span><span>{{(blackPoint()*100).toFixed(0)}}%</span></span><input type="range" min="0" [max]="whitePoint() - 0.01" step=".005" [value]="blackPoint()" (input)="setBlackPoint($any($event.target).value)"/></label>
             <label class="channel-control"><span><span>White point</span><span>{{(whitePoint()*100).toFixed(0)}}%</span></span><input type="range" [min]="blackPoint() + 0.01" max="2" step=".01" [value]="whitePoint()" (input)="setWhitePoint($any($event.target).value)"/></label>
           </div>
+            }
+          </section>
           <button (click)="resetCorrections()">Reset corrections</button>
         }
       </section>
