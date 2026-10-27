@@ -1,6 +1,5 @@
 import { app, desktopCapturer, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
 import { enumerateMonitors, enumerateWindows, ImageEncoder, ImageEncoderPixelFormat, ImageFormat, ScreenCapture } from '@screen-capture/node';
-import { deflateSync } from 'node:zlib';
 import { encodeExr, init as initExr } from 'exrs';
 import { CaptureResult, CaptureSources, CaptureTarget, FileListing, supportedFileExtensions } from 'internal-api';
 import * as fsSync from 'node:fs';
@@ -24,6 +23,76 @@ const halfToFloat = (half: number): number => {
 };
 
 const CAPTURE_BRIGHTNESS_CORRECTION = 0.4;
+
+interface CapturedHdrFrame {
+  targetKey: string;
+  width: number;
+  height: number;
+  buffer: Buffer;
+}
+
+let cachedHdrFrame: CapturedHdrFrame | null = null;
+
+const captureTargetKey = (target: CaptureTarget): string => target.kind === 'monitor'
+  ? `monitor:${target.index}`
+  : `window:${target.handle}`;
+
+const captureHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame> => {
+  if (process.platform !== 'win32') throw new Error('HDR capture is currently supported on Windows only.');
+  if (target?.kind !== 'monitor' && target?.kind !== 'window') throw new Error('Choose a monitor or application window to capture.');
+  const targetKey = captureTargetKey(target);
+  const options = target.kind === 'monitor' ? { monitorIndex: target.index } : { windowHandle: target.handle };
+  const capture = new ScreenCapture({
+    ...options,
+    colorFormat: 'rgba16F' as unknown as ConstructorParameters<typeof ScreenCapture>[0]['colorFormat'],
+    cursorCapture: false,
+    drawBorder: false,
+    minimumUpdateIntervalMs: 0
+  });
+  let phase = 'initialize capture';
+  const logPhase = (nextPhase: string): void => {
+    phase = nextPhase;
+    console.info(`[HDR Capture] ${phase}`);
+  };
+  try {
+    logPhase('start native capture session');
+    await capture.start();
+    logPhase('wait for first FP16 frame');
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const frame = await Promise.race([
+      capture.nextFrame(),
+      new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new Error('Timed out waiting for the HDR capture frame.')), 10000); })
+    ]).finally(() => { if (timeout !== undefined) clearTimeout(timeout); });
+    if (!frame) throw new Error('The selected capture source is no longer available.');
+    logPhase('validate FP16 frame');
+    if (frame.colorFormat !== 'rgba16F' || frame.rowPitch !== frame.width * 8 || frame.buffer.byteLength !== frame.width * frame.height * 8) {
+      throw new Error('The capture did not return the expected packed FP16 HDR frame.');
+    }
+    const captured: CapturedHdrFrame = {
+      targetKey,
+      width: frame.width,
+      height: frame.height,
+      buffer: Buffer.from(frame.buffer)
+    };
+    cachedHdrFrame = captured;
+    logPhase(`FP16 HDR frame ready (${frame.width}x${frame.height})`);
+    return captured;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`[HDR Capture] Failed during "${phase}": ${message}`);
+  } finally {
+    await capture.stop().catch(() => undefined);
+  }
+};
+
+const getHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame> => {
+  const key = captureTargetKey(target);
+  if (cachedHdrFrame?.targetKey === key) {
+    console.info('[HDR Capture] reuse cached FP16 HDR frame');
+    return cachedHdrFrame;
+  }
+  return captureHdrFrame(target);
+};
 const halfConversionBuffer = new ArrayBuffer(4);
 const halfConversionFloat = new Float32Array(halfConversionBuffer);
 const halfConversionBits = new Uint32Array(halfConversionBuffer);
@@ -43,59 +112,7 @@ const floatToHalf = (value: number): number => {
   return sign | (exponent << 10) | ((mantissa + 0x1000) >> 13);
 };
 
-const crc32 = (buffer: Buffer): number => {
-  let crc = 0xffffffff;
-  for (const byte of buffer) {
-    crc ^= byte;
-    for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-};
 
-const makePngChunk = (type: string, data: Buffer): Buffer => {
-  const typeBuffer = Buffer.from(type, 'ascii');
-  const body = Buffer.concat([typeBuffer, data]);
-  const header = Buffer.alloc(4);
-  header.writeUInt32BE(data.length, 0);
-  const checksum = Buffer.alloc(4);
-  checksum.writeUInt32BE(crc32(body), 0);
-  return Buffer.concat([header, body, checksum]);
-};
-
-const makeCapturePreview = (frame: { width: number; height: number; buffer: Buffer }): string => {
-  const previewWidth = Math.min(640, frame.width);
-  const previewHeight = Math.max(1, Math.round(frame.height * previewWidth / frame.width));
-  const scanlines = Buffer.alloc((previewWidth * 4 + 1) * previewHeight);
-  for (let y = 0; y < previewHeight; y++) {
-    const sourceY = Math.min(frame.height - 1, Math.floor((y + 0.5) * frame.height / previewHeight));
-    const row = y * (previewWidth * 4 + 1);
-    scanlines[row] = 0;
-    for (let x = 0; x < previewWidth; x++) {
-      const sourceX = Math.min(frame.width - 1, Math.floor((x + 0.5) * frame.width / previewWidth));
-      const sourceOffset = (sourceY * frame.width + sourceX) * 8;
-      const targetOffset = row + 1 + x * 4;
-      for (let channel = 0; channel < 3; channel++) {
-        const linear = Math.max(0, halfToFloat(frame.buffer.readUInt16LE(sourceOffset + channel * 2)) * CAPTURE_BRIGHTNESS_CORRECTION);
-        const mapped = linear / (1 + linear);
-        const srgb = mapped <= 0.0031308 ? mapped * 12.92 : 1.055 * Math.pow(mapped, 1 / 2.4) - 0.055;
-        scanlines[targetOffset + channel] = Math.max(0, Math.min(255, Math.round(srgb * 255)));
-      }
-      scanlines[targetOffset + 3] = 255;
-    }
-  }
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(previewWidth, 0);
-  ihdr.writeUInt32BE(previewHeight, 4);
-  ihdr[8] = 8;
-  ihdr[9] = 6;
-  const png = Buffer.concat([
-    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    makePngChunk('IHDR', ihdr),
-    makePngChunk('IDAT', deflateSync(scanlines)),
-    makePngChunk('IEND', Buffer.alloc(0))
-  ]);
-  return `data:image/png;base64,${png.toString('base64')}`;
-};
 
 export default class ElectronEvents {
   static bootstrapElectronEvents(): Electron.IpcMain {
@@ -316,95 +333,29 @@ ipcMain.handle('Capture.chooseFolder', async (_event, initialPath?: string): Pro
   return result.canceled || result.filePaths.length === 0 ? null : result.filePaths[0];
 });
 
-ipcMain.handle('Capture.preview', async (_event, target: CaptureTarget): Promise<{ width: number; height: number; dataUrl: string }> => {
-  if (process.platform !== 'win32') throw new Error('HDR preview capture is currently supported on Windows only.');
-  if (target?.kind !== 'monitor' && target?.kind !== 'window') throw new Error('Choose a monitor or application window to preview.');
-  const options = target.kind === 'monitor' ? { monitorIndex: target.index } : { windowHandle: target.handle };
-  const capture = new ScreenCapture({
-    ...options,
-    colorFormat: 'rgba16F' as unknown as ConstructorParameters<typeof ScreenCapture>[0]['colorFormat'],
-    cursorCapture: false,
-    drawBorder: false,
-    minimumUpdateIntervalMs: 0
-  });
-  try {
-    await capture.start();
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    const frame = await Promise.race([
-      capture.nextFrame(),
-      new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new Error('Timed out waiting for the HDR preview frame.')), 10000); })
-    ]).finally(() => { if (timeout !== undefined) clearTimeout(timeout); });
-    if (!frame) throw new Error('The selected preview source is no longer available.');
-    if (frame.colorFormat !== 'rgba16F' || frame.rowPitch !== frame.width * 8 || frame.buffer.byteLength !== frame.width * frame.height * 8) {
-      throw new Error('The preview did not return the expected packed FP16 HDR frame.');
-    }
-    return { width: frame.width, height: frame.height, dataUrl: makeCapturePreview(frame) };
-  } finally {
-    await capture.stop().catch(() => undefined);
-  }
+ipcMain.handle('Capture.preview', async (_event, target: CaptureTarget): Promise<{ width: number; height: number; pixels: Uint16Array }> => {
+  console.info('[HDR Capture] preview requested');
+  const frame = await getHdrFrame(target);
+  // Copy the packed FP16 pixels into an aligned typed array for structured-clone IPC.
+  const pixels = new Uint16Array(frame.buffer.buffer.slice(frame.buffer.byteOffset, frame.buffer.byteOffset + frame.buffer.byteLength));
+  console.info(`[HDR Capture] send FP16 frame to WebGPU preview (${frame.width}x${frame.height})`);
+  return { width: frame.width, height: frame.height, pixels };
 });
 
 ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: string, format: 'exr' | 'jxr' = 'exr'): Promise<CaptureResult> => {
   if (format !== 'exr' && format !== 'jxr') throw new Error('Choose EXR or JXR as the capture format.');
-  if (process.platform !== 'win32') {
-    throw new Error('HDR capture is currently supported on Windows only.');
-  }
-  if (!folder || !path.isAbsolute(folder)) {
-    throw new Error('Choose a valid destination folder before capturing.');
-  }
-  if (target?.kind !== 'monitor' && target?.kind !== 'window') {
-    throw new Error('Choose a monitor or application window to capture.');
-  }
+  if (process.platform !== 'win32') throw new Error('HDR capture is currently supported on Windows only.');
+  if (!folder || !path.isAbsolute(folder)) throw new Error('Choose a valid destination folder before capturing.');
+  if (target?.kind !== 'monitor' && target?.kind !== 'window') throw new Error('Choose a monitor or application window to capture.');
 
-  const options = target.kind === 'monitor'
-    ? { monitorIndex: target.index }
-    : { windowHandle: target.handle };
-  const capture = new ScreenCapture({
-    ...options,
-    colorFormat: 'rgba16F' as unknown as ConstructorParameters<typeof ScreenCapture>[0]['colorFormat'],
-    cursorCapture: false,
-    drawBorder: false,
-    minimumUpdateIntervalMs: 0
-  });
-
-  let phase = 'initialize capture';
+  let phase = 'get FP16 HDR frame';
   const logPhase = (nextPhase: string): void => {
     phase = nextPhase;
     console.info(`[HDR Capture] ${phase}`);
   };
-
   try {
-    logPhase('start native capture session');
-    await capture.start();
-
-    logPhase('wait for first FP16 frame');
-    let captureTimeout: ReturnType<typeof setTimeout> | undefined;
-    const frame = await Promise.race([
-      capture.nextFrame(),
-      new Promise<never>((_, reject) => {
-        captureTimeout = setTimeout(() => reject(new Error('Timed out waiting for the HDR capture frame.')), 10000);
-      })
-    ]).finally(() => {
-      if (captureTimeout !== undefined) clearTimeout(captureTimeout);
-    });
-    if (!frame) throw new Error('The selected capture source is no longer available.');
-
-    logPhase('validate FP16 frame');
-    if (frame.colorFormat !== 'rgba16F' || frame.rowPitch !== frame.width * 8 ||
-        frame.buffer.byteLength !== frame.width * frame.height * 8) {
-      throw new Error('The capture did not return the expected packed FP16 HDR frame.');
-    }
-
-    logPhase('prepare corrected FP16 frame');
-    if ((frame.buffer.byteOffset & 1) !== 0 || (frame.buffer.byteLength & 1) !== 0) {
-      throw new Error('The FP16 frame buffer is not aligned to 16-bit channel boundaries.');
-    }
-    const sourceChannels = new Uint16Array(
-      frame.buffer.buffer,
-      frame.buffer.byteOffset,
-      frame.buffer.byteLength / 2
-    );
-
+    const frame = await getHdrFrame(target);
+    const sourceChannels = new Uint16Array(frame.buffer.buffer, frame.buffer.byteOffset, frame.buffer.byteLength / 2);
     let encoded: Buffer | Uint8Array;
     if (format === 'jxr') {
       logPhase('apply brightness correction and encode JPEG XR');
@@ -414,8 +365,6 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
         const value = halfToFloat(sourceChannels[channelIndex]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
         corrected.writeUInt16LE(floatToHalf(value), channelIndex * 2);
       }
-      // Keep all four 16-bit channels. The native RGB16F encoder expects a
-      // packed 8-byte-per-pixel buffer; a 6-byte RGB-only buffer is too small.
       const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
       encoded = encoder.encode(corrected, frame.width, frame.height);
     } else {
@@ -425,7 +374,6 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
         const channel = source % 4;
         rgba[source] = halfToFloat(sourceChannels[source]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
       }
-      logPhase('FP16 to Float32 RGBA conversion complete');
       logPhase('initialize OpenEXR encoder');
       exrInitPromise ??= initExr();
       await exrInitPromise;
@@ -436,26 +384,17 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
         layers: [{ name: 'rgba', channelNames: ['R', 'G', 'B', 'A'], interleavedPixels: rgba, precision: 'f32', compression: 'piz' }]
       });
     }
-
     logPhase(`write ${format.toUpperCase()} file`);
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const baseName = `LightMatter_Capture_${stamp}`;
     let outputPath = path.join(folder, `${baseName}.${format}`);
     let suffix = 1;
-    while (fsSync.existsSync(outputPath)) {
-      outputPath = path.join(folder, `${baseName}_${suffix++}.${format}`);
-    }
+    while (fsSync.existsSync(outputPath)) outputPath = path.join(folder, `${baseName}_${suffix++}.${format}`);
     await fs.writeFile(outputPath, encoded, { flag: 'wx' });
     return { path: outputPath, width: frame.width, height: frame.height };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[HDR Capture] Failed during "${phase}": ${message}`);
-    throw new Error(`HDR capture failed during "${phase}": ${message}`);
-  } finally {
-    logPhase('stop native capture session');
-    await capture.stop().catch((error: unknown) => {
-      console.error('[HDR Capture] Failed to stop native capture session:', error);
-    });
+    throw new Error(`[HDR Capture] Failed during "${phase}": ${message}`);
   }
 });
 
