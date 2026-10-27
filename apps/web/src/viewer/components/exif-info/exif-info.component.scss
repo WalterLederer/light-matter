@@ -110,8 +110,13 @@
   cursor: pointer;
 }
 
-.copy-path-button:hover {
+.copy-path-button:hover:not(:disabled) {
   background: var(--color-background-hover, rgb(128 128 128 / 18%));
+}
+
+.copy-path-button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .copy-path-icon { font-size: 1.15em; }
