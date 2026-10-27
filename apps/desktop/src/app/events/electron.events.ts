@@ -148,7 +148,7 @@ ipcMain.handle('Loupe.sample', (_event, x: number, y: number, radius?: number) =
 ipcMain.handle('Loupe.region', (_event, x: number, y: number, width: number, height: number) => sampleLoupeRectangle(x, y, width, height));
 ipcMain.handle('Loupe.release', () => releaseLoupeFrame());
 
-ipcMain.handle('Capture.listSources', (): CaptureSources => {
+ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
   if (process.platform !== 'win32') {
     throw new Error('HDR capture of individual windows and monitors is currently supported on Windows only.');
   }
