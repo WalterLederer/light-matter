@@ -317,7 +317,7 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
     const encoded = encodeExr({
       width: frame.width,
       height: frame.height,
-      layers: [{ name: 'rgba', channels: 'rgba', data: rgba }]
+      layers: [{ name: 'rgba', channelNames: ['R', 'G', 'B', 'A'], interleavedPixels: rgba, precision: 'f32', compression: 'piz' }]
     });
 
     logPhase('write OpenEXR file');
@@ -326,7 +326,7 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
     let outputPath = path.join(folder, `${baseName}.exr`);
     let suffix = 1;
     while (fsSync.existsSync(outputPath)) {
-      outputPath = path.join(folder, `${baseName}_${suffix++}.jxr`);
+      outputPath = path.join(folder, `${baseName}_${suffix++}.exr`);
     }
     await fs.writeFile(outputPath, encoded, { flag: 'wx' });
     return { path: outputPath, width: frame.width, height: frame.height };
