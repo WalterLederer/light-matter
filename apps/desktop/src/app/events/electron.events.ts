@@ -241,7 +241,35 @@ ipcMain.handle('Capture.chooseFolder', async (_event, initialPath?: string): Pro
   return result.canceled || result.filePaths.length === 0 ? null : result.filePaths[0];
 });
 
-ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: string): Promise<CaptureResult> => {
+ipcMain.handle('Capture.preview', async (_event, target: CaptureTarget): Promise<{ width: number; height: number; dataUrl: string }> => {
+  if (process.platform !== 'win32') throw new Error('HDR preview capture is currently supported on Windows only.');
+  if (target?.kind !== 'monitor' && target?.kind !== 'window') throw new Error('Choose a monitor or application window to preview.');
+  const options = target.kind === 'monitor' ? { monitorIndex: target.index } : { windowHandle: target.handle };
+  const capture = new ScreenCapture({
+    ...options,
+    colorFormat: 'rgba16F' as unknown as ConstructorParameters<typeof ScreenCapture>[0]['colorFormat'],
+    cursorCapture: false,
+    drawBorder: false,
+    minimumUpdateIntervalMs: 0
+  });
+  try {
+    await capture.start();
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const frame = await Promise.race([
+      capture.nextFrame(),
+      new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new Error('Timed out waiting for the HDR preview frame.')), 10000); })
+    ]).finally(() => { if (timeout !== undefined) clearTimeout(timeout); });
+    if (!frame) throw new Error('The selected preview source is no longer available.');
+    if (frame.colorFormat !== 'rgba16F' || frame.rowPitch !== frame.width * 8 || frame.buffer.byteLength !== frame.width * frame.height * 8) {
+      throw new Error('The preview did not return the expected packed FP16 HDR frame.');
+    }
+    return { width: frame.width, height: frame.height, dataUrl: makeCapturePreview(frame) };
+  } finally {
+    await capture.stop().catch(() => undefined);
+  }
+});
+
+ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: string, format: 'exr' | 'jxr' = 'exr'): Promise<CaptureResult> => {
   if (process.platform !== 'win32') {
     throw new Error('HDR capture is currently supported on Windows only.');
   }
@@ -291,7 +319,7 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
       throw new Error('The capture did not return the expected packed FP16 HDR frame.');
     }
 
-    logPhase(`convert RGBA16F to Float32 RGBA (${frame.width}x${frame.height})`);
+    logPhase(`apply brightness correction and convert RGBA16F (${frame.width}x${frame.height})`);
     // OpenEXR's encoder accepts Float32 RGBA values. Convert the captured IEEE-754
     // half-float bit patterns to numeric float values; copying the raw bits would
     // corrupt HDR values. Keep all four channels from the captured frame.
@@ -305,7 +333,8 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
     );
     const rgba = new Float32Array(frame.width * frame.height * 4);
     for (let source = 0; source < sourceChannels.length; source++) {
-      rgba[source] = halfToFloat(sourceChannels[source]);
+      const channel = source % 4;
+      rgba[source] = halfToFloat(sourceChannels[source]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
     }
 
     logPhase('FP16 to Float32 RGBA conversion complete');
@@ -313,20 +342,36 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
     exrInitPromise ??= initExr();
     await exrInitPromise;
 
-    logPhase('encode OpenEXR');
-    const encoded = encodeExr({
-      width: frame.width,
-      height: frame.height,
-      layers: [{ name: 'rgba', channelNames: ['R', 'G', 'B', 'A'], interleavedPixels: rgba, precision: 'f32', compression: 'piz' }]
-    });
+    let encoded: Buffer | Uint8Array;
+    if (format === 'jxr') {
+      logPhase('encode JPEG XR from corrected RGBA16F');
+      const corrected = Buffer.allocUnsafe(frame.buffer.byteLength);
+      for (let pixel = 0; pixel < sourceChannels.length; pixel++) {
+        const channel = pixel % 4;
+        const value = halfToFloat(sourceChannels[pixel]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
+        corrected.writeUInt16LE(floatToHalf(value), pixel * 2);
+      }
+      // The native encoder's RGB16F format is backed by a four-channel 16-bit
+      // Windows bitmap. Preserve the packed 8-byte RGBA pixels; dropping alpha
+      // produces a too-small buffer and triggers WINCODEC_ERR_INSUFFICIENTBUFFER.
+      const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
+      encoded = encoder.encode(corrected, frame.width, frame.height);
+    } else {
+      logPhase('encode OpenEXR');
+      encoded = encodeExr({
+        width: frame.width,
+        height: frame.height,
+        layers: [{ name: 'rgba', channelNames: ['R', 'G', 'B', 'A'], interleavedPixels: rgba, precision: 'f32', compression: 'piz' }]
+      });
+    }
 
-    logPhase('write OpenEXR file');
+    logPhase(`write ${format.toUpperCase()} file`);
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const baseName = `LightMatter_Capture_${stamp}`;
-    let outputPath = path.join(folder, `${baseName}.exr`);
+    let outputPath = path.join(folder, `${baseName}.${format}`);
     let suffix = 1;
     while (fsSync.existsSync(outputPath)) {
-      outputPath = path.join(folder, `${baseName}_${suffix++}.exr`);
+      outputPath = path.join(folder, `${baseName}_${suffix++}.${format}`);
     }
     await fs.writeFile(outputPath, encoded, { flag: 'wx' });
     return { path: outputPath, width: frame.width, height: frame.height };
