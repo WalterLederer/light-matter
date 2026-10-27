@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CaptureMonitor, CaptureTarget, CaptureWindow } from 'internal-api';
+import { CaptureFormat, CaptureMonitor, CaptureTarget, CaptureWindow } from 'internal-api';
 import { filter, firstValueFrom, take } from 'rxjs';
 import { CaptureService } from '../../../ipc/capture';
 import { GalleryLocations } from '../../../gallery/services/gallery-locations/gallery-locations';
@@ -27,9 +27,20 @@ export class CapturePanelComponent {
   protected readonly destinationFolder = signal('');
   protected readonly loadingSources = signal(false);
   protected readonly capturing = signal(false);
+  protected readonly previewing = signal(false);
+  protected readonly previewUrl = signal<string | null>(null);
+  protected readonly previewSize = signal('');
+  protected readonly selectedFormat = signal<CaptureFormat>('exr');
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
   protected readonly toggleExpanded = (): void => this.expanded.update(value => !value);
+  protected readonly changeTarget = (value: string): void => {
+    this.selectedTarget.set(value);
+    this.previewUrl.set(null);
+    this.previewSize.set('');
+    this.status.set('');
+    this.error.set(null);
+  };
 
   constructor() {
     this.galleryState.selectedLocation()
@@ -88,6 +99,29 @@ export class CapturePanelComponent {
     return null;
   }
 
+  protected readonly previewNow = async (): Promise<void> => {
+    const target = this.selectedCaptureTarget();
+    if (!target) {
+      this.error.set('Select a monitor or application window.');
+      return;
+    }
+    this.previewing.set(true);
+    this.error.set(null);
+    this.status.set('Capturing source preview…');
+    try {
+      const preview = await this.captureService.preview(target);
+      this.previewUrl.set(preview.dataUrl);
+      this.previewSize.set(`${preview.width} × ${preview.height}`);
+      this.status.set(`Preview ready · ${preview.width} × ${preview.height}`);
+    } catch (error) {
+      this.previewUrl.set(null);
+      this.status.set('');
+      this.error.set(error instanceof Error ? error.message : String(error));
+    } finally {
+      this.previewing.set(false);
+    }
+  };
+
   protected readonly captureNow = async (): Promise<void> => {
     const target = this.selectedCaptureTarget();
     const folder = this.destinationFolder();
@@ -104,7 +138,7 @@ export class CapturePanelComponent {
     this.error.set(null);
     this.status.set('Capturing HDR frame…');
     try {
-      const result = await this.captureService.capture(target, folder);
+      const result = await this.captureService.capture(target, folder, this.selectedFormat());
       // Refresh the folder from disk so the capture appears in the gallery and
       // becomes part of the current image-navigation sequence immediately.
       this.galleryLocations.addLocation(folder);
