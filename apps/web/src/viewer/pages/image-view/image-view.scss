@@ -1125,6 +1125,12 @@
  .image-controls-sidebar .sdr-overexposure-threshold > span {display:flex;justify-content:space-between;align-items:center;gap:8px}
  .image-controls-sidebar .sdr-overexposure-threshold > span > span {font-variant-numeric:tabular-nums;opacity:.8;text-align:right}
  .image-controls-sidebar .sdr-overexposure-threshold input[type=range] {width:100%;accent-color:#ff8a3d}
+ .image-controls-sidebar .sdr-underexposure-toggle {display:flex;flex-direction:row;align-items:center;gap:7px;padding:5px 0}
+ .image-controls-sidebar .sdr-underexposure-toggle input {flex:0 0 auto;width:auto;accent-color:#00d1e0}
+ .image-controls-sidebar .sdr-underexposure-threshold {display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:4px 0 8px}
+ .image-controls-sidebar .sdr-underexposure-threshold > span {display:flex;justify-content:space-between;align-items:center;gap:8px}
+ .image-controls-sidebar .sdr-underexposure-threshold > span > span {font-variant-numeric:tabular-nums;opacity:.8;text-align:right}
+ .image-controls-sidebar .sdr-underexposure-threshold input[type=range] {width:100%;accent-color:#00d1e0}
 
 
 .image-controls-sidebar .rgb-inversion-controls {display:flex;flex-direction:column;gap:4px}
