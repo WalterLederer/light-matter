@@ -916,6 +916,8 @@ if (parentPort) {
         let hasCapacityMax = false;
 
         // wasm-vips exposes getFields() as an embind Vector, not a JavaScript array.
+        // The capacity field is a gdouble, so only report its presence here; getString()
+        // is valid for string metadata such as gainmap-data, not numeric fields.
         for (let i = 0; i < fields.size(); i++) {
           const field = fields.get(i);
           if (field === 'gainmap-data') hasGainmapData = true;
@@ -923,11 +925,8 @@ if (parentPort) {
           if (field.startsWith('gainmap-') || field === 'gainmap-data') gainmapFields.push(field);
         }
 
-        const capacity = hasCapacityMax
-          ? encoded.getString('gainmap-hdr-capacity-max')
-          : 'missing';
         console.info(
-          `[ThumbWorker] EXR UltraHDR verification: ${source} -> ${target}; loader=${hasGainmapData ? 'gainmap-present' : 'gainmap-missing'}; capacity-max=${capacity}; metadata=${gainmapFields.join(',') || 'none'}`
+          `[ThumbWorker] EXR UltraHDR verification: ${source} -> ${target}; loader=${hasGainmapData ? 'gainmap-present' : 'gainmap-missing'}; capacity-max-field=${hasCapacityMax ? 'present' : 'missing'}; metadata=${gainmapFields.join(',') || 'none'}`
         );
       }
 
