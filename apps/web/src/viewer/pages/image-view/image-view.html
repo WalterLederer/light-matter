@@ -249,7 +249,6 @@
             <label class="channel-control"><span><span>Black point</span><span>{{(blackPoint()*100).toFixed(0)}}%</span></span><input type="range" min="0" [max]="whitePoint() - 0.01" step=".005" [value]="blackPoint()" (input)="setBlackPoint($any($event.target).value)"/></label>
             <label class="channel-control"><span><span>White point</span><span>{{(whitePoint()*100).toFixed(0)}}%</span></span><input type="range" [min]="blackPoint() + 0.01" max="2" step=".01" [value]="whitePoint()" (input)="setWhitePoint($any($event.target).value)"/></label>
           </div>
-          }
           <button (click)="resetCorrections()">Reset corrections</button>
         }
       </section>
@@ -275,6 +274,7 @@
               <span><b>SDR shadow threshold</b><span>{{sdrUnderexposureThreshold()}} / 255</span></span>
               <input type="range" min="0" max="64" step="1" [value]="sdrUnderexposureThreshold()" (input)="setSdrUnderexposureThreshold($any($event.target).value)" aria-label="SDR underexposure threshold from 0 to 64"/>
             </label>
+          }
         }
       </section>
       <section><button class="section-heading" (click)="toggleSidebarSection('loupe')"><span class="section-chevron">{{sidebarSectionExpanded('loupe') ? 'v' : '>'}}</span>Magnifier (M)</button>
