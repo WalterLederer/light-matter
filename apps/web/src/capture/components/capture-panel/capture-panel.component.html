@@ -1,5 +1,5 @@
 <section class="capture-panel">
-  <button class="capture-heading" type="button" (click)="expanded.update(value => !value)" [attr.aria-expanded]="expanded()">
+  <button class="capture-heading" type="button" (click)="toggleExpanded()" [attr.aria-expanded]="expanded()">
     <span class="capture-chevron">{{ expanded() ? 'v' : '>' }}</span>
     Capture
   </button>
