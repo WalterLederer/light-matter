@@ -162,20 +162,30 @@ ipcMain.handle('Capture.listSources', (): CaptureSources => {
     refreshRate: monitor.refreshRate
   }));
 
-  const windows = enumerateWindows()
-    .filter(window => window.isValid && window.title.trim().length > 0 && window.processId !== process.pid && !window.title.trim().toLowerCase().startsWith('light matter'))
-    .map(window => ({
-      title: window.title.trim(),
-      processName: window.processName || 'Unknown application',
-      processId: window.processId,
-      handle: window.handle,
-      width: window.width,
-      height: window.height,
-      monitorIndex: window.monitorIndex
-    }))
-    .sort((a, b) => a.title.localeCompare(b.title));
+  // Enumerating top-level windows can fail independently on some Windows
+  // configurations (for example, when the native API cannot inspect a window).
+  // Keep monitor capture available instead of failing the entire source list.
+  let windows: CaptureSources['windows'] = [];
+  const sourceErrors: string[] = [];
+  try {
+    windows = enumerateWindows()
+      .filter(window => window.isValid && window.title.trim().length > 0 && window.processId !== process.pid && !window.title.trim().toLowerCase().startsWith('light matter'))
+      .map(window => ({
+        title: window.title.trim(),
+        processName: window.processName || 'Unknown application',
+        processId: window.processId,
+        handle: window.handle,
+        width: window.width,
+        height: window.height,
+        monitorIndex: window.monitorIndex
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    sourceErrors.push(`Could not enumerate application windows: ${message}`);
+  }
 
-  return { monitors, windows };
+  return { monitors, windows, sourceErrors };
 });
 
 ipcMain.handle('Capture.chooseFolder', async (_event, initialPath?: string): Promise<string | null> => {
