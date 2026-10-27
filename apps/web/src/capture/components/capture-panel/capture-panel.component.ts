@@ -78,14 +78,18 @@ export class CapturePanelComponent {
       this.windows.set(sources.windows);
       if (sources.sourceErrors?.length) this.error.set(sources.sourceErrors.join('\n'));
       const saved = this.readSavedSource();
-      const savedMonitor = saved?.kind === 'monitor' && sources.monitors.some(item => item.index === saved.index);
-      const savedWindow = saved?.kind === 'window' && sources.windows.some(item => item.executablePath && item.executablePath.toLowerCase() === saved.executablePath?.toLowerCase());
-      if (savedMonitor) {
-        this.selectedTarget.set(`monitor:${saved!.index}`);
-      } else if (savedWindow) {
-        const matchingWindow = sources.windows.find(item => item.executablePath && item.executablePath.toLowerCase() === saved!.executablePath?.toLowerCase());
-        if (matchingWindow) this.selectedTarget.set(`window:${matchingWindow.handle}`);
-      } else if (!sources.monitors.some(monitor => this.selectedTarget() === `monitor:${monitor.index}`) &&
+      let restored = false;
+      if (saved?.kind === 'monitor' && sources.monitors.some(item => item.index === saved.index)) {
+        this.selectedTarget.set(`monitor:${saved.index}`);
+        restored = true;
+      } else if (saved?.kind === 'window') {
+        const matchingWindow = sources.windows.find(item => item.executablePath && item.executablePath.toLowerCase() === saved.executablePath.toLowerCase());
+        if (matchingWindow) {
+          this.selectedTarget.set(`window:${matchingWindow.handle}`);
+          restored = true;
+        }
+      }
+      if (!restored && !sources.monitors.some(monitor => this.selectedTarget() === `monitor:${monitor.index}`) &&
           !sources.windows.some(window => this.selectedTarget() === `window:${window.handle}`)) {
         const firstMonitor = sources.monitors[0];
         const firstWindow = sources.windows[0];
