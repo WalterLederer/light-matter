@@ -163,7 +163,7 @@ ipcMain.handle('Capture.listSources', (): CaptureSources => {
   }));
 
   const windows = enumerateWindows()
-    .filter(window => window.isValid && window.title.trim().length > 0 && window.processId !== process.pid)
+    .filter(window => window.isValid && window.title.trim().length > 0 && window.processId !== process.pid && !window.title.trim().toLowerCase().startsWith('light matter'))
     .map(window => ({
       title: window.title.trim(),
       processName: window.processName || 'Unknown application',
