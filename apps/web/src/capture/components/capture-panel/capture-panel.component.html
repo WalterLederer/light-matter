@@ -37,10 +37,10 @@
       <button type="button" class="capture-secondary-button" (click)="previewNow()" [disabled]="previewing() || capturing() || loadingSources() || !selectedTarget()">
         {{ previewing() ? 'Creating preview…' : 'Preview source' }}
       </button>
-      @if (previewUrl()) {
+      @if (previewFrame()) {
         <figure class="capture-preview">
-          <img [src]="previewUrl()!" alt="HDR capture source preview" />
-          <figcaption>{{ previewSize() }} · SDR preview with HDR brightness correction</figcaption>
+          <canvas #previewCanvas aria-label="HDR capture source preview"></canvas>
+          <figcaption>{{ previewSize() }} · HDR preview via WebGPU · brightness 0.4</figcaption>
         </figure>
       }
 
