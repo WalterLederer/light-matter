@@ -345,6 +345,7 @@ ipcMain.handle('Capture.preview', async (_event, target: CaptureTarget): Promise
 });
 
 ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: string, format: 'exr' | 'jxr' = 'exr'): Promise<CaptureResult> => {
+  if (format !== 'exr' && format !== 'jxr') throw new Error('Choose EXR or JXR as the capture format.');
   if (process.platform !== 'win32') {
     throw new Error('HDR capture is currently supported on Windows only.');
   }
