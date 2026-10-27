@@ -307,7 +307,7 @@ export class ImageView {
     view.addEventListener('pointercancel', onUp);
     this.sidebarResizeCleanup = onUp;
   };
-  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, loupe: true, loupeRenderer: false, highlight: true, mode: true, histogram: false, info: false, general: false });
+  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, loupe: true, loupeRenderer: false, highlight: true, toneCurve: false, mode: true, histogram: false, info: false, general: false });
   protected readonly sidebarSectionExpanded = (key: string): boolean => this.sidebarSections()[key] === true;
   protected readonly toggleSidebarSection = (key: string): void => {
     const sections = { ...this.sidebarSections(), [key]: !this.sidebarSectionExpanded(key) };
