@@ -53,6 +53,9 @@ export class ExifInfoComponent {
   constructor() {
     effect(() => {
       const sourcePath = this.path();
+      // Recheck after the image load completes: the raw-image request may still be
+      // generating the full-size derivative when this component first appears.
+      this.loadDuration();
       const requestId = ++this.cachePathRequestId;
       this.cachePath.set(null);
       this.cachePathLoading.set(!!sourcePath);
