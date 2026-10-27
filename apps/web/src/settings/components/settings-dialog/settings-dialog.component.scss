@@ -114,6 +114,15 @@
   width: 100%;
 }
 
+/* Make nested expandable settings visibly follow their hierarchy. */
+.settings-panel details > summary {
+  padding-left: 12px;
+}
+
+.settings-panel details details > summary {
+  padding-left: 24px;
+}
+
 .format-list {
   max-width: 100%;
   overflow-x: auto;
