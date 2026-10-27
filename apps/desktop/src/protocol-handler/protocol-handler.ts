@@ -109,7 +109,7 @@ const histogram = async (params: URLSearchParams, signal?: AbortSignal): Promise
       const cacheManager = injector.inject('CacheManager');
       const thumbManager = injector.inject('ThumbManager');
       const isTiff = [ '.tif', '.tiff' ].includes(extension);
-      const tag = `${extension.slice(1)}-full-${isTiff ? 'hdr-v6' : 'uhdr'}`;
+      const tag = `${extension.slice(1)}-full-${isTiff ? 'hdr-v6' : extension === '.exr' ? 'uhdr-v2' : 'uhdr'}`;
       const result = await cacheManager.get(
         fileName,
         tag,
