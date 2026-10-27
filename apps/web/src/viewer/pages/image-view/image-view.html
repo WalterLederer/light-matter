@@ -225,26 +225,33 @@
           <label class="channel-control"><span><b>Brightness</b><span>{{((mainImageBrightness()-1)*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/></label>
           <label class="channel-control"><span><b>Contrast</b><span>{{(imageContrast()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/></label>
           <label class="channel-control"><span><b>Color intensity</b><span>{{(colorIntensity()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="3" step=".01" [value]="colorIntensity()" (input)="setColorIntensity($any($event.target).value)" title="0% = black and white; 100% = original colors; 300% = strongly boosted colors"/></label>
-          <div class="rgb-correction-controls" aria-label="RGB channel levels">
-            <div class="correction-subheading">RGB</div>
-            <label class="channel-control rgb-red"><span><b>R</b><span>{{(redChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="redChannelLevel()" (input)="setRedChannelLevel($any($event.target).value)"/></label>
-            <label class="channel-control rgb-green"><span><b>G</b><span>{{(greenChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="greenChannelLevel()" (input)="setGreenChannelLevel($any($event.target).value)"/></label>
-            <label class="channel-control rgb-blue"><span><b>B</b><span>{{(blueChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="blueChannelLevel()" (input)="setBlueChannelLevel($any($event.target).value)"/></label>
-          </div>
-          <div class="rgb-inversion-controls">
-            <div class="correction-subheading">Inverse</div>
-            <div class="rgb-inversion-row">
-              <label><input type="checkbox" [checked]="invertRedChannel()" (change)="setInvertRedChannel($any($event.target).checked)"/> R</label>
-              <label><input type="checkbox" [checked]="invertGreenChannel()" (change)="setInvertGreenChannel($any($event.target).checked)"/> G</label>
-              <label><input type="checkbox" [checked]="invertBlueChannel()" (change)="setInvertBlueChannel($any($event.target).checked)"/> B</label>
-              <label><input type="checkbox" [checked]="invertAllRgbChannels()" (change)="setInvertAllRgbChannels($any($event.target).checked)"/> All</label>
-            </div>
-          </div>
+          <section class="correction-subsection rgb-correction-section">
+            <button class="section-heading" (click)="toggleSidebarSection('rgbLevels')"><span class="section-chevron">{{sidebarSectionExpanded('rgbLevels') ? 'v' : '>'}}</span>RGB</button>
+            @if (sidebarSectionExpanded('rgbLevels')) {
+              <div class="rgb-correction-controls" aria-label="RGB channel levels">
+                <label class="channel-control rgb-red"><span><b>R</b><span>{{(redChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="redChannelLevel()" (input)="setRedChannelLevel($any($event.target).value)"/></label>
+                <label class="channel-control rgb-green"><span><b>G</b><span>{{(greenChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="greenChannelLevel()" (input)="setGreenChannelLevel($any($event.target).value)"/></label>
+                <label class="channel-control rgb-blue"><span><b>B</b><span>{{(blueChannelLevel()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="blueChannelLevel()" (input)="setBlueChannelLevel($any($event.target).value)"/></label>
+              </div>
+            }
+          </section>
+          <section class="correction-subsection inverse-section">
+            <button class="section-heading" (click)="toggleSidebarSection('inverse')"><span class="section-chevron">{{sidebarSectionExpanded('inverse') ? 'v' : '>'}}</span>Inverse</button>
+            @if (sidebarSectionExpanded('inverse')) {
+              <div class="rgb-inversion-controls">
+                <div class="rgb-inversion-row">
+                  <label><input type="checkbox" [checked]="invertRedChannel()" (change)="setInvertRedChannel($any($event.target).checked)"/> R</label>
+                  <label><input type="checkbox" [checked]="invertGreenChannel()" (change)="setInvertGreenChannel($any($event.target).checked)"/> G</label>
+                  <label><input type="checkbox" [checked]="invertBlueChannel()" (change)="setInvertBlueChannel($any($event.target).checked)"/> B</label>
+                  <label><input type="checkbox" [checked]="invertAllRgbChannels()" (change)="setInvertAllRgbChannels($any($event.target).checked)"/> All</label>
+                </div>
+              </div>
+            }
+          </section>
           <section class="tone-curve-section">
             <button class="section-heading" (click)="toggleSidebarSection('toneCurve')"><span class="section-chevron">{{sidebarSectionExpanded('toneCurve') ? 'v' : '>'}}</span>Tone curve</button>
             @if (sidebarSectionExpanded('toneCurve')) {
           <div class="tone-curve-controls">
-            <div class="correction-subheading">Tone curve</div>
             <svg class="tone-curve" viewBox="0 0 120 72" role="img" aria-label="Tone curve with adjustable black and white points">
               <path class="tone-curve-grid" d="M4 4V68H116M4 36H116M60 4V68" />
               <path class="tone-curve-line" [attr.d]="'M4 68 H' + (4 + blackPoint() * 56) + ' L' + (4 + whitePoint() * 56) + ' 4 H116'" />
