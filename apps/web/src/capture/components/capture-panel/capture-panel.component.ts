@@ -29,6 +29,8 @@ export class CapturePanelComponent {
   protected readonly capturing = signal(false);
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
+  protected readonly toggleExpanded = (): void => this.expanded.update(value => !value);
+
   constructor() {
     this.galleryState.selectedLocation()
       .pipe(
