@@ -898,6 +898,20 @@ if (parentPort) {
         thumb.writeToFile(target, { Q: 80 });
       }
 
+      if (extname(source).toLowerCase() === '.exr') {
+        // Verify the encoded JPEG by reopening it through libvips' UltraHDR loader.
+        // This distinguishes a missing/invalid gain map from a rendering issue in Chromium.
+        using encoded = vips.Image.newFromFile(target);
+        const fields = encoded.get_fields();
+        const gainmapFields = fields.filter(field => field.startsWith('gainmap-') || field === 'gainmap-data');
+        const capacity = fields.includes('gainmap-hdr-capacity-max')
+          ? encoded.get_as_string('gainmap-hdr-capacity-max')
+          : 'missing';
+        console.info(
+          `[ThumbWorker] EXR UltraHDR verification: ${source} -> ${target}; loader=${fields.includes('gainmap-data') ? 'gainmap-present' : 'gainmap-missing'}; capacity-max=${capacity}; metadata=${gainmapFields.join(',') || 'none'}`
+        );
+      }
+
       parentPort?.postMessage({ id, success: true } satisfies ThumbWorkerResponse);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
