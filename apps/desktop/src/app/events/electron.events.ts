@@ -251,8 +251,17 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
     minimumUpdateIntervalMs: 0
   });
 
+  let phase = 'initialize capture';
+  const logPhase = (nextPhase: string): void => {
+    phase = nextPhase;
+    console.info(`[HDR Capture] ${phase}`);
+  };
+
   try {
+    logPhase('start native capture session');
     await capture.start();
+
+    logPhase('wait for first FP16 frame');
     let captureTimeout: ReturnType<typeof setTimeout> | undefined;
     const frame = await Promise.race([
       capture.nextFrame(),
@@ -263,19 +272,25 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
       if (captureTimeout !== undefined) clearTimeout(captureTimeout);
     });
     if (!frame) throw new Error('The selected capture source is no longer available.');
+
+    logPhase('validate FP16 frame');
     if (frame.colorFormat !== 'rgba16F' || frame.rowPitch !== frame.width * 8 ||
         frame.buffer.byteLength !== frame.width * frame.height * 8) {
       throw new Error('The capture did not return the expected packed FP16 HDR frame.');
     }
 
+    logPhase(`convert RGBA16F to RGB16F (${frame.width}x${frame.height})`);
     // JPEG XR's RGB16F encoder expects three half-float channels, without RGBA alpha.
     const rgb = Buffer.allocUnsafe(frame.width * frame.height * 6);
     for (let source = 0, destination = 0; source < frame.buffer.length; source += 8, destination += 6) {
       frame.buffer.copy(rgb, destination, source, source + 6);
     }
+
+    logPhase('encode JPEG XR');
     const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
     const encoded = encoder.encode(rgb, frame.width, frame.height);
 
+    logPhase('write JPEG XR file');
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const baseName = `LightMatter_Capture_${stamp}`;
     let outputPath = path.join(folder, `${baseName}.jxr`);
@@ -285,8 +300,15 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
     }
     await fs.writeFile(outputPath, encoded, { flag: 'wx' });
     return { path: outputPath, width: frame.width, height: frame.height };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[HDR Capture] Failed during "${phase}": ${message}`);
+    throw new Error(`HDR capture failed during "${phase}": ${message}`);
   } finally {
-    await capture.stop().catch(() => undefined);
+    logPhase('stop native capture session');
+    await capture.stop().catch((error: unknown) => {
+      console.error('[HDR Capture] Failed to stop native capture session:', error);
+    });
   }
 });
 
