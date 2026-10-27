@@ -1,5 +1,6 @@
 import { app, desktopCapturer, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
-import { enumerateMonitors, enumerateWindows, ScreenCapture } from '@screen-capture/node';
+import { enumerateMonitors, enumerateWindows, ImageEncoder, ImageEncoderPixelFormat, ImageFormat, ScreenCapture } from '@screen-capture/node';
+import { deflateSync } from 'node:zlib';
 import { encodeExr, init as initExr } from 'exrs';
 import { CaptureResult, CaptureSources, CaptureTarget, FileListing, supportedFileExtensions } from 'internal-api';
 import * as fsSync from 'node:fs';
@@ -20,6 +21,80 @@ const halfToFloat = (half: number): number => {
   if (exponent === 0) return fraction === 0 ? sign * 0 : sign * 2 ** -14 * (fraction / 1024);
   if (exponent === 0x1f) return fraction === 0 ? sign * Infinity : NaN;
   return sign * 2 ** (exponent - 15) * (1 + fraction / 1024);
+};
+
+const CAPTURE_BRIGHTNESS_CORRECTION = 0.4;
+const halfConversionBuffer = new ArrayBuffer(4);
+const halfConversionFloat = new Float32Array(halfConversionBuffer);
+const halfConversionBits = new Uint32Array(halfConversionBuffer);
+
+const floatToHalf = (value: number): number => {
+  halfConversionFloat[0] = value;
+  const bits = halfConversionBits[0];
+  const sign = (bits >>> 16) & 0x8000;
+  let exponent = ((bits >>> 23) & 0xff) - 127 + 15;
+  let mantissa = bits & 0x7fffff;
+  if (exponent <= 0) {
+    if (exponent < -10) return sign;
+    mantissa = (mantissa | 0x800000) >> (1 - exponent);
+    return sign | ((mantissa + 0x1000) >> 13);
+  }
+  if (exponent >= 31) return sign | 0x7c00 | (mantissa ? 0x0200 : 0);
+  return sign | (exponent << 10) | ((mantissa + 0x1000) >> 13);
+};
+
+const crc32 = (buffer: Buffer): number => {
+  let crc = 0xffffffff;
+  for (const byte of buffer) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+};
+
+const makePngChunk = (type: string, data: Buffer): Buffer => {
+  const typeBuffer = Buffer.from(type, 'ascii');
+  const body = Buffer.concat([typeBuffer, data]);
+  const header = Buffer.alloc(4);
+  header.writeUInt32BE(data.length, 0);
+  const checksum = Buffer.alloc(4);
+  checksum.writeUInt32BE(crc32(body), 0);
+  return Buffer.concat([header, body, checksum]);
+};
+
+const makeCapturePreview = (frame: { width: number; height: number; buffer: Buffer }): string => {
+  const previewWidth = Math.min(640, frame.width);
+  const previewHeight = Math.max(1, Math.round(frame.height * previewWidth / frame.width));
+  const scanlines = Buffer.alloc((previewWidth * 4 + 1) * previewHeight);
+  for (let y = 0; y < previewHeight; y++) {
+    const sourceY = Math.min(frame.height - 1, Math.floor((y + 0.5) * frame.height / previewHeight));
+    const row = y * (previewWidth * 4 + 1);
+    scanlines[row] = 0;
+    for (let x = 0; x < previewWidth; x++) {
+      const sourceX = Math.min(frame.width - 1, Math.floor((x + 0.5) * frame.width / previewWidth));
+      const sourceOffset = (sourceY * frame.width + sourceX) * 8;
+      const targetOffset = row + 1 + x * 4;
+      for (let channel = 0; channel < 3; channel++) {
+        const linear = Math.max(0, halfToFloat(frame.buffer.readUInt16LE(sourceOffset + channel * 2)) * CAPTURE_BRIGHTNESS_CORRECTION);
+        const mapped = linear / (1 + linear);
+        const srgb = mapped <= 0.0031308 ? mapped * 12.92 : 1.055 * Math.pow(mapped, 1 / 2.4) - 0.055;
+        scanlines[targetOffset + channel] = Math.max(0, Math.min(255, Math.round(srgb * 255)));
+      }
+      scanlines[targetOffset + 3] = 255;
+    }
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(previewWidth, 0);
+  ihdr.writeUInt32BE(previewHeight, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  const png = Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    makePngChunk('IHDR', ihdr),
+    makePngChunk('IDAT', deflateSync(scanlines)),
+    makePngChunk('IEND', Buffer.alloc(0))
+  ]);
+  return `data:image/png;base64,${png.toString('base64')}`;
 };
 
 export default class ElectronEvents {
