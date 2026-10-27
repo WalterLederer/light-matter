@@ -361,7 +361,7 @@ export class ImageView {
     this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1 ||
     this.invertRedChannel() || this.invertGreenChannel() || this.invertBlueChannel() || this.invertAllRgbChannels() ||
     this.colorIntensity() !== 1 || this.blackPoint() !== 0 || this.whitePoint() !== 1 ||
-    this.highlightHdrPixels() || this.highlightSdrOverexposure()
+    this.highlightHdrPixels() || this.highlightSdrOverexposure() || this.highlightSdrUnderexposure()
   );
   protected readonly setMainBrightness = (v: string | number): void => {
     this.mainImageBrightness.set(Math.max(0, Math.min(2, Number(v))));
@@ -427,6 +427,16 @@ export class ImageView {
   };
   protected readonly setSdrOverexposureThreshold = (value: string | number): void => {
     this.sdrOverexposureThreshold.set(Math.max(0, Math.min(255, Math.round(Number(value)))));
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly highlightSdrUnderexposure = signal(false);
+  protected readonly sdrUnderexposureThreshold = signal(16);
+  protected readonly setSdrUnderexposureHighlight = (enabled: boolean): void => {
+    this.highlightSdrUnderexposure.set(enabled);
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly setSdrUnderexposureThreshold = (value: string | number): void => {
+    this.sdrUnderexposureThreshold.set(Math.max(0, Math.min(64, Math.round(Number(value)))));
     this.refreshHdrImageAdjustments();
   };
   protected readonly resetCorrections = (): void => {
@@ -1292,7 +1302,9 @@ export class ImageView {
         highlightHdrPixels: this.highlightHdrPixels(),
         hdrHighlightThreshold: this.hdrHighlightThreshold(),
         highlightSdrOverexposure: this.highlightSdrOverexposure(),
-        sdrOverexposureThreshold: this.sdrOverexposureThreshold()
+        sdrOverexposureThreshold: this.sdrOverexposureThreshold(),
+        highlightSdrUnderexposure: this.highlightSdrUnderexposure(),
+        sdrUnderexposureThreshold: this.sdrUnderexposureThreshold()
       }
     );
     if (request === this.hdrImageAdjustmentRequest && this.hdrImageAdjustmentActive()) {
