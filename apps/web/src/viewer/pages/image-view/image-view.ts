@@ -1207,7 +1207,7 @@ export class ImageView {
       const image = host?.querySelector<HTMLImageElement>('img.hdr-image:not(.hidden-variant)');
       const hostBounds = host?.getBoundingClientRect();
       const imageBounds = image?.getBoundingClientRect();
-      if (!host || !hostBounds || !imageBounds) return;
+      if (!host || !image || !hostBounds || !imageBounds) return;
       const bounds = {
         left: Math.max(hostBounds.left, imageBounds.left),
         top: Math.max(hostBounds.top, imageBounds.top),
