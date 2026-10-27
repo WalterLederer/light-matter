@@ -31,9 +31,11 @@ export class CapturePanelComponent {
   protected readonly previewFrame = signal<CapturePreview | null>(null);
   protected readonly previewSize = signal('');
   protected readonly previewCanvas = viewChild<ElementRef<HTMLCanvasElement>>('previewCanvas');
-  private previewDevice: GPUDevice | null = null;
-  private previewTexture: GPUTexture | null = null;
-  private previewContext: GPUCanvasContext | null = null;
+  // WebGPU's current DOM typings are not included in this project's configured TypeScript libs.
+  // Keep the WebGPU boundary structurally typed so the app builds without an extra global type package.
+  private previewDevice: { destroy(): void } | null = null;
+  private previewTexture: { destroy(): void } | null = null;
+  private previewContext: { unconfigure(): void; configure(options: any): void; getCurrentTexture(): any } | null = null;
   protected readonly selectedFormat = signal<CaptureFormat>('exr');
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
@@ -136,14 +138,15 @@ export class CapturePanelComponent {
 
   private readonly renderHdrPreview = async (canvas: HTMLCanvasElement, frame: CapturePreview): Promise<void> => {
     try {
-      if (!navigator.gpu) throw new Error('WebGPU is unavailable; HDR preview cannot be displayed.');
+      const gpu = (navigator as Navigator & { gpu?: any }).gpu;
+      if (!gpu) throw new Error('WebGPU is unavailable; HDR preview cannot be displayed.');
       this.disposeHdrPreview();
       canvas.width = frame.width;
       canvas.height = frame.height;
-      const adapter = await navigator.gpu.requestAdapter();
+      const adapter = await gpu.requestAdapter();
       if (!adapter) throw new Error('No WebGPU adapter is available for the HDR preview.');
-      const device = await adapter.requestDevice();
-      const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
+      const device: any = await adapter.requestDevice();
+      const context = canvas.getContext('webgpu') as any;
       if (!context) {
         device.destroy();
         throw new Error('Could not create a WebGPU canvas for the HDR preview.');
@@ -158,7 +161,7 @@ export class CapturePanelComponent {
       const texture = device.createTexture({
         size: { width: frame.width, height: frame.height },
         format: 'rgba16float',
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+        usage: 4 | 2 // GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
       });
       device.queue.writeTexture(
         { texture },
