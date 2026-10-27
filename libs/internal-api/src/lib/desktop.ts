@@ -95,6 +95,7 @@ export interface CaptureWindow {
 export interface CaptureSources {
   monitors: CaptureMonitor[];
   windows: CaptureWindow[];
+  sourceErrors?: string[];
 }
 
 export type CaptureTarget =
