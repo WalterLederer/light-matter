@@ -157,7 +157,7 @@ const thumb = async (params: URLSearchParams, signal?: AbortSignal): Promise<Glo
     const isExr = extname(fileName).toLowerCase() === '.exr';
     const isRadiance = extname(fileName).toLowerCase() === '.hdr';
     const isTiff = [ '.tif', '.tiff' ].includes(extname(fileName).toLowerCase());
-    const tag = `${width}x${height}${isJxr ? '-jxr-uhdr' : isAvif ? '-avif' : isHeif ? '-heif' : isExr ? '-exr-uhdr' : isRadiance ? '-radiance-hdr' : isTiff ? '-tiff-hdr-v6' : ''}`;
+    const tag = `${width}x${height}${isJxr ? '-jxr-uhdr' : isAvif ? '-avif' : isHeif ? '-heif' : isExr ? '-exr-uhdr-v2' : isRadiance ? '-radiance-hdr' : isTiff ? '-tiff-hdr-v6' : ''}`;
     const injector = Injector.getInstance();
     const cacheManager = injector.inject('CacheManager');
     const thumbManager = injector.inject('ThumbManager');
@@ -209,7 +209,8 @@ const raw = async (params: URLSearchParams, signal?: AbortSignal): Promise<Globa
       const injector = Injector.getInstance();
       const cacheManager = injector.inject('CacheManager');
       const thumbManager = injector.inject('ThumbManager');
-      const cacheTag = `${extname(fileName).toLowerCase().slice(1)}${[ '.tif', '.tiff' ].includes(extname(fileName).toLowerCase()) ? '-full-hdr-v6' : '-full-uhdr'}`;
+      const extension = extname(fileName).toLowerCase();
+      const cacheTag = `${extension.slice(1)}${[ '.tif', '.tiff' ].includes(extension) ? '-full-hdr-v6' : extension === '.exr' ? '-full-uhdr-v2' : '-full-uhdr'}`;
       const cacheEntry = cacheManager.exists(fileName, cacheTag);
       let wasCacheHit = false;
       if (cacheEntry && typeof cacheEntry['target_path'] === 'string' && existsSync(cacheEntry['target_path'])) {
