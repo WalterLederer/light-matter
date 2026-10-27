@@ -192,6 +192,7 @@ export class ImageView {
   protected readonly hdrImageAdjustmentReady = signal(false);
   protected readonly hdrImageAdjustmentBounds = signal({ left: 0, top: 0, width: 0, height: 0 });
   private hdrImageAdjustmentRegion: HdrLoupeRegion | null = null;
+  private hdrImageAdjustmentSdrPixels: Uint8Array | null = null;
   private hdrImageAdjustmentSourceKey = '';
   private hdrImageAdjustmentRequest = 0;
   private hdrImageAdjustmentCapturePromise: Promise<void> | null = null;
@@ -1193,7 +1194,7 @@ export class ImageView {
       await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       if (request !== this.hdrImageAdjustmentRequest || !this.hdrImageAdjustmentActive()) return;
       const host = this.document.querySelector<HTMLElement>('app-image-renderer');
-      const image = host?.querySelector<HTMLElement>('img.hdr-image:not(.hidden-variant)');
+      const image = host?.querySelector<HTMLImageElement>('img.hdr-image:not(.hidden-variant)');
       const hostBounds = host?.getBoundingClientRect();
       const imageBounds = image?.getBoundingClientRect();
       if (!host || !hostBounds || !imageBounds) return;
@@ -1222,6 +1223,23 @@ export class ImageView {
         centerY: region.regionHeight / 2,
         data: region.data
       };
+
+      // Sample the displayed image into an 8-bit SDR buffer aligned to the
+      // exact visible area covered by the FP16 capture.
+      const sdrCanvas = this.document.createElement('canvas');
+      sdrCanvas.width = region.regionWidth;
+      sdrCanvas.height = region.regionHeight;
+      const sdrContext = sdrCanvas.getContext('2d', { willReadFrequently: true });
+      if (!sdrContext || !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0 ||
+          imageBounds.width <= 0 || imageBounds.height <= 0) {
+        throw new Error('SDR image pixels are not available for overexposure highlighting.');
+      }
+      const sx = Math.max(0, (visibleBounds.left - imageBounds.left) / imageBounds.width * image.naturalWidth);
+      const sy = Math.max(0, (visibleBounds.top - imageBounds.top) / imageBounds.height * image.naturalHeight);
+      const sw = Math.min(image.naturalWidth - sx, visibleBounds.width / imageBounds.width * image.naturalWidth);
+      const sh = Math.min(image.naturalHeight - sy, visibleBounds.height / imageBounds.height * image.naturalHeight);
+      sdrContext.drawImage(image, sx, sy, sw, sh, 0, 0, region.regionWidth, region.regionHeight);
+      this.hdrImageAdjustmentSdrPixels = new Uint8Array(sdrContext.getImageData(0, 0, region.regionWidth, region.regionHeight).data);
       this.hdrImageAdjustmentSourceKey = 'capture-' + request + ':' + this.debugSelectedImagePath;
       await this.drawHdrImageAdjustments();
     } catch (error) {
@@ -1239,7 +1257,8 @@ export class ImageView {
   private readonly drawHdrImageAdjustments = async (): Promise<void> => {
     const canvas = this.document.querySelector<HTMLCanvasElement>('.hdr-image-adjustment-canvas');
     const region = this.hdrImageAdjustmentRegion;
-    if (!canvas || !region || !this.hdrImageAdjustmentActive()) return;
+    const sdrPixels = this.hdrImageAdjustmentSdrPixels;
+    if (!canvas || !region || !sdrPixels || !this.hdrImageAdjustmentActive()) return;
     const host = this.document.querySelector<HTMLElement>('app-image-renderer');
     const image = host?.querySelector<HTMLElement>('img.hdr-image:not(.hidden-variant)');
     const hostBounds = host?.getBoundingClientRect();
@@ -1255,6 +1274,7 @@ export class ImageView {
     await this.hdrImageAdjustmentRenderer.render(
       canvas,
       region,
+      sdrPixels,
       this.mainImageBrightness() * HDR_WEBGPU_BRIGHTNESS_CORRECTION,
       this.hdrImageAdjustmentSourceKey,
       {
