@@ -63,7 +63,7 @@ export class ExifInfoComponent {
 
       this.cacheManager.imageCachePath(sourcePath).then(path => {
         if (requestId !== this.cachePathRequestId) return;
-        this.cachePath.set(path ? path.replace(/\\/g, '\\\\').replace(/\\\\/g, '\\\\') : null);
+        this.cachePath.set(path);
         this.cachePathLoading.set(false);
       }).catch(error => {
         if (requestId !== this.cachePathRequestId) return;
@@ -76,8 +76,8 @@ export class ExifInfoComponent {
 
   readonly normalizedCachePath = (): string => {
     const value = this.cachePath() ?? '';
-    // Cache paths are displayed as native Windows paths with single backslashes.
-    return value.replace(/\\/g, '/').replace(/\\/g, '\\\\').replace(/\\\\/g, '\\\\');
+    // Display cache paths with native Windows separators and single backslashes.
+    return value.replace(/\//g, '\\').replace(/\\{2,}/g, '\\');
   };
 
   readonly copyCachePath = async (): Promise<void> => {
