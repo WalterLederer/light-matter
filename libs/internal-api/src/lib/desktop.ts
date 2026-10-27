@@ -108,10 +108,19 @@ export interface CaptureResult {
   height: number;
 }
 
+export interface CapturePreview {
+  width: number;
+  height: number;
+  dataUrl: string;
+}
+
+export type CaptureFormat = 'exr' | 'jxr';
+
 export interface DesktopCapture {
   readonly listSources: () => Promise<CaptureSources>;
   readonly chooseFolder: (initialPath?: string) => Promise<string | null>;
-  readonly capture: (target: CaptureTarget, folder: string) => Promise<CaptureResult>;
+  readonly preview: (target: CaptureTarget) => Promise<CapturePreview>;
+  readonly capture: (target: CaptureTarget, folder: string, format?: CaptureFormat) => Promise<CaptureResult>;
 }
 
 export interface DesktopHistogram {
