@@ -211,10 +211,15 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
 
   try {
     await capture.start();
+    let captureTimeout: ReturnType<typeof setTimeout> | undefined;
     const frame = await Promise.race([
       capture.nextFrame(),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timed out waiting for the HDR capture frame.')), 10000))
-    ]);
+      new Promise<never>((_, reject) => {
+        captureTimeout = setTimeout(() => reject(new Error('Timed out waiting for the HDR capture frame.')), 10000);
+      })
+    ]).finally(() => {
+      if (captureTimeout !== undefined) clearTimeout(captureTimeout);
+    });
     if (!frame) throw new Error('The selected capture source is no longer available.');
     if (frame.colorFormat !== 'rgba16F' || frame.rowPitch !== frame.width * 8 ||
         frame.buffer.byteLength !== frame.width * frame.height * 8) {
