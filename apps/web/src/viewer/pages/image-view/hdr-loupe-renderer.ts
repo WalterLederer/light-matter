@@ -344,6 +344,8 @@ export class HdrImageBrightnessRenderer {
   private device: GPUDevice | null = null;
   private pipeline: GPURenderPipeline | null = null;
   private sourceTexture: GPUTexture | null = null;
+  private sdrSourceTexture: GPUTexture | null = null;
+  private sdrSourceKey: string | number | null = null;
   private uniformBuffer: GPUBuffer | null = null;
   private context: GPUCanvasContext | null = null;
   private canvas: HTMLCanvasElement | null = null;
@@ -355,11 +357,12 @@ export class HdrImageBrightnessRenderer {
   render(
     canvas: HTMLCanvasElement,
     region: HdrLoupeRegion,
+    sdrPixels: Uint8Array,
     brightness: number,
     sourceKey: string | number,
     adjustments: { contrast: number; red: number; green: number; blue: number; invertRed?: boolean; invertGreen?: boolean; invertBlue?: boolean; invertAll?: boolean; saturation: number; blackPoint: number; whitePoint: number; highlightHdrPixels?: boolean; hdrHighlightThreshold?: number; highlightSdrOverexposure?: boolean; sdrOverexposureThreshold?: number } = { contrast: 1, red: 1, green: 1, blue: 1, saturation: 1, blackPoint: 0, whitePoint: 1, highlightHdrPixels: false, hdrHighlightThreshold: 1, highlightSdrOverexposure: false, sdrOverexposureThreshold: 255 }
   ): Promise<void> {
-    const task = this.queue.then(() => this.renderInternal(canvas, region, brightness, sourceKey, adjustments));
+    const task = this.queue.then(() => this.renderInternal(canvas, region, sdrPixels, brightness, sourceKey, adjustments));
     this.queue = task.catch(() => undefined);
     return task;
   }
@@ -367,6 +370,7 @@ export class HdrImageBrightnessRenderer {
   private async renderInternal(
     canvas: HTMLCanvasElement,
     region: HdrLoupeRegion,
+    sdrPixels: Uint8Array,
     brightness: number,
     sourceKey: string | number,
     adjustments: { contrast: number; red: number; green: number; blue: number; invertRed?: boolean; invertGreen?: boolean; invertBlue?: boolean; invertAll?: boolean; saturation: number; blackPoint: number; whitePoint: number; highlightHdrPixels?: boolean; hdrHighlightThreshold?: number; highlightSdrOverexposure?: boolean; sdrOverexposureThreshold?: number }
@@ -400,6 +404,26 @@ export class HdrImageBrightnessRenderer {
       this.sourceHeight = region.height;
     }
 
+    // Upload original 8-bit SDR values independently of the FP16/scRGB capture.
+    if (!this.sdrSourceTexture || this.sdrSourceKey !== sourceKey) {
+      this.sdrSourceTexture?.destroy();
+      this.sdrSourceTexture = device.createTexture({
+        size: { width: region.width, height: region.height },
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      if (sdrPixels.length !== region.width * region.height * 4) {
+        throw new Error('SDR pixel buffer dimensions do not match the HDR capture region.');
+      }
+      device.queue.writeTexture(
+        { texture: this.sdrSourceTexture },
+        sdrPixels,
+        { bytesPerRow: region.width * 4, rowsPerImage: region.height },
+        { width: region.width, height: region.height, depthOrArrayLayers: 1 }
+      );
+      this.sdrSourceKey = sourceKey;
+    }
+
     device.queue.writeBuffer(this.uniformBuffer!, 0, new Float32Array([
       brightness, adjustments.contrast, adjustments.red, adjustments.green,
       adjustments.blue, adjustments.saturation, adjustments.blackPoint, adjustments.whitePoint,
@@ -412,7 +436,8 @@ export class HdrImageBrightnessRenderer {
       layout: this.pipeline!.getBindGroupLayout(0),
       entries: [
         { binding: 0, resource: this.sourceTexture!.createView() },
-        { binding: 1, resource: { buffer: this.uniformBuffer! } }
+        { binding: 1, resource: { buffer: this.uniformBuffer! } },
+        { binding: 2, resource: this.sdrSourceTexture!.createView() }
       ]
     });
     const encoder = device.createCommandEncoder();
@@ -454,6 +479,7 @@ export class HdrImageBrightnessRenderer {
       struct Params { brightness: f32, contrast: f32, red: f32, green: f32, blue: f32, saturation: f32, blackPoint: f32, whitePoint: f32, highlightEnabled: f32, highlightR: f32, highlightG: f32, highlightB: f32, highlightThreshold: f32, invertRed: f32, invertGreen: f32, invertBlue: f32, invertAll: f32, sdrOverexposureEnabled: f32, sdrOverexposureThreshold: f32, pad2: f32 };
       @group(0) @binding(0) var imageTexture: texture_2d<f32>;
       @group(0) @binding(1) var<uniform> params: Params;
+      @group(0) @binding(2) var sdrImageTexture: texture_2d<f32>;
       struct VertexOutput { @builtin(position) position: vec4<f32>, @location(0) uv: vec2<f32> };
       @vertex fn vs(@builtin(vertex_index) index: u32) -> VertexOutput {
         var positions = array<vec2<f32>, 3>(vec2<f32>(-1.0,-1.0), vec2<f32>(3.0,-1.0), vec2<f32>(-1.0,3.0));
@@ -477,14 +503,10 @@ export class HdrImageBrightnessRenderer {
           && (sourceColor.r >= params.highlightThreshold || sourceColor.g >= params.highlightThreshold || sourceColor.b >= params.highlightThreshold)) {
           return vec4<f32>(params.highlightR, params.highlightG, params.highlightB, 1.0);
         }
-        // Convert captured linear scRGB to SDR-encoded sRGB values. At the
-        // default threshold (255/255), only clipped SDR-white channel values
-        // are marked; lowering it also marks near-white values such as 250–255.
-        let sdrEncoded = clamp(vec3<f32>(
-          linearToExtendedSrgb(max(sourceColor.r, 0.0)),
-          linearToExtendedSrgb(max(sourceColor.g, 0.0)),
-          linearToExtendedSrgb(max(sourceColor.b, 0.0))
-        ), vec3<f32>(0.0), vec3<f32>(1.0));
+        // Read the separately uploaded 8-bit SDR image values (normalized by /255).
+        let sdrDims = vec2<i32>(textureDimensions(sdrImageTexture));
+        let sdrCoords = vec2<i32>(clamp(input.uv * vec2<f32>(sdrDims), vec2<f32>(0.0), vec2<f32>(sdrDims - vec2<i32>(1, 1))));
+        let sdrEncoded = textureLoad(sdrImageTexture, sdrCoords, 0).rgb;
         if (params.sdrOverexposureEnabled > 0.5
           && max(sdrEncoded.r, max(sdrEncoded.g, sdrEncoded.b)) >= params.sdrOverexposureThreshold) {
           return vec4<f32>(1.0, 0.18, 0.0, 1.0);
@@ -520,11 +542,14 @@ export class HdrImageBrightnessRenderer {
 
   dispose(): void {
     this.sourceTexture?.destroy();
+    this.sdrSourceTexture?.destroy();
     this.uniformBuffer?.destroy();
     this.device?.destroy();
     this.device = null;
     this.pipeline = null;
     this.sourceTexture = null;
+    this.sdrSourceTexture = null;
+    this.sdrSourceKey = null;
     this.uniformBuffer = null;
     this.context = null;
     this.canvas = null;
