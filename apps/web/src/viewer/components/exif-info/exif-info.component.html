@@ -40,7 +40,7 @@
 
 <section class="info-box cache-info">
   <details>
-    <summary>Cache · {{ cachePathLoading() ? 'Checking…' : cachePath() ? 'Full-size UHDR JPEG found' : 'No full-size cache file found' }}</summary>
+    <summary>Cache · {{ cachePathLoading() ? 'Checking…' : cachePath() ? 'Full-size JPEG derivative found' : 'No full-size cache file found' }}</summary>
     <div class="full-path-row">
       <div class="full-path-value" [title]="normalizedCachePath()">{{ normalizedCachePath() || (cachePathLoading() ? 'Checking cache…' : 'No cached derivative for this image') }}</div>
       <button type="button"
