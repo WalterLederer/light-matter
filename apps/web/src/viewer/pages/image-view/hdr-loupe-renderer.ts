@@ -357,7 +357,7 @@ export class HdrImageBrightnessRenderer {
     region: HdrLoupeRegion,
     brightness: number,
     sourceKey: string | number,
-    adjustments: { contrast: number; red: number; green: number; blue: number; invertRed?: boolean; invertGreen?: boolean; invertBlue?: boolean; invertAll?: boolean; saturation: number; blackPoint: number; whitePoint: number; highlightHdrPixels?: boolean; hdrHighlightThreshold?: number } = { contrast: 1, red: 1, green: 1, blue: 1, saturation: 1, blackPoint: 0, whitePoint: 1, highlightHdrPixels: false, hdrHighlightThreshold: 1 }
+    adjustments: { contrast: number; red: number; green: number; blue: number; invertRed?: boolean; invertGreen?: boolean; invertBlue?: boolean; invertAll?: boolean; saturation: number; blackPoint: number; whitePoint: number; highlightHdrPixels?: boolean; hdrHighlightThreshold?: number; highlightSdrOverexposure?: boolean; sdrOverexposureThreshold?: number } = { contrast: 1, red: 1, green: 1, blue: 1, saturation: 1, blackPoint: 0, whitePoint: 1, highlightHdrPixels: false, hdrHighlightThreshold: 1, highlightSdrOverexposure: false, sdrOverexposureThreshold: 255 }
   ): Promise<void> {
     const task = this.queue.then(() => this.renderInternal(canvas, region, brightness, sourceKey, adjustments));
     this.queue = task.catch(() => undefined);
@@ -369,7 +369,7 @@ export class HdrImageBrightnessRenderer {
     region: HdrLoupeRegion,
     brightness: number,
     sourceKey: string | number,
-    adjustments: { contrast: number; red: number; green: number; blue: number; invertRed?: boolean; invertGreen?: boolean; invertBlue?: boolean; invertAll?: boolean; saturation: number; blackPoint: number; whitePoint: number; highlightHdrPixels?: boolean; hdrHighlightThreshold?: number }
+    adjustments: { contrast: number; red: number; green: number; blue: number; invertRed?: boolean; invertGreen?: boolean; invertBlue?: boolean; invertAll?: boolean; saturation: number; blackPoint: number; whitePoint: number; highlightHdrPixels?: boolean; hdrHighlightThreshold?: number; highlightSdrOverexposure?: boolean; sdrOverexposureThreshold?: number }
   ): Promise<void> {
     const width = Math.max(1, Math.round(canvas.clientWidth || canvas.parentElement?.clientWidth || region.width));
     const height = Math.max(1, Math.round(canvas.clientHeight || canvas.parentElement?.clientHeight || region.height));
@@ -406,7 +406,7 @@ export class HdrImageBrightnessRenderer {
       adjustments.highlightHdrPixels ? 1 : 0, 1, 0, 1,
       adjustments.hdrHighlightThreshold ?? 1,
       adjustments.invertRed ? 1 : 0, adjustments.invertGreen ? 1 : 0, adjustments.invertBlue ? 1 : 0, adjustments.invertAll ? 1 : 0,
-      0, 0, 0
+      adjustments.highlightSdrOverexposure ? 1 : 0, (adjustments.sdrOverexposureThreshold ?? 255) / 255, 0
     ]));
     const bindGroup = device.createBindGroup({
       layout: this.pipeline!.getBindGroupLayout(0),
@@ -451,7 +451,7 @@ export class HdrImageBrightnessRenderer {
       toneMapping: { mode: 'extended' }
     });
     const module = device.createShaderModule({ code: `
-      struct Params { brightness: f32, contrast: f32, red: f32, green: f32, blue: f32, saturation: f32, blackPoint: f32, whitePoint: f32, highlightEnabled: f32, highlightR: f32, highlightG: f32, highlightB: f32, highlightThreshold: f32, invertRed: f32, invertGreen: f32, invertBlue: f32, invertAll: f32, pad0: f32, pad1: f32, pad2: f32 };
+      struct Params { brightness: f32, contrast: f32, red: f32, green: f32, blue: f32, saturation: f32, blackPoint: f32, whitePoint: f32, highlightEnabled: f32, highlightR: f32, highlightG: f32, highlightB: f32, highlightThreshold: f32, invertRed: f32, invertGreen: f32, invertBlue: f32, invertAll: f32, sdrOverexposureEnabled: f32, sdrOverexposureThreshold: f32, pad2: f32 };
       @group(0) @binding(0) var imageTexture: texture_2d<f32>;
       @group(0) @binding(1) var<uniform> params: Params;
       struct VertexOutput { @builtin(position) position: vec4<f32>, @location(0) uv: vec2<f32> };
@@ -476,6 +476,18 @@ export class HdrImageBrightnessRenderer {
         if (params.highlightEnabled > 0.5
           && (sourceColor.r >= params.highlightThreshold || sourceColor.g >= params.highlightThreshold || sourceColor.b >= params.highlightThreshold)) {
           return vec4<f32>(params.highlightR, params.highlightG, params.highlightB, 1.0);
+        }
+        // Convert captured linear scRGB to SDR-encoded sRGB values. At the
+        // default threshold (255/255), only clipped SDR-white channel values
+        // are marked; lowering it also marks near-white values such as 250–255.
+        let sdrEncoded = clamp(vec3<f32>(
+          linearToExtendedSrgb(max(sourceColor.r, 0.0)),
+          linearToExtendedSrgb(max(sourceColor.g, 0.0)),
+          linearToExtendedSrgb(max(sourceColor.b, 0.0))
+        ), vec3<f32>(0.0), vec3<f32>(1.0));
+        if (params.sdrOverexposureEnabled > 0.5
+          && max(sdrEncoded.r, max(sdrEncoded.g, sdrEncoded.b)) >= params.sdrOverexposureThreshold) {
+          return vec4<f32>(1.0, 0.18, 0.0, 1.0);
         }
         let linearColor = sourceColor * params.brightness;
         var encodedColor = vec3<f32>(
