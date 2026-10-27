@@ -1,5 +1,6 @@
 import { app, desktopCapturer, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
-import { enumerateMonitors, enumerateWindows, ImageEncoder, ImageEncoderPixelFormat, ImageFormat, ScreenCapture } from '@screen-capture/node';
+import { enumerateMonitors, enumerateWindows, ScreenCapture } from '@screen-capture/node';
+import { encodeExr, init as initExr } from 'exrs';
 import { CaptureResult, CaptureSources, CaptureTarget, FileListing, supportedFileExtensions } from 'internal-api';
 import * as fsSync from 'node:fs';
 import * as fs from 'node:fs/promises';
@@ -9,6 +10,17 @@ import { Injector } from '../../injector/injector';
 import { IpcRegistry } from '../decorators/ipc-registry';
 import { captureLoupeFrame, releaseLoupeFrame, sampleLoupeRegion, sampleLoupeRectangle } from '../loupe-capture';
 import App from '../app';
+
+let exrInitPromise: Promise<void> | undefined;
+
+const halfToFloat = (half: number): number => {
+  const sign = (half & 0x8000) !== 0 ? -1 : 1;
+  const exponent = (half >> 10) & 0x1f;
+  const fraction = half & 0x03ff;
+  if (exponent === 0) return fraction === 0 ? sign * 0 : sign * 2 ** -14 * (fraction / 1024);
+  if (exponent === 0x1f) return fraction === 0 ? sign * Infinity : NaN;
+  return sign * 2 ** (exponent - 15) * (1 + fraction / 1024);
+};
 
 export default class ElectronEvents {
   static bootstrapElectronEvents(): Electron.IpcMain {
@@ -279,10 +291,10 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
       throw new Error('The capture did not return the expected packed FP16 HDR frame.');
     }
 
-    logPhase(`convert RGBA16F to RGB16F (${frame.width}x${frame.height})`);
-    // JPEG XR's RGB16F encoder expects three half-float channels, without RGBA alpha.
-    // Use typed-array indexing instead of millions of Buffer.copy() calls: at 4K,
-    // the latter invokes a method over eight million times and makes the app appear frozen.
+    logPhase(`convert RGBA16F to Float32 RGBA (${frame.width}x${frame.height})`);
+    // OpenEXR's encoder accepts Float32 RGBA values. Convert the captured IEEE-754
+    // half-float bit patterns to numeric float values; copying the raw bits would
+    // corrupt HDR values. Keep all four channels from the captured frame.
     if ((frame.buffer.byteOffset & 1) !== 0 || (frame.buffer.byteLength & 1) !== 0) {
       throw new Error('The FP16 frame buffer is not aligned to 16-bit channel boundaries.');
     }
@@ -291,27 +303,27 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
       frame.buffer.byteOffset,
       frame.buffer.byteLength / 2
     );
-    const rgb = Buffer.allocUnsafe(frame.width * frame.height * 6);
-    const targetChannels = new Uint16Array(
-      rgb.buffer,
-      rgb.byteOffset,
-      rgb.byteLength / 2
-    );
-    for (let source = 0, destination = 0; source < sourceChannels.length; source += 4, destination += 3) {
-      targetChannels[destination] = sourceChannels[source];
-      targetChannels[destination + 1] = sourceChannels[source + 1];
-      targetChannels[destination + 2] = sourceChannels[source + 2];
+    const rgba = new Float32Array(frame.width * frame.height * 4);
+    for (let source = 0; source < sourceChannels.length; source++) {
+      rgba[source] = halfToFloat(sourceChannels[source]);
     }
 
-    logPhase('RGBA16F to RGB16F conversion complete');
-    logPhase('encode JPEG XR');
-    const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
-    const encoded = encoder.encode(rgb, frame.width, frame.height);
+    logPhase('FP16 to Float32 RGBA conversion complete');
+    logPhase('initialize OpenEXR encoder');
+    exrInitPromise ??= initExr();
+    await exrInitPromise;
 
-    logPhase('write JPEG XR file');
+    logPhase('encode OpenEXR');
+    const encoded = encodeExr({
+      width: frame.width,
+      height: frame.height,
+      layers: [{ name: 'rgba', channels: 'rgba', data: rgba }]
+    });
+
+    logPhase('write OpenEXR file');
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const baseName = `LightMatter_Capture_${stamp}`;
-    let outputPath = path.join(folder, `${baseName}.jxr`);
+    let outputPath = path.join(folder, `${baseName}.exr`);
     let suffix = 1;
     while (fsSync.existsSync(outputPath)) {
       outputPath = path.join(folder, `${baseName}_${suffix++}.jxr`);
