@@ -1,6 +1,6 @@
 import { app, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
-import { enumerateMonitors } from '@screen-capture/node';
-import { FileListing, supportedFileExtensions } from 'internal-api';
+import { enumerateMonitors, enumerateWindows, ImageEncoder, ImageEncoderPixelFormat, ImageFormat, ScreenCapture } from '@screen-capture/node';
+import { CaptureResult, CaptureSources, CaptureTarget, FileListing, supportedFileExtensions } from 'internal-api';
 import * as fsSync from 'node:fs';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -147,6 +147,102 @@ ipcMain.handle('Loupe.capture', async () => {
 ipcMain.handle('Loupe.sample', (_event, x: number, y: number, radius?: number) => sampleLoupeRegion(x, y, radius));
 ipcMain.handle('Loupe.region', (_event, x: number, y: number, width: number, height: number) => sampleLoupeRectangle(x, y, width, height));
 ipcMain.handle('Loupe.release', () => releaseLoupeFrame());
+
+ipcMain.handle('Capture.listSources', (): CaptureSources => {
+  if (process.platform !== 'win32') {
+    throw new Error('HDR capture of individual windows and monitors is currently supported on Windows only.');
+  }
+
+  const monitors = enumerateMonitors().map(monitor => ({
+    index: monitor.index,
+    name: monitor.name || monitor.deviceName || `Monitor ${monitor.index}`,
+    deviceName: monitor.deviceName,
+    width: monitor.width,
+    height: monitor.height,
+    refreshRate: monitor.refreshRate
+  }));
+
+  const windows = enumerateWindows()
+    .filter(window => window.isValid && window.title.trim().length > 0 && window.processId !== process.pid)
+    .map(window => ({
+      title: window.title.trim(),
+      processName: window.processName || 'Unknown application',
+      processId: window.processId,
+      handle: window.handle,
+      width: window.width,
+      height: window.height,
+      monitorIndex: window.monitorIndex
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+
+  return { monitors, windows };
+});
+
+ipcMain.handle('Capture.chooseFolder', async (_event, initialPath?: string): Promise<string | null> => {
+  const result = await dialog.showOpenDialog(App.mainWindow, {
+    title: 'Choose HDR capture folder',
+    defaultPath: initialPath || undefined,
+    properties: ['openDirectory', 'createDirectory']
+  });
+  return result.canceled || result.filePaths.length === 0 ? null : result.filePaths[0];
+});
+
+ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: string): Promise<CaptureResult> => {
+  if (process.platform !== 'win32') {
+    throw new Error('HDR capture is currently supported on Windows only.');
+  }
+  if (!folder || !path.isAbsolute(folder)) {
+    throw new Error('Choose a valid destination folder before capturing.');
+  }
+  if (target?.kind !== 'monitor' && target?.kind !== 'window') {
+    throw new Error('Choose a monitor or application window to capture.');
+  }
+
+  const options = target.kind === 'monitor'
+    ? { monitorIndex: target.index }
+    : { windowHandle: target.handle };
+  const capture = new ScreenCapture({
+    ...options,
+    colorFormat: 'rgba16F' as unknown as ConstructorParameters<typeof ScreenCapture>[0]['colorFormat'],
+    cursorCapture: false,
+    drawBorder: false,
+    minimumUpdateIntervalMs: 0
+  });
+
+  try {
+    await capture.start();
+    const frame = await Promise.race([
+      capture.nextFrame(),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timed out waiting for the HDR capture frame.')), 10000))
+    ]);
+    if (!frame) throw new Error('The selected capture source is no longer available.');
+    if (frame.colorFormat !== 'rgba16F' || frame.rowPitch !== frame.width * 8 ||
+        frame.buffer.byteLength !== frame.width * frame.height * 8) {
+      throw new Error('The capture did not return the expected packed FP16 HDR frame.');
+    }
+
+    // JPEG XR's RGB16F encoder expects three half-float channels, without RGBA alpha.
+    const rgb = Buffer.allocUnsafe(frame.width * frame.height * 6);
+    for (let source = 0, destination = 0; source < frame.buffer.length; source += 8, destination += 6) {
+      frame.buffer.copy(rgb, destination, source, source + 6);
+    }
+    const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
+    const encoded = encoder.encode(rgb, frame.width, frame.height);
+
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const baseName = `LightMatter_Capture_${stamp}`;
+    let outputPath = path.join(folder, `${baseName}.jxr`);
+    let suffix = 1;
+    while (fsSync.existsSync(outputPath)) {
+      outputPath = path.join(folder, `${baseName}_${suffix++}.jxr`);
+    }
+    await fs.writeFile(outputPath, encoded, { flag: 'wx' });
+    return { path: outputPath, width: frame.width, height: frame.height };
+  } finally {
+    await capture.stop().catch(() => undefined);
+  }
+});
+
 
 ipcMain.on('quit', (_, code) => app.exit(code));
 
