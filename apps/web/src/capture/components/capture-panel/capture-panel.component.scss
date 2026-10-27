@@ -127,9 +127,10 @@
   background: rgb(128 128 128 / 7%);
 }
 
-.capture-preview img {
+.capture-preview canvas {
   display: block;
   width: 100%;
+  height: auto;
   max-height: 220px;
   object-fit: contain;
   background: #111;
