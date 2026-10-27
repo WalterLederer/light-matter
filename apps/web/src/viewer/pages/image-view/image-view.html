@@ -263,6 +263,13 @@
               <input type="range" min="0" max="255" step="1" [value]="sdrOverexposureThreshold()" (input)="setSdrOverexposureThreshold($any($event.target).value)" aria-label="SDR overexposure threshold from 0 to 255"/>
             </label>
           }
+          <label class="sdr-underexposure-toggle"><input type="checkbox" [checked]="highlightSdrUnderexposure()" (change)="setSdrUnderexposureHighlight($any($event.target).checked)"/> Highlight underexposed SDR pixels</label>
+          @if (highlightSdrUnderexposure()) {
+            <label class="sdr-underexposure-threshold">
+              <span><b>SDR shadow threshold</b><span>{{sdrUnderexposureThreshold()}} / 255</span></span>
+              <input type="range" min="0" max="64" step="1" [value]="sdrUnderexposureThreshold()" (input)="setSdrUnderexposureThreshold($any($event.target).value)" aria-label="SDR underexposure threshold from 0 to 64"/>
+            </label>
+          }
           <button (click)="resetCorrections()">Reset corrections</button>
         }
       </section>
