@@ -31,11 +31,10 @@ export class CapturePanelComponent {
   protected readonly previewFrame = signal<CapturePreview | null>(null);
   protected readonly previewSize = signal('');
   protected readonly previewCanvas = viewChild<ElementRef<HTMLCanvasElement>>('previewCanvas');
-  // WebGPU's current DOM typings are not included in this project's configured TypeScript libs.
-  // Keep the WebGPU boundary structurally typed so the app builds without an extra global type package.
   private previewDevice: { destroy(): void } | null = null;
   private previewTexture: { destroy(): void } | null = null;
   private previewContext: { unconfigure(): void; configure(options: any): void; getCurrentTexture(): any } | null = null;
+  private previewRequestId = 0;
   protected readonly selectedFormat = signal<CaptureFormat>('exr');
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
@@ -47,6 +46,7 @@ export class CapturePanelComponent {
     this.previewSize.set('');
     this.status.set('');
     this.error.set(null);
+    void this.previewNow();
   };
 
   constructor() {
@@ -76,21 +76,50 @@ export class CapturePanelComponent {
       const sources = await this.captureService.listSources();
       this.monitors.set(sources.monitors);
       this.windows.set(sources.windows);
-      if (sources.sourceErrors?.length) {
-        this.error.set(sources.sourceErrors.join('\n'));
-      }
-      if (!sources.monitors.some(monitor => this.selectedTarget() === `monitor:${monitor.index}`) &&
+      if (sources.sourceErrors?.length) this.error.set(sources.sourceErrors.join('\n'));
+      const saved = this.readSavedSource();
+      const savedMonitor = saved?.kind === 'monitor' && sources.monitors.some(item => item.index === saved.index);
+      const savedWindow = saved?.kind === 'window' && sources.windows.some(item => item.executablePath && item.executablePath.toLowerCase() === saved.executablePath?.toLowerCase());
+      if (savedMonitor) {
+        this.selectedTarget.set(`monitor:${saved!.index}`);
+      } else if (savedWindow) {
+        const matchingWindow = sources.windows.find(item => item.executablePath && item.executablePath.toLowerCase() === saved!.executablePath?.toLowerCase());
+        if (matchingWindow) this.selectedTarget.set(`window:${matchingWindow.handle}`);
+      } else if (!sources.monitors.some(monitor => this.selectedTarget() === `monitor:${monitor.index}`) &&
           !sources.windows.some(window => this.selectedTarget() === `window:${window.handle}`)) {
         const firstMonitor = sources.monitors[0];
         const firstWindow = sources.windows[0];
         this.selectedTarget.set(firstMonitor ? `monitor:${firstMonitor.index}` : firstWindow ? `window:${firstWindow.handle}` : '');
       }
+      if (this.selectedTarget()) void this.previewNow();
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : String(error));
     } finally {
       this.loadingSources.set(false);
     }
   };
+
+  private readSavedSource(): { kind: 'monitor'; index: number } | { kind: 'window'; executablePath: string } | null {
+    try {
+      const value = JSON.parse(localStorage.getItem('capture.source') ?? 'null');
+      if (value?.kind === 'monitor' && Number.isSafeInteger(value.index)) return value;
+      if (value?.kind === 'window' && typeof value.executablePath === 'string') return value;
+    } catch { /* ignore invalid saved preference */ }
+    return null;
+  }
+
+  private saveSelectedSource(): void {
+    const target = this.selectedCaptureTarget();
+    if (!target) return;
+    if (target.kind === 'monitor') {
+      localStorage.setItem('capture.source', JSON.stringify({ kind: 'monitor', index: target.index }));
+      return;
+    }
+    const window = this.windows().find(item => item.handle === target.handle);
+    if (window?.executablePath) {
+      localStorage.setItem('capture.source', JSON.stringify({ kind: 'window', executablePath: window.executablePath }));
+    }
+  }
 
   protected readonly chooseFolder = async (): Promise<void> => {
     const folder = await this.captureService.chooseFolder(this.destinationFolder() || undefined);
@@ -118,23 +147,26 @@ export class CapturePanelComponent {
       this.error.set('Select a monitor or application window.');
       return;
     }
+    const requestId = ++this.previewRequestId;
     this.previewing.set(true);
     this.error.set(null);
     this.status.set('Capturing source preview…');
     try {
       const preview = await this.captureService.preview(target);
+      if (requestId !== this.previewRequestId) return;
       this.previewFrame.set(preview);
       this.previewSize.set(`${preview.width} × ${preview.height}`);
       this.status.set(`Preview ready · ${preview.width} × ${preview.height}`);
+      this.saveSelectedSource();
     } catch (error) {
+      if (requestId !== this.previewRequestId) return;
       this.previewFrame.set(null);
       this.status.set('');
       this.error.set(error instanceof Error ? error.message : String(error));
     } finally {
-      this.previewing.set(false);
+      if (requestId === this.previewRequestId) this.previewing.set(false);
     }
   };
-
 
   private readonly renderHdrPreview = async (canvas: HTMLCanvasElement, frame: CapturePreview): Promise<void> => {
     try {
@@ -151,24 +183,13 @@ export class CapturePanelComponent {
         device.destroy();
         throw new Error('Could not create a WebGPU canvas for the HDR preview.');
       }
-      context.configure({
-        device,
-        format: 'rgba16float',
-        colorSpace: 'srgb',
-        alphaMode: 'opaque',
-        toneMapping: { mode: 'extended' }
-      });
+      context.configure({ device, format: 'rgba16float', colorSpace: 'srgb', alphaMode: 'opaque', toneMapping: { mode: 'extended' } });
       const texture = device.createTexture({
         size: { width: frame.width, height: frame.height },
         format: 'rgba16float',
-        usage: 4 | 2 // GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+        usage: 4 | 2
       });
-      device.queue.writeTexture(
-        { texture },
-        frame.pixels,
-        { bytesPerRow: frame.width * 8, rowsPerImage: frame.height },
-        { width: frame.width, height: frame.height, depthOrArrayLayers: 1 }
-      );
+      device.queue.writeTexture({ texture }, frame.pixels, { bytesPerRow: frame.width * 8, rowsPerImage: frame.height }, { width: frame.width, height: frame.height, depthOrArrayLayers: 1 });
       const shader = device.createShaderModule({ code: `
         @group(0) @binding(0) var sourceTexture: texture_2d<f32>;
         struct VertexOutput { @builtin(position) position: vec4<f32>, @location(0) uv: vec2<f32> };
@@ -191,25 +212,10 @@ export class CapturePanelComponent {
           return vec4<f32>(linearToExtendedSrgb(linearColor.r), linearToExtendedSrgb(linearColor.g), linearToExtendedSrgb(linearColor.b), 1.0);
         }
       ` });
-      const pipeline = device.createRenderPipeline({
-        layout: 'auto',
-        vertex: { module: shader, entryPoint: 'vs' },
-        fragment: { module: shader, entryPoint: 'fs', targets: [{ format: 'rgba16float' }] },
-        primitive: { topology: 'triangle-list' }
-      });
-      const bindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [{ binding: 0, resource: texture.createView() }]
-      });
+      const pipeline = device.createRenderPipeline({ layout: 'auto', vertex: { module: shader, entryPoint: 'vs' }, fragment: { module: shader, entryPoint: 'fs', targets: [{ format: 'rgba16float' }] }, primitive: { topology: 'triangle-list' } });
+      const bindGroup = device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries: [{ binding: 0, resource: texture.createView() }] });
       const encoder = device.createCommandEncoder();
-      const pass = encoder.beginRenderPass({
-        colorAttachments: [{
-          view: context.getCurrentTexture().createView(),
-          clearValue: { r: 0, g: 0, b: 0, a: 1 },
-          loadOp: 'clear',
-          storeOp: 'store'
-        }]
-      });
+      const pass = encoder.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: 'clear', storeOp: 'store' }] });
       pass.setPipeline(pipeline);
       pass.setBindGroup(0, bindGroup);
       pass.draw(3);
@@ -246,14 +252,11 @@ export class CapturePanelComponent {
       this.error.set('Choose a destination folder first.');
       return;
     }
-
     this.capturing.set(true);
     this.error.set(null);
     this.status.set('Capturing HDR frame…');
     try {
       const result = await this.captureService.capture(target, folder, this.selectedFormat());
-      // Refresh the folder from disk so the capture appears in the gallery and
-      // becomes part of the current image-navigation sequence immediately.
       this.galleryLocations.addLocation(folder);
       await firstValueFrom(this.galleryState.navigateTo(folder).pipe(take(1)));
       await firstValueFrom(this.viewNavigator.selectImage(result.path).pipe(take(1)));
