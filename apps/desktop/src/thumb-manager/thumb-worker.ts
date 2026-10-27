@@ -515,6 +515,7 @@ if (parentPort) {
     const { id, source, target, width, height } = request;
 
     console.log(`[ThumbWorker] Processing ${source}...`);
+    let processingStage = 'initialization';
 
     try {
       if (cancelledRequests.has(id)) {
@@ -546,13 +547,16 @@ if (parentPort) {
       const sourceExtension = extname(source).toLowerCase();
 
       if (sourceExtension === '.exr') {
+        processingStage = 'loading EXR decoder';
         const decoder = await getExrDecoder();
+        processingStage = 'decoding EXR pixels';
         const decoded = decoder.decodeRgbExr(await readFile(source));
 
         if (decoded.interleavedRgbPixels.length !== decoded.width * decoded.height * 3) {
           throw new Error('The EXR image does not contain standard RGB channels.');
         }
 
+        processingStage = 'creating libvips float image';
         using image = vips.Image.newFromMemory(
           decoded.interleavedRgbPixels,
           decoded.width,
@@ -570,10 +574,13 @@ if (parentPort) {
             width,
             height
           );
+          processingStage = 'resizing EXR thumbnail';
           using scrgb = cropped.copy({ interpretation: vips.Interpretation.scrgb });
+          processingStage = 'encoding EXR thumbnail as Ultra HDR JPEG';
           scrgb.uhdrsave(target, { Q: 90 });
         } else {
           using scrgb = image.copy({ interpretation: vips.Interpretation.scrgb });
+          processingStage = 'encoding full-size EXR derivative as Ultra HDR JPEG';
           scrgb.uhdrsave(target, { Q: 90 });
         }
       } else if (sourceExtension === '.hdr') {
@@ -901,6 +908,7 @@ if (parentPort) {
       if (extname(source).toLowerCase() === '.exr') {
         // Verify the encoded JPEG by reopening it through libvips' UltraHDR loader.
         // This distinguishes a missing/invalid gain map from a rendering issue in Chromium.
+        processingStage = 'verifying generated Ultra HDR JPEG';
         using encoded = vips.Image.newFromFile(target);
         const fields = encoded.getFields();
         const gainmapFields: string[] = [];
@@ -926,7 +934,11 @@ if (parentPort) {
       parentPort?.postMessage({ id, success: true } satisfies ThumbWorkerResponse);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error(`[ThumbWorker] Thumbnail generation error (${source}):`, errorMessage);
+      const errorDetails = err instanceof Error
+        ? `${err.name}: ${err.message}${err.stack ? `\\n${err.stack}` : ''}`
+        : Object.prototype.toString.call(err);
+      console.error(`[ThumbWorker] Thumbnail generation error (${source}) at stage "${processingStage}": ${errorMessage}`);
+      console.error('[ThumbWorker] Thumbnail error details:', errorDetails, err);
       parentPort?.postMessage(
         {
           id,
