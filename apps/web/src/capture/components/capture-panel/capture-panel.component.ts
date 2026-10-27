@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CaptureFormat, CaptureMonitor, CaptureTarget, CaptureWindow } from 'internal-api';
+import { CaptureFormat, CaptureMonitor, CapturePreview, CaptureTarget, CaptureWindow } from 'internal-api';
 import { filter, firstValueFrom, take } from 'rxjs';
 import { CaptureService } from '../../../ipc/capture';
 import { GalleryLocations } from '../../../gallery/services/gallery-locations/gallery-locations';
@@ -28,15 +28,19 @@ export class CapturePanelComponent {
   protected readonly loadingSources = signal(false);
   protected readonly capturing = signal(false);
   protected readonly previewing = signal(false);
-  protected readonly previewUrl = signal<string | null>(null);
+  protected readonly previewFrame = signal<CapturePreview | null>(null);
   protected readonly previewSize = signal('');
+  protected readonly previewCanvas = viewChild<ElementRef<HTMLCanvasElement>>('previewCanvas');
+  private previewDevice: GPUDevice | null = null;
+  private previewTexture: GPUTexture | null = null;
+  private previewContext: GPUCanvasContext | null = null;
   protected readonly selectedFormat = signal<CaptureFormat>('exr');
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
   protected readonly toggleExpanded = (): void => this.expanded.update(value => !value);
   protected readonly changeTarget = (value: string): void => {
     this.selectedTarget.set(value);
-    this.previewUrl.set(null);
+    this.previewFrame.set(null);
     this.previewSize.set('');
     this.status.set('');
     this.error.set(null);
@@ -53,6 +57,11 @@ export class CapturePanelComponent {
         if (!this.destinationFolder()) this.destinationFolder.set(path);
       });
 
+    effect(() => {
+      const frame = this.previewFrame();
+      const canvas = this.previewCanvas()?.nativeElement;
+      if (frame && canvas) void this.renderHdrPreview(canvas, frame);
+    });
     void this.loadSources();
   }
 
@@ -110,16 +119,115 @@ export class CapturePanelComponent {
     this.status.set('Capturing source preview…');
     try {
       const preview = await this.captureService.preview(target);
-      this.previewUrl.set(preview.dataUrl);
+      this.previewFrame.set(preview);
       this.previewSize.set(`${preview.width} × ${preview.height}`);
       this.status.set(`Preview ready · ${preview.width} × ${preview.height}`);
     } catch (error) {
-      this.previewUrl.set(null);
+      this.previewFrame.set(null);
       this.status.set('');
       this.error.set(error instanceof Error ? error.message : String(error));
     } finally {
       this.previewing.set(false);
     }
+  };
+
+
+  private readonly renderHdrPreview = async (canvas: HTMLCanvasElement, frame: CapturePreview): Promise<void> => {
+    try {
+      if (!navigator.gpu) throw new Error('WebGPU is unavailable; HDR preview cannot be displayed.');
+      this.disposeHdrPreview();
+      canvas.width = frame.width;
+      canvas.height = frame.height;
+      const adapter = await navigator.gpu.requestAdapter();
+      if (!adapter) throw new Error('No WebGPU adapter is available for the HDR preview.');
+      const device = await adapter.requestDevice();
+      const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
+      if (!context) {
+        device.destroy();
+        throw new Error('Could not create a WebGPU canvas for the HDR preview.');
+      }
+      context.configure({
+        device,
+        format: 'rgba16float',
+        colorSpace: 'srgb',
+        alphaMode: 'opaque',
+        toneMapping: { mode: 'extended' }
+      });
+      const texture = device.createTexture({
+        size: { width: frame.width, height: frame.height },
+        format: 'rgba16float',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      device.queue.writeTexture(
+        { texture },
+        frame.pixels,
+        { bytesPerRow: frame.width * 8, rowsPerImage: frame.height },
+        { width: frame.width, height: frame.height, depthOrArrayLayers: 1 }
+      );
+      const shader = device.createShaderModule({ code: `
+        @group(0) @binding(0) var sourceTexture: texture_2d<f32>;
+        struct VertexOutput { @builtin(position) position: vec4<f32>, @location(0) uv: vec2<f32> };
+        @vertex fn vs(@builtin(vertex_index) index: u32) -> VertexOutput {
+          var positions = array<vec2<f32>, 3>(vec2<f32>(-1.0, -1.0), vec2<f32>(3.0, -1.0), vec2<f32>(-1.0, 3.0));
+          var output: VertexOutput;
+          let p = positions[index];
+          output.position = vec4<f32>(p, 0.0, 1.0);
+          output.uv = vec2<f32>((p.x + 1.0) * 0.5, (1.0 - p.y) * 0.5);
+          return output;
+        }
+        fn linearToExtendedSrgb(value: f32) -> f32 {
+          if (value <= 0.0031308) { return value * 12.92; }
+          return 1.055 * pow(value, 1.0 / 2.4) - 0.055;
+        }
+        @fragment fn fs(input: VertexOutput) -> @location(0) vec4<f32> {
+          let dims = vec2<i32>(textureDimensions(sourceTexture));
+          let coords = vec2<i32>(clamp(input.uv * vec2<f32>(dims), vec2<f32>(0.0), vec2<f32>(dims - vec2<i32>(1, 1))));
+          let linearColor = textureLoad(sourceTexture, coords, 0).rgb * 0.4;
+          return vec4<f32>(linearToExtendedSrgb(linearColor.r), linearToExtendedSrgb(linearColor.g), linearToExtendedSrgb(linearColor.b), 1.0);
+        }
+      ` });
+      const pipeline = device.createRenderPipeline({
+        layout: 'auto',
+        vertex: { module: shader, entryPoint: 'vs' },
+        fragment: { module: shader, entryPoint: 'fs', targets: [{ format: 'rgba16float' }] },
+        primitive: { topology: 'triangle-list' }
+      });
+      const bindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [{ binding: 0, resource: texture.createView() }]
+      });
+      const encoder = device.createCommandEncoder();
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: context.getCurrentTexture().createView(),
+          clearValue: { r: 0, g: 0, b: 0, a: 1 },
+          loadOp: 'clear',
+          storeOp: 'store'
+        }]
+      });
+      pass.setPipeline(pipeline);
+      pass.setBindGroup(0, bindGroup);
+      pass.draw(3);
+      pass.end();
+      device.queue.submit([encoder.finish()]);
+      this.previewDevice = device;
+      this.previewTexture = texture;
+      this.previewContext = context;
+      this.status.set(`HDR preview ready · ${frame.width} × ${frame.height} · WebGPU FP16/scRGB`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.error.set(message);
+      console.error('[HDR Capture] WebGPU preview failed:', error);
+    }
+  };
+
+  private readonly disposeHdrPreview = (): void => {
+    try { this.previewContext?.unconfigure(); } catch { /* already unconfigured */ }
+    this.previewTexture?.destroy();
+    this.previewDevice?.destroy();
+    this.previewTexture = null;
+    this.previewDevice = null;
+    this.previewContext = null;
   };
 
   protected readonly captureNow = async (): Promise<void> => {
