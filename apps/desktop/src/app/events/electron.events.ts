@@ -277,6 +277,7 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
       .map(window => ({
         title: window.title.trim(),
         processName: window.processName || 'Unknown application',
+        executablePath: (window as typeof window & { executablePath?: string; processPath?: string }).executablePath ?? (window as typeof window & { processPath?: string }).processPath,
         processId: window.processId,
         handle: window.handle,
         width: window.width,
@@ -304,6 +305,7 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
         return [{
           title,
           processName: 'Windows application',
+          executablePath: undefined,
           processId: 0,
           handle,
           width: 0,
@@ -360,20 +362,17 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
     let encoded: Buffer | Uint8Array;
     if (format === 'jxr') {
       logPhase('pack RGB16F and encode JPEG XR');
-      // ImageEncoderPixelFormat.Rgb16F expects tightly packed RGB triples, not
-      // the RGBA16F source stride. Passing RGBA directly shifts every pixel's
-      // channel interpretation and produces visibly wrong colours.
-      const rgb = Buffer.allocUnsafe(frame.width * frame.height * 3 * 2);
-      for (let pixel = 0; pixel < frame.width * frame.height; pixel++) {
-        const source = pixel * 4;
-        const destination = pixel * 6;
-        for (let channel = 0; channel < 3; channel++) {
-          const value = halfToFloat(sourceChannels[source + channel]) * CAPTURE_BRIGHTNESS_CORRECTION;
-          rgb.writeUInt16LE(floatToHalf(value), destination + channel * 2);
-        }
+      // Keep the native RGBA16F layout. The Windows JPEG XR encoder reported
+      // WINCODEC_ERR_INSUFFICIENTBUFFER when given a tightly packed RGB16F buffer.
+      // Use the encoder's RGBA16F pixel format so channel order and row size agree.
+      const rgba = Buffer.allocUnsafe(frame.width * frame.height * 4 * 2);
+      for (let channelIndex = 0; channelIndex < sourceChannels.length; channelIndex++) {
+        const channel = channelIndex % 4;
+        const value = halfToFloat(sourceChannels[channelIndex]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
+        rgba.writeUInt16LE(floatToHalf(value), channelIndex * 2);
       }
-      const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
-      encoded = encoder.encode(rgb, frame.width, frame.height);
+      const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgba16F);
+      encoded = encoder.encode(rgba, frame.width, frame.height);
     } else {
       logPhase(`convert native RGBA16F to Float32 RGBA (${frame.width}x${frame.height}) without brightness correction`);
       const rgba = new Float32Array(frame.width * frame.height * 4);
