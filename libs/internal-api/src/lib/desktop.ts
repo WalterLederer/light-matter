@@ -73,6 +73,46 @@ export interface DesktopLoupe {
   readonly release: () => Promise<void>;
 }
 
+export interface CaptureMonitor {
+  index: number;
+  name: string;
+  deviceName: string;
+  width: number;
+  height: number;
+  refreshRate: number;
+}
+
+export interface CaptureWindow {
+  title: string;
+  processName: string;
+  processId: number;
+  handle: number;
+  width: number;
+  height: number;
+  monitorIndex?: number;
+}
+
+export interface CaptureSources {
+  monitors: CaptureMonitor[];
+  windows: CaptureWindow[];
+}
+
+export type CaptureTarget =
+  | { kind: 'monitor'; index: number }
+  | { kind: 'window'; handle: number };
+
+export interface CaptureResult {
+  path: string;
+  width: number;
+  height: number;
+}
+
+export interface DesktopCapture {
+  readonly listSources: () => Promise<CaptureSources>;
+  readonly chooseFolder: (initialPath?: string) => Promise<string | null>;
+  readonly capture: (target: CaptureTarget, folder: string) => Promise<CaptureResult>;
+}
+
 export interface DesktopHistogram {
   readonly calculate: (path: string) => Promise<ApiResponse<ImageHistogram>>;
 }
@@ -85,6 +125,7 @@ export interface Desktop {
   readonly CacheManager: DesktopCacheManager;
   readonly Histogram: DesktopHistogram;
   readonly Loupe: DesktopLoupe;
+  readonly Capture: DesktopCapture;
 
   openFolder: () => Promise<FileListing>;
   openFile: () => Promise<FileListing>;
