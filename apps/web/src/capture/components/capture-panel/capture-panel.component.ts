@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CaptureMonitor, CaptureTarget, CaptureWindow } from 'internal-api';
 import { filter, firstValueFrom, take } from 'rxjs';
 import { CaptureService } from '../../../ipc/capture';
+import { GalleryLocations } from '../../../gallery/services/gallery-locations/gallery-locations';
 import { GalleryState } from '../../../gallery/services/gallery-state/gallery-state';
 import { ViewNavigator } from '../../../viewer/services/view-navigator/view-navigator';
 
@@ -15,6 +16,7 @@ import { ViewNavigator } from '../../../viewer/services/view-navigator/view-navi
 export class CapturePanelComponent {
   private readonly captureService = inject(CaptureService);
   private readonly galleryState = inject(GalleryState);
+  private readonly galleryLocations = inject(GalleryLocations);
   private readonly viewNavigator = inject(ViewNavigator);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -112,6 +114,7 @@ export class CapturePanelComponent {
       const result = await this.captureService.capture(target, folder);
       // Refresh the folder from disk so the capture appears in the gallery and
       // becomes part of the current image-navigation sequence immediately.
+      this.galleryLocations.addLocation(folder);
       await firstValueFrom(this.galleryState.navigateTo(folder).pipe(take(1)));
       await firstValueFrom(this.viewNavigator.selectImage(result.path).pipe(take(1)));
       this.status.set(`Saved ${result.width} × ${result.height} HDR · ${result.path}`);
