@@ -335,8 +335,9 @@ ipcMain.handle('Capture.chooseFolder', async (_event, initialPath?: string): Pro
 
 ipcMain.handle('Capture.preview', async (_event, target: CaptureTarget): Promise<{ width: number; height: number; pixels: Uint16Array }> => {
   console.info('[HDR Capture] preview requested');
-  const frame = await getHdrFrame(target);
-  // Copy the packed FP16 pixels into an aligned typed array for structured-clone IPC.
+  // Always capture a fresh frame for Preview. The resulting frame remains cached
+  // so Save can reuse exactly the image the user just inspected.
+  const frame = await captureHdrFrame(target);
   const pixels = new Uint16Array(frame.buffer.buffer.slice(frame.buffer.byteOffset, frame.buffer.byteOffset + frame.buffer.byteLength));
   console.info(`[HDR Capture] send FP16 frame to WebGPU preview (${frame.width}x${frame.height})`);
   return { width: frame.width, height: frame.height, pixels };
@@ -358,21 +359,26 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
     const sourceChannels = new Uint16Array(frame.buffer.buffer, frame.buffer.byteOffset, frame.buffer.byteLength / 2);
     let encoded: Buffer | Uint8Array;
     if (format === 'jxr') {
-      logPhase('apply brightness correction and encode JPEG XR');
-      const corrected = Buffer.allocUnsafe(frame.buffer.byteLength);
-      for (let channelIndex = 0; channelIndex < sourceChannels.length; channelIndex++) {
-        const channel = channelIndex % 4;
-        const value = halfToFloat(sourceChannels[channelIndex]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
-        corrected.writeUInt16LE(floatToHalf(value), channelIndex * 2);
+      logPhase('pack RGB16F and encode JPEG XR');
+      // ImageEncoderPixelFormat.Rgb16F expects tightly packed RGB triples, not
+      // the RGBA16F source stride. Passing RGBA directly shifts every pixel's
+      // channel interpretation and produces visibly wrong colours.
+      const rgb = Buffer.allocUnsafe(frame.width * frame.height * 3 * 2);
+      for (let pixel = 0; pixel < frame.width * frame.height; pixel++) {
+        const source = pixel * 4;
+        const destination = pixel * 6;
+        for (let channel = 0; channel < 3; channel++) {
+          const value = halfToFloat(sourceChannels[source + channel]) * CAPTURE_BRIGHTNESS_CORRECTION;
+          rgb.writeUInt16LE(floatToHalf(value), destination + channel * 2);
+        }
       }
       const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
-      encoded = encoder.encode(corrected, frame.width, frame.height);
+      encoded = encoder.encode(rgb, frame.width, frame.height);
     } else {
-      logPhase(`convert corrected RGBA16F to Float32 RGBA (${frame.width}x${frame.height})`);
+      logPhase(`convert native RGBA16F to Float32 RGBA (${frame.width}x${frame.height}) without brightness correction`);
       const rgba = new Float32Array(frame.width * frame.height * 4);
       for (let source = 0; source < sourceChannels.length; source++) {
-        const channel = source % 4;
-        rgba[source] = halfToFloat(sourceChannels[source]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
+        rgba[source] = halfToFloat(sourceChannels[source]);
       }
       logPhase('initialize OpenEXR encoder');
       exrInitPromise ??= initExr();
@@ -391,8 +397,6 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
     let suffix = 1;
     while (fsSync.existsSync(outputPath)) outputPath = path.join(folder, `${baseName}_${suffix++}.${format}`);
     await fs.writeFile(outputPath, encoded, { flag: 'wx' });
-    // A preview frame is consumed by the next successful save. Subsequent saves
-    // must capture a fresh frame rather than silently reusing an old screen state.
     if (cachedHdrFrame === frame) cachedHdrFrame = null;
     return { path: outputPath, width: frame.width, height: frame.height };
   } catch (error) {
