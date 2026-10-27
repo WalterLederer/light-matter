@@ -52,6 +52,9 @@ export class CapturePanelComponent {
       const sources = await this.captureService.listSources();
       this.monitors.set(sources.monitors);
       this.windows.set(sources.windows);
+      if (sources.sourceErrors?.length) {
+        this.error.set(sources.sourceErrors.join('\n'));
+      }
       if (!sources.monitors.some(monitor => this.selectedTarget() === `monitor:${monitor.index}`) &&
           !sources.windows.some(window => this.selectedTarget() === `window:${window.handle}`)) {
         const firstMonitor = sources.monitors[0];
