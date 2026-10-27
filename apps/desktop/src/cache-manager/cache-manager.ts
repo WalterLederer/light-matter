@@ -102,6 +102,33 @@ export class CacheManager {
     return { path: this.cacheDir, ...totals, fullSize, thumbnails };
   };
 
+  @IpcHandler({ name: 'CacheManager.imageCachePath' })
+  readonly imageCachePath = async (sourceName: string): Promise<string | null> => {
+    const extension = extname(sourceName).toLowerCase();
+    if (![ '.jxr', '.avif', '.heif', '.heic', '.exr', '.hdr', '.tif', '.tiff' ].includes(extension)) {
+      return null;
+    }
+
+    const sourceTag = `${extension.slice(1)}${[ '.tif', '.tiff' ].includes(extension) ? '-full-hdr-v6' : extension === '.exr' ? '-full-uhdr-v2' : '-full-uhdr'}`;
+    const entry = this.exists(sourceName, sourceTag);
+    if (!entry || typeof entry['target_path'] !== 'string') {
+      return null;
+    }
+
+    try {
+      const [ sourceStats, cacheStats ] = await Promise.all([
+        stat(sourceName),
+        stat(entry['target_path'])
+      ]);
+      if (entry['source_size'] !== sourceStats.size || entry['updated_at'] !== sourceStats.mtimeMs || !cacheStats.isFile()) {
+        return null;
+      }
+      return entry['target_path'];
+    } catch {
+      return null;
+    }
+  };
+
   @IpcHandler({ name: 'CacheManager.openCacheFolder' })
   readonly openCacheFolder = async (): Promise<string> => {
     await mkdir(this.cacheDir, { recursive: true });
