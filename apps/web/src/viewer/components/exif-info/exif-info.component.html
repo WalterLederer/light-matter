@@ -52,6 +52,14 @@
         <span class="copy-path-icon" aria-hidden="true">⧉</span>
         {{ copyCachePathStatus() || 'Copy cache path' }}
       </button>
+      <button type="button"
+              class="copy-path-button"
+              [disabled]="cachePathLoading()"
+              (click)="refreshCachePath()"
+              title="Refresh cache lookup"
+              aria-label="Refresh cache lookup">
+        ↻ Refresh
+      </button>
     </div>
   </details>
 </section>
