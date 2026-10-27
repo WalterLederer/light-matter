@@ -8,7 +8,7 @@
     <div class="capture-content">
       <label class="capture-field">
         <span>Source</span>
-        <select [value]="selectedTarget()" (change)="selectedTarget.set($any($event.target).value)" [disabled]="loadingSources() || capturing()">
+        <select [value]="selectedTarget()" (change)="changeTarget($any($event.target).value)" [disabled]="loadingSources() || capturing() || previewing()">
           @for (monitor of monitors(); track monitor.index) {
             <option [value]="'monitor:' + monitor.index">
               Monitor {{ monitor.index }} · {{ monitor.width }} × {{ monitor.height }}
@@ -26,13 +26,31 @@
         {{ loadingSources() ? 'Loading sources…' : 'Refresh windows and monitors' }}
       </button>
 
+      <label class="capture-field">
+        <span>Save format</span>
+        <select [value]="selectedFormat()" (change)="selectedFormat.set($any($event.target).value)" [disabled]="capturing() || previewing()">
+          <option value="exr">OpenEXR (.exr)</option>
+          <option value="jxr">JPEG XR (.jxr)</option>
+        </select>
+      </label>
+
+      <button type="button" class="capture-secondary-button" (click)="previewNow()" [disabled]="previewing() || capturing() || loadingSources() || !selectedTarget()">
+        {{ previewing() ? 'Creating preview…' : 'Preview source' }}
+      </button>
+      @if (previewUrl()) {
+        <figure class="capture-preview">
+          <img [src]="previewUrl()!" alt="HDR capture source preview" />
+          <figcaption>{{ previewSize() }} · SDR preview with HDR brightness correction</figcaption>
+        </figure>
+      }
+
       <div class="capture-destination">
         <span>Save folder</span>
         <div class="capture-folder-path">{{ destinationFolder() || 'No folder selected' }}</div>
         <button type="button" class="capture-secondary-button" (click)="chooseFolder()" [disabled]="capturing()">Choose folder…</button>
       </div>
 
-      <button type="button" class="capture-primary-button" (click)="captureNow()" [disabled]="capturing() || loadingSources() || !selectedTarget() || !destinationFolder()">
+      <button type="button" class="capture-primary-button" (click)="captureNow()" [disabled]="capturing() || previewing() || loadingSources() || !selectedTarget() || !destinationFolder()">
         {{ capturing() ? 'Capturing…' : 'Capture HDR image' }}
       </button>
 
@@ -45,7 +63,7 @@
       @if (monitors().length === 0 && !loadingSources() && !error()) {
         <p class="capture-error" role="alert">No monitors were detected by the capture API.</p>
       }
-      <p class="capture-format-note">Saved as JPEG XR (.jxr) using the captured FP16 HDR pixel data.</p>
+      <p class="capture-format-note">Brightness correction: 0.4 · Selected format: {{ selectedFormat() === 'exr' ? 'OpenEXR (.exr)' : 'JPEG XR (.jxr)' }}.</p>
     </div>
   }
 </section>
