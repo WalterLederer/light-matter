@@ -391,6 +391,9 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
     let suffix = 1;
     while (fsSync.existsSync(outputPath)) outputPath = path.join(folder, `${baseName}_${suffix++}.${format}`);
     await fs.writeFile(outputPath, encoded, { flag: 'wx' });
+    // A preview frame is consumed by the next successful save. Subsequent saves
+    // must capture a fresh frame rather than silently reusing an old screen state.
+    if (cachedHdrFrame === frame) cachedHdrFrame = null;
     return { path: outputPath, width: frame.width, height: frame.height };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
