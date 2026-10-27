@@ -1,4 +1,4 @@
-import { app, shell } from 'electron';
+import { app, shell, type IpcMainInvokeEvent } from 'electron';
 import { nanoid } from 'nanoid/non-secure';
 import { existsSync, mkdirSync } from 'node:fs';
 import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises';
@@ -103,7 +103,7 @@ export class CacheManager {
   };
 
   @IpcHandler({ name: 'CacheManager.imageCachePath' })
-  readonly imageCachePath = async (sourceName: string): Promise<string | null> => {
+  readonly imageCachePath = async (_event: IpcMainInvokeEvent, sourceName: string): Promise<string | null> => {
     const extension = extname(sourceName).toLowerCase();
     if (![ '.jxr', '.avif', '.heif', '.heic', '.exr', '.hdr', '.tif', '.tiff' ].includes(extension)) {
       return null;
