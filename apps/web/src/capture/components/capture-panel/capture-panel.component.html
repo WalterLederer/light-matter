@@ -22,7 +22,7 @@
         </select>
       </label>
 
-      <button type="button" class="capture-secondary-button" (click)="loadSources()" [disabled]="loadingSources() || capturing()">
+      <button type="button" class="capture-secondary-button" (click)="loadSources()" [disabled]="loadingSources() || capturing() || previewing()">
         {{ loadingSources() ? 'Loading sources…' : 'Refresh windows and monitors' }}
       </button>
 
@@ -47,7 +47,7 @@
       <div class="capture-destination">
         <span>Save folder</span>
         <div class="capture-folder-path">{{ destinationFolder() || 'No folder selected' }}</div>
-        <button type="button" class="capture-secondary-button" (click)="chooseFolder()" [disabled]="capturing()">Choose folder…</button>
+        <button type="button" class="capture-secondary-button" (click)="chooseFolder()" [disabled]="capturing() || previewing()">Choose folder…</button>
       </div>
 
       <button type="button" class="capture-primary-button" (click)="captureNow()" [disabled]="capturing() || previewing() || loadingSources() || !selectedTarget() || !destinationFolder()">
