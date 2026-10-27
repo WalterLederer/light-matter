@@ -359,7 +359,8 @@ export class ImageView {
     this.mainImageBrightness() !== 1 || this.imageContrast() !== 1 ||
     this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1 ||
     this.invertRedChannel() || this.invertGreenChannel() || this.invertBlueChannel() || this.invertAllRgbChannels() ||
-    this.colorIntensity() !== 1 || this.blackPoint() !== 0 || this.whitePoint() !== 1 || this.highlightHdrPixels()
+    this.colorIntensity() !== 1 || this.blackPoint() !== 0 || this.whitePoint() !== 1 ||
+    this.highlightHdrPixels() || this.highlightSdrOverexposure()
   );
   protected readonly setMainBrightness = (v: string | number): void => {
     this.mainImageBrightness.set(Math.max(0, Math.min(2, Number(v))));
