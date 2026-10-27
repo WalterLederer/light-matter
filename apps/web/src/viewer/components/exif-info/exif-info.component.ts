@@ -49,10 +49,12 @@ export class ExifInfoComponent {
   readonly copyCachePathStatus = signal('');
 
   private cachePathRequestId = 0;
+  readonly cachePathRefresh = signal(0);
 
   constructor() {
     effect(() => {
       const sourcePath = this.path();
+      this.cachePathRefresh();
       // Recheck after the image load completes: the raw-image request may still be
       // generating the full-size derivative when this component first appears.
       this.loadDuration();
@@ -76,6 +78,8 @@ export class ExifInfoComponent {
       });
     });
   }
+
+  readonly refreshCachePath = (): void => this.cachePathRefresh.update(value => value + 1);
 
   readonly normalizedCachePath = (): string => {
     const value = this.cachePath() ?? '';
