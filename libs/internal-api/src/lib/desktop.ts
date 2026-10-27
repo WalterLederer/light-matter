@@ -111,7 +111,8 @@ export interface CaptureResult {
 export interface CapturePreview {
   width: number;
   height: number;
-  dataUrl: string;
+  /** Packed RGBA16F/scRGB pixels from the native HDR capture, not an SDR conversion. */
+  pixels: Uint16Array;
 }
 
 export type CaptureFormat = 'exr' | 'jxr';
