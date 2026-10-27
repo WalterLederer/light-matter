@@ -1,0 +1,116 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.capture-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid rgb(128 128 128 / 28%);
+}
+
+.capture-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.capture-chevron {
+  display: inline-block;
+  flex: 0 0 12px;
+  width: 12px;
+  text-align: center;
+  opacity: 0.8;
+}
+
+.capture-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding-left: 19px;
+}
+
+.capture-field,
+.capture-destination {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  min-width: 0;
+}
+
+.capture-field > span,
+.capture-destination > span {
+  font-weight: 600;
+}
+
+.capture-panel select {
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  padding: 4px 6px;
+  color: inherit;
+  background: rgb(128 128 128 / 10%);
+  border: 1px solid rgb(128 128 128 / 40%);
+  border-radius: 4px;
+  font: inherit;
+}
+
+.capture-folder-path {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.85em;
+  opacity: 0.8;
+  user-select: text;
+}
+
+.capture-secondary-button,
+.capture-primary-button {
+  width: 100%;
+  min-height: 30px;
+  padding: 5px 8px;
+  color: inherit;
+  background: rgb(128 128 128 / 10%);
+  border: 1px solid rgb(128 128 128 / 40%);
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.capture-primary-button {
+  font-weight: 700;
+  background: rgb(70 140 230 / 20%);
+  border-color: rgb(70 140 230 / 60%);
+}
+
+.capture-panel button:disabled,
+.capture-panel select:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.capture-status,
+.capture-error,
+.capture-format-note {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+
+.capture-status { opacity: 0.85; }
+.capture-error { color: #e45a5a; }
+.capture-format-note { opacity: 0.65; }
