@@ -39,6 +39,12 @@ export class CapturePanelComponent {
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
   protected readonly toggleExpanded = (): void => this.expanded.update(value => !value);
+
+  protected readonly windowExecutableName = (window: CaptureWindow): string => {
+    const path = window.executablePath ?? '';
+    const executable = path.split(/[\\/]/).pop();
+    return executable || window.processName || 'Unknown executable';
+  };
   protected readonly changeTarget = (value: string): void => {
     this.disposeHdrPreview();
     this.selectedTarget.set(value);
