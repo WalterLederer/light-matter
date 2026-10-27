@@ -81,6 +81,11 @@ export class ExifInfoComponent {
 
   readonly refreshCachePath = (): void => this.cachePathRefresh.update(value => value + 1);
 
+  readonly rawImageUrl = (): string => {
+    const sourcePath = this.path();
+    return sourcePath ? `atom://app/raw?image=${encodeURIComponent(sourcePath)}` : '';
+  };
+
   readonly normalizedCachePath = (): string => {
     const value = this.cachePath() ?? '';
     // Display cache paths with native Windows separators and single backslashes.
