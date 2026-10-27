@@ -85,6 +85,8 @@ export interface CaptureMonitor {
 export interface CaptureWindow {
   title: string;
   processName: string;
+  /** Stable executable path, when provided by the native window enumerator. */
+  executablePath?: string;
   processId: number;
   handle: number;
   width: number;
