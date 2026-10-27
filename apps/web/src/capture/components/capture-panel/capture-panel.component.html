@@ -1,0 +1,48 @@
+<section class="capture-panel">
+  <button class="capture-heading" type="button" (click)="expanded.update(value => !value)" [attr.aria-expanded]="expanded()">
+    <span class="capture-chevron">{{ expanded() ? 'v' : '>' }}</span>
+    Capture
+  </button>
+
+  @if (expanded()) {
+    <div class="capture-content">
+      <label class="capture-field">
+        <span>Source</span>
+        <select [value]="selectedTarget()" (change)="selectedTarget.set($any($event.target).value)" [disabled]="loadingSources() || capturing()">
+          @for (monitor of monitors(); track monitor.index) {
+            <option [value]="'monitor:' + monitor.index">
+              Monitor {{ monitor.index }} · {{ monitor.width }} × {{ monitor.height }}
+            </option>
+          }
+          @for (window of windows(); track window.handle) {
+            <option [value]="'window:' + window.handle">
+              {{ window.title }} · {{ window.width }} × {{ window.height }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <button type="button" class="capture-secondary-button" (click)="loadSources()" [disabled]="loadingSources() || capturing()">
+        {{ loadingSources() ? 'Loading sources…' : 'Refresh windows and monitors' }}
+      </button>
+
+      <div class="capture-destination">
+        <span>Save folder</span>
+        <div class="capture-folder-path">{{ destinationFolder() || 'No folder selected' }}</div>
+        <button type="button" class="capture-secondary-button" (click)="chooseFolder()" [disabled]="capturing()">Choose folder…</button>
+      </div>
+
+      <button type="button" class="capture-primary-button" (click)="captureNow()" [disabled]="capturing() || loadingSources() || !selectedTarget() || !destinationFolder()">
+        {{ capturing() ? 'Capturing…' : 'Capture HDR image' }}
+      </button>
+
+      @if (status()) {
+        <p class="capture-status" role="status">{{ status() }}</p>
+      }
+      @if (error()) {
+        <p class="capture-error" role="alert">{{ error() }}</p>
+      }
+      <p class="capture-format-note">Saved as JPEG XR (.jxr), preserving the captured FP16 HDR values.</p>
+    </div>
+  }
+</section>
