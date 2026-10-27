@@ -191,7 +191,7 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
         fetchWindowIcons: false
       });
       windows = sources.flatMap(source => {
-        const match = /^window:(\\d+):/.exec(source.id);
+        const match = /^window:(\d+):/.exec(source.id);
         if (!match) return [];
         const handle = Number(match[1]);
         if (!Number.isSafeInteger(handle) || handle <= 0) return [];
