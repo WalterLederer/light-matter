@@ -56,6 +56,12 @@ const api: Desktop = {
     release: () => ipcRenderer.invoke('Loupe.release')
   },
 
+  Capture: {
+    listSources: () => ipcRenderer.invoke('Capture.listSources'),
+    chooseFolder: (initialPath?: string) => ipcRenderer.invoke('Capture.chooseFolder', initialPath),
+    capture: (target, folder: string) => ipcRenderer.invoke('Capture.capture', target, folder)
+  },
+
   // TODO: Deprecated methods, should be moved into a handler class in the future
   openFolder: () => ipcRenderer.invoke('openFolder'),
   openFile: () => ipcRenderer.invoke('openFile'),
