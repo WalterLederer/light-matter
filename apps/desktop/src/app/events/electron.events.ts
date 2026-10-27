@@ -281,11 +281,29 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
 
     logPhase(`convert RGBA16F to RGB16F (${frame.width}x${frame.height})`);
     // JPEG XR's RGB16F encoder expects three half-float channels, without RGBA alpha.
+    // Use typed-array indexing instead of millions of Buffer.copy() calls: at 4K,
+    // the latter invokes a method over eight million times and makes the app appear frozen.
+    if ((frame.buffer.byteOffset & 1) !== 0 || (frame.buffer.byteLength & 1) !== 0) {
+      throw new Error('The FP16 frame buffer is not aligned to 16-bit channel boundaries.');
+    }
+    const sourceChannels = new Uint16Array(
+      frame.buffer.buffer,
+      frame.buffer.byteOffset,
+      frame.buffer.byteLength / 2
+    );
     const rgb = Buffer.allocUnsafe(frame.width * frame.height * 6);
-    for (let source = 0, destination = 0; source < frame.buffer.length; source += 8, destination += 6) {
-      frame.buffer.copy(rgb, destination, source, source + 6);
+    const targetChannels = new Uint16Array(
+      rgb.buffer,
+      rgb.byteOffset,
+      rgb.byteLength / 2
+    );
+    for (let source = 0, destination = 0; source < sourceChannels.length; source += 4, destination += 3) {
+      targetChannels[destination] = sourceChannels[source];
+      targetChannels[destination + 1] = sourceChannels[source + 1];
+      targetChannels[destination + 2] = sourceChannels[source + 2];
     }
 
+    logPhase('RGBA16F to RGB16F conversion complete');
     logPhase('encode JPEG XR');
     const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
     const encoded = encoder.encode(rgb, frame.width, frame.height);
