@@ -1,9 +1,10 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { ExifTags } from 'internal-api';
 import { ByteSizePipe } from '../../../ui/pipes/byte-size/byte-size.pipe';
 import { ImageDimensions } from '../../services/image-positioning/image-positioning.types';
 import { imageDynamicRangeDiagnostics } from '../../utils/image-dynamic-range';
+import { CacheManager } from '../../../ipc/cache-manager';
 
 @Component({
   selector: 'app-exif-info',
@@ -38,6 +39,60 @@ export class ExifInfoComponent {
   readonly requiresConversion = input(false);
 
   readonly path = input('');
+
+  private readonly cacheManager = inject(CacheManager);
+
+  readonly cachePath = signal<string | null>(null);
+
+  readonly cachePathLoading = signal(false);
+
+  readonly copyCachePathStatus = signal('');
+
+  private cachePathRequestId = 0;
+
+  constructor() {
+    effect(() => {
+      const sourcePath = this.path();
+      const requestId = ++this.cachePathRequestId;
+      this.cachePath.set(null);
+      this.cachePathLoading.set(!!sourcePath);
+      if (!sourcePath) {
+        this.cachePathLoading.set(false);
+        return;
+      }
+
+      this.cacheManager.imageCachePath(sourcePath).then(path => {
+        if (requestId !== this.cachePathRequestId) return;
+        this.cachePath.set(path ? path.replace(/\\/g, '\\\\').replace(/\\\\/g, '\\\\') : null);
+        this.cachePathLoading.set(false);
+      }).catch(error => {
+        if (requestId !== this.cachePathRequestId) return;
+        console.error('Failed to retrieve image cache path', error);
+        this.cachePath.set(null);
+        this.cachePathLoading.set(false);
+      });
+    });
+  }
+
+  readonly normalizedCachePath = (): string => {
+    const value = this.cachePath() ?? '';
+    // Cache paths are displayed as native Windows paths with single backslashes.
+    return value.replace(/\\/g, '/').replace(/\\/g, '\\\\').replace(/\\\\/g, '\\\\');
+  };
+
+  readonly copyCachePath = async (): Promise<void> => {
+    const path = this.normalizedCachePath();
+    if (!path) return;
+    try {
+      await navigator.clipboard.writeText(path);
+      this.copyCachePathStatus.set('Copied');
+      window.setTimeout(() => this.copyCachePathStatus.set(''), 1800);
+    } catch (error) {
+      console.error('Failed to copy cache path to clipboard', error);
+      this.copyCachePathStatus.set('Copy failed');
+      window.setTimeout(() => this.copyCachePathStatus.set(''), 2500);
+    }
+  };
 
   readonly copyPathStatus = signal('');
 
