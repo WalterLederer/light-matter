@@ -42,6 +42,9 @@
       @if (error()) {
         <p class="capture-error" role="alert">{{ error() }}</p>
       }
+      @if (monitors().length === 0 && !loadingSources() && !error()) {
+        <p class="capture-error" role="alert">No monitors were detected by the capture API.</p>
+      }
       <p class="capture-format-note">Saved as JPEG XR (.jxr) using the captured FP16 HDR pixel data.</p>
     </div>
   }
