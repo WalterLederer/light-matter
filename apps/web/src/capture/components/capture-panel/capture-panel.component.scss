@@ -114,3 +114,29 @@
 .capture-status { opacity: 0.85; }
 .capture-error { color: #e45a5a; }
 .capture-format-note { opacity: 0.65; }
+
+.capture-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid rgb(128 128 128 / 35%);
+  border-radius: 4px;
+  background: rgb(128 128 128 / 7%);
+}
+
+.capture-preview img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  background: #111;
+}
+
+.capture-preview figcaption {
+  overflow-wrap: anywhere;
+  font-size: 0.78em;
+  opacity: 0.7;
+}
