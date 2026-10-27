@@ -417,6 +417,16 @@ export class ImageView {
     this.refreshHdrImageAdjustments();
   };
   protected readonly hdrHighlightThresholdNits = (): number => Math.round(this.hdrHighlightThreshold() * 80);
+  protected readonly highlightSdrOverexposure = signal(false);
+  protected readonly sdrOverexposureThreshold = signal(255);
+  protected readonly setSdrOverexposureHighlight = (enabled: boolean): void => {
+    this.highlightSdrOverexposure.set(enabled);
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly setSdrOverexposureThreshold = (value: string | number): void => {
+    this.sdrOverexposureThreshold.set(Math.max(0, Math.min(255, Math.round(Number(value)))));
+    this.refreshHdrImageAdjustments();
+  };
   protected readonly resetCorrections = (): void => {
     this.mainImageBrightness.set(1);
     this.imageContrast.set(1);
@@ -1259,7 +1269,9 @@ export class ImageView {
         blackPoint: this.blackPoint(),
         whitePoint: this.whitePoint(),
         highlightHdrPixels: this.highlightHdrPixels(),
-        hdrHighlightThreshold: this.hdrHighlightThreshold()
+        hdrHighlightThreshold: this.hdrHighlightThreshold(),
+        highlightSdrOverexposure: this.highlightSdrOverexposure(),
+        sdrOverexposureThreshold: this.sdrOverexposureThreshold()
       }
     );
     if (request === this.hdrImageAdjustmentRequest && this.hdrImageAdjustmentActive()) {
