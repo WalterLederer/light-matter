@@ -319,10 +319,7 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
       throw new Error('The capture did not return the expected packed FP16 HDR frame.');
     }
 
-    logPhase(`apply brightness correction and convert RGBA16F (${frame.width}x${frame.height})`);
-    // OpenEXR's encoder accepts Float32 RGBA values. Convert the captured IEEE-754
-    // half-float bit patterns to numeric float values; copying the raw bits would
-    // corrupt HDR values. Keep all four channels from the captured frame.
+    logPhase('prepare corrected FP16 frame');
     if ((frame.buffer.byteOffset & 1) !== 0 || (frame.buffer.byteLength & 1) !== 0) {
       throw new Error('The FP16 frame buffer is not aligned to 16-bit channel boundaries.');
     }
@@ -331,32 +328,31 @@ ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: 
       frame.buffer.byteOffset,
       frame.buffer.byteLength / 2
     );
-    const rgba = new Float32Array(frame.width * frame.height * 4);
-    for (let source = 0; source < sourceChannels.length; source++) {
-      const channel = source % 4;
-      rgba[source] = halfToFloat(sourceChannels[source]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
-    }
-
-    logPhase('FP16 to Float32 RGBA conversion complete');
-    logPhase('initialize OpenEXR encoder');
-    exrInitPromise ??= initExr();
-    await exrInitPromise;
 
     let encoded: Buffer | Uint8Array;
     if (format === 'jxr') {
-      logPhase('encode JPEG XR from corrected RGBA16F');
+      logPhase('apply brightness correction and encode JPEG XR');
       const corrected = Buffer.allocUnsafe(frame.buffer.byteLength);
-      for (let pixel = 0; pixel < sourceChannels.length; pixel++) {
-        const channel = pixel % 4;
-        const value = halfToFloat(sourceChannels[pixel]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
-        corrected.writeUInt16LE(floatToHalf(value), pixel * 2);
+      for (let channelIndex = 0; channelIndex < sourceChannels.length; channelIndex++) {
+        const channel = channelIndex % 4;
+        const value = halfToFloat(sourceChannels[channelIndex]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
+        corrected.writeUInt16LE(floatToHalf(value), channelIndex * 2);
       }
-      // The native encoder's RGB16F format is backed by a four-channel 16-bit
-      // Windows bitmap. Preserve the packed 8-byte RGBA pixels; dropping alpha
-      // produces a too-small buffer and triggers WINCODEC_ERR_INSUFFICIENTBUFFER.
+      // Keep all four 16-bit channels. The native RGB16F encoder expects a
+      // packed 8-byte-per-pixel buffer; a 6-byte RGB-only buffer is too small.
       const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
       encoded = encoder.encode(corrected, frame.width, frame.height);
     } else {
+      logPhase(`convert corrected RGBA16F to Float32 RGBA (${frame.width}x${frame.height})`);
+      const rgba = new Float32Array(frame.width * frame.height * 4);
+      for (let source = 0; source < sourceChannels.length; source++) {
+        const channel = source % 4;
+        rgba[source] = halfToFloat(sourceChannels[source]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
+      }
+      logPhase('FP16 to Float32 RGBA conversion complete');
+      logPhase('initialize OpenEXR encoder');
+      exrInitPromise ??= initExr();
+      await exrInitPromise;
       logPhase('encode OpenEXR');
       encoded = encodeExr({
         width: frame.width,
