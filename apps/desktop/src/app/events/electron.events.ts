@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
+import { app, desktopCapturer, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
 import { enumerateMonitors, enumerateWindows, ImageEncoder, ImageEncoderPixelFormat, ImageFormat, ScreenCapture } from '@screen-capture/node';
 import { CaptureResult, CaptureSources, CaptureTarget, FileListing, supportedFileExtensions } from 'internal-api';
 import * as fsSync from 'node:fs';
@@ -180,9 +180,41 @@ ipcMain.handle('Capture.listSources', (): CaptureSources => {
         monitorIndex: window.monitorIndex
       }))
       .sort((a, b) => a.title.localeCompare(b.title));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    sourceErrors.push(`Could not enumerate application windows: ${message}`);
+  } catch (nativeError) {
+    // The native enumerator can fail with E_ACCESSDENIED on some windows.
+    // Try Electron's own source list as a fallback so window capture remains
+    // available when its source IDs expose a native HWND.
+    try {
+      const sources = await desktopCapturer.getSources({
+        types: ['window'],
+        thumbnailSize: { width: 0, height: 0 },
+        fetchWindowIcons: false
+      });
+      windows = sources.flatMap(source => {
+        const match = /^window:(\\d+):/.exec(source.id);
+        if (!match) return [];
+        const handle = Number(match[1]);
+        if (!Number.isSafeInteger(handle) || handle <= 0) return [];
+        const title = source.name.trim();
+        if (!title || title.toLowerCase().startsWith('light matter')) return [];
+        return [{
+          title,
+          processName: 'Windows application',
+          processId: 0,
+          handle,
+          width: 0,
+          height: 0
+        }];
+      }).sort((a, b) => a.title.localeCompare(b.title));
+      if (windows.length === 0) {
+        const message = nativeError instanceof Error ? nativeError.message : String(nativeError);
+        sourceErrors.push(`Native window enumeration failed (${message}); Electron fallback did not return usable window handles.`);
+      }
+    } catch (fallbackError) {
+      const nativeMessage = nativeError instanceof Error ? nativeError.message : String(nativeError);
+      const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+      sourceErrors.push(`Window enumeration failed. Native API: ${nativeMessage}. Electron fallback: ${fallbackMessage}`);
+    }
   }
 
   return { monitors, windows, sourceErrors };
