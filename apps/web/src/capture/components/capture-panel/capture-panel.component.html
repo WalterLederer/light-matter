@@ -33,7 +33,7 @@
                     [attr.title]="row.favorite ? 'Remove favorite' : 'Add favorite'"
                     (click)="toggleFavorite(row, $event)">{{ row.favorite ? '★' : '☆' }}</button>
                   <button type="button" class="capture-source-select capture-source-table" [disabled]="row.minimized" (click)="selectSourceRow(row.value)">
-                    <span class="capture-source-exe">{{ row.favorite ? '* ' : '' }}{{ row.exe }}</span>
+                    <span class="capture-source-exe">{{ row.exe }}</span>
                     <span class="capture-source-title" [title]="row.title">{{ row.title }}</span>
                     <span class="capture-source-size">{{ row.size }}</span>
                     <span class="capture-source-status">{{ row.status }}</span>
