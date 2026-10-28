@@ -95,6 +95,8 @@ export interface CaptureWindow {
   width: number;
   height: number;
   monitorIndex?: number;
+  /** Win32 monitor device name (for example, \\.\DISPLAY1), when resolved. */
+  monitorDeviceName?: string;
   /** Whether the window is currently minimized. */
   isMinimized?: boolean;
 }
