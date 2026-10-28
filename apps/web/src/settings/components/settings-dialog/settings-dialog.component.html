@@ -23,6 +23,7 @@
 
   }
 
+  @if (mode() !== 'general') {
   <section>
     <details class="cache-details">
       <summary>Cache · {{ currentCache.entries }} files · {{ currentCache.bytes | byteSize }}</summary>
@@ -99,8 +100,10 @@
     }
 
     </details>
+  </section>
+  }
 
-    @if (mode() !== 'general') {
+  @if (mode() !== 'cache') {
     <section class="format-details info-box">
       <details>
       <summary>Supported image formats · {{ formatSummary.hdr }} HDR formats · {{ formatSummary.sdr }} SDR formats · {{ formatSummary.decoders }} decoders</summary>
@@ -148,8 +151,6 @@
       </div>
       </details>
     </section>
-  </section>
-    }
   <section class="debug-settings">
     <details>
       <summary>Debug</summary>
@@ -187,7 +188,6 @@
       </div>
     </details>
   </section>
-
   }
 
 </div>
