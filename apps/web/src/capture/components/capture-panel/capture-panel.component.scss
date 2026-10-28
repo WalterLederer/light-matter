@@ -73,13 +73,14 @@
   z-index: 1000;
   top: calc(100% + 3px);
   left: 0;
-  width: max-content;
-  min-width: 100%;
-  max-width: min(960px, calc(100vw - 40px));
+  width: min(1100px, calc(100vw - 48px));
+  min-width: min(760px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
   max-height: 360px;
   overflow: auto;
-  color: inherit;
-  background: var(--surface-color, #252525);
+  color: CanvasText;
+  background: Canvas;
+  color-scheme: light dark;
   border: 1px solid rgb(128 128 128 / 55%);
   border-radius: 5px;
   box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
@@ -102,7 +103,8 @@
   padding: 0 8px 0 0;
   font-size: 0.78em;
   font-weight: 700;
-  background: var(--surface-color, #252525);
+  color: CanvasText;
+  background: Canvas;
   border-bottom: 1px solid rgb(128 128 128 / 40%);
 }
 
@@ -177,7 +179,8 @@
 
 @media (max-width: 680px) {
   .capture-source-menu {
-    width: calc(100vw - 40px);
+    width: calc(100vw - 32px);
+    min-width: 0;
   }
 
   .capture-source-table {
