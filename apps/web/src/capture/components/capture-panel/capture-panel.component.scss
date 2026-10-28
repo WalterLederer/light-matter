@@ -94,15 +94,17 @@
   min-width: 0;
 }
 
-.capture-source-header {
+  .capture-source-header {
   position: sticky;
   top: 0;
   z-index: 1;
+  display: grid;
   grid-template-columns: 48px minmax(150px, 1fr) minmax(260px, 2fr) 130px 150px;
   min-height: 30px;
   padding: 0 8px 0 0;
   font-size: 0.78em;
   font-weight: 700;
+  text-align: center;
   color: CanvasText;
   background: Canvas;
   border-bottom: 1px solid rgb(128 128 128 / 40%);
