@@ -17,6 +17,7 @@ type CaptureSourceRow = {
   size: string;
   status: string;
   minimized: boolean;
+  unavailable: boolean;
 };
 
 @Component({
@@ -38,6 +39,7 @@ export class CapturePanelComponent {
   protected readonly selectedTarget = signal('monitor:1');
   protected readonly sourceMenuOpen = signal(false);
   protected readonly favoriteKeys = signal<string[]>(this.readFavoriteKeys());
+  protected readonly unavailableTargets = signal<string[]>([]);
   protected readonly destinationFolder = signal('');
   protected readonly loadingSources = signal(false);
   protected readonly capturing = signal(false);
@@ -65,7 +67,8 @@ export class CapturePanelComponent {
         title: monitor.name || monitor.deviceName || `Monitor ${monitor.index}`,
         size: `${monitor.width} × ${monitor.height}`,
         status: monitor.refreshRate ? `${monitor.refreshRate} Hz` : '',
-        minimized: false
+        minimized: false,
+        unavailable: this.unavailableTargets().includes(value)
       };
     });
     const windows: CaptureSourceRow[] = this.windows().map(window => {
@@ -77,12 +80,13 @@ export class CapturePanelComponent {
         exe: this.windowExecutableName(window),
         title: window.title,
         size: `${window.width} × ${window.height}`,
-        status: window.isMinimized ? '[Minimized]' : '',
-        minimized: !!window.isMinimized
+        status: window.isMinimized ? '[Minimized]' : this.unavailableTargets().includes(value) ? '[Not capturable]' : '',
+        minimized: !!window.isMinimized,
+        unavailable: this.unavailableTargets().includes(value)
       };
     });
     return [...monitors, ...windows].sort((a, b) =>
-      Number(a.minimized) - Number(b.minimized) ||
+      Number(a.minimized || a.unavailable) - Number(b.minimized || b.unavailable) ||
       Number(b.favorite) - Number(a.favorite) ||
       a.exe.localeCompare(b.exe, undefined, { sensitivity: 'base' }) ||
       a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
@@ -108,7 +112,7 @@ export class CapturePanelComponent {
 
   protected readonly selectSourceRow = (value: string): void => {
     const row = this.sourceRows().find(item => item.value === value);
-    if (row?.minimized) return;
+    if (row?.minimized || row?.unavailable) return;
     this.sourceMenuOpen.set(false);
     this.changeTarget(value);
   };
@@ -289,7 +293,11 @@ export class CapturePanelComponent {
       if (requestId !== this.previewRequestId) return;
       this.previewFrame.set(null);
       this.status.set('');
-      this.error.set(error instanceof Error ? error.message : String(error));
+      const message = error instanceof Error ? error.message : String(error);
+      if (target.kind === 'window' && /0x80070057|Falscher Parameter|invalid parameter/i.test(message)) {
+        this.unavailableTargets.update(keys => keys.includes(`window:${target.handle}`) ? keys : [...keys, `window:${target.handle}`]);
+      }
+      this.error.set(message);
     } finally {
       if (requestId === this.previewRequestId) this.previewing.set(false);
     }
