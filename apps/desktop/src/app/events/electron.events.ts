@@ -255,7 +255,7 @@ ipcMain.handle('Loupe.release', () => releaseLoupeFrame());
 
 const queryWindowsMonitorHdrModes = (): Record<string, boolean | null> => {
   if (process.platform !== 'win32') return {};
-  const script = String.raw\`
+  const script = String.raw`
     $ErrorActionPreference = 'Stop'
     [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
     $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
@@ -325,7 +325,7 @@ public static class LightMatterDisplayConfig {
 }
 '@
     [LightMatterDisplayConfig]::GetModes() | ConvertTo-Json -Compress -Depth 4
-  \`;
+  `;
   try {
     const raw = execFileSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
       { encoding: 'utf8', windowsHide: true, timeout: 10000 }).trim();
