@@ -328,3 +328,10 @@
 .capture-source-row.is-minimized .capture-source-status {
   color: #888;
 }
+
+
+.capture-source-row.is-minimized,
+.capture-source-row.is-minimized .capture-source-select,
+.capture-source-row.is-minimized .capture-source-favorite {
+  color: #888;
+}
