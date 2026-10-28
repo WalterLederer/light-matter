@@ -292,6 +292,7 @@ public sealed class LightMatterWindowRow {
   public int width { get; set; }
   public int height { get; set; }
   public int monitorIndex { get; set; }
+  public string monitorDeviceName { get; set; }
   public bool isMinimized { get; set; }
 }
 
@@ -299,12 +300,22 @@ public static class LightMatterWindowEnumerator {
   private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
   [StructLayout(LayoutKind.Sequential)]
   private struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+  private struct MONITORINFOEX {
+    public int cbSize;
+    public RECT rcMonitor;
+    public RECT rcWork;
+    public uint dwFlags;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string szDevice;
+  }
   [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
   [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hWnd);
   [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr hWnd);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int maxCount);
   [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
   [DllImport("user32.dll", SetLastError=true)] private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+  [DllImport("user32.dll")] private static extern IntPtr MonitorFromRect(ref RECT rect, uint flags);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode, SetLastError=true)] private static extern bool GetMonitorInfoW(IntPtr monitor, ref MONITORINFOEX info);
   [DllImport("kernel32.dll", SetLastError=true)] private static extern IntPtr OpenProcess(uint access, bool inheritHandle, uint processId);
   [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] private static extern bool QueryFullProcessImageNameW(IntPtr process, uint flags, StringBuilder path, ref uint size);
   [DllImport("kernel32.dll", SetLastError=true)] private static extern bool CloseHandle(IntPtr handle);
@@ -332,8 +343,20 @@ public static class LightMatterWindowEnumerator {
       }
       RECT rect;
       int width = 0, height = 0;
-      if (GetWindowRect(hWnd, out rect)) { width = Math.Max(0, rect.Right - rect.Left); height = Math.Max(0, rect.Bottom - rect.Top); }
-      rows.Add(new LightMatterWindowRow { handle = hWnd.ToInt64().ToString(), title = title, processId = pid, executablePath = exePath, width = width, height = height, monitorIndex = -1, isMinimized = IsIconic(hWnd) });
+      string monitorDeviceName = null;
+      if (GetWindowRect(hWnd, out rect)) {
+        width = Math.Max(0, rect.Right - rect.Left);
+        height = Math.Max(0, rect.Bottom - rect.Top);
+        if (width >= 100 && height >= 100 && !IsIconic(hWnd)) {
+          IntPtr monitor = MonitorFromRect(ref rect, 2); // MONITOR_DEFAULTTONEAREST
+          if (monitor != IntPtr.Zero) {
+            var monitorInfo = new MONITORINFOEX();
+            monitorInfo.cbSize = Marshal.SizeOf(typeof(MONITORINFOEX));
+            if (GetMonitorInfoW(monitor, ref monitorInfo)) monitorDeviceName = monitorInfo.szDevice;
+          }
+        }
+      }
+      rows.Add(new LightMatterWindowRow { handle = hWnd.ToInt64().ToString(), title = title, processId = pid, executablePath = exePath, width = width, height = height, monitorIndex = -1, monitorDeviceName = monitorDeviceName, isMinimized = IsIconic(hWnd) });
       return true;
     }, IntPtr.Zero);
     return rows.ToArray();
@@ -350,7 +373,7 @@ public static class LightMatterWindowEnumerator {
     ], { encoding: 'utf8', windowsHide: true, timeout: 20000 }).trim();
     const nativeRows = JSON.parse(nativeJson || '[]') as Array<{
       handle: string; title: string; processId: number; executablePath?: string | null;
-      width: number; height: number; monitorIndex: number; isMinimized: boolean;
+      width: number; height: number; monitorIndex: number; monitorDeviceName?: string | null; isMinimized: boolean;
     }>;
     windows = nativeRows
       .filter(window => Number(window.processId) !== process.pid)
@@ -365,6 +388,7 @@ public static class LightMatterWindowEnumerator {
           width: Number(window.width) || 0,
           height: Number(window.height) || 0,
           monitorIndex: Number(window.monitorIndex) || -1,
+          monitorDeviceName: window.monitorDeviceName || undefined,
           isMinimized: Boolean(window.isMinimized)
         };
       })
