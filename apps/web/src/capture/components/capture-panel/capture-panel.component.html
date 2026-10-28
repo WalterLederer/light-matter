@@ -5,7 +5,7 @@
         <select [value]="selectedTarget()" (change)="changeTarget($any($event.target).value)" [disabled]="loadingSources() || capturing() || previewing()">
           @for (monitor of monitors(); track monitor.index) {
             <option [value]="'monitor:' + monitor.index">
-              Monitor {{ monitor.index }} · {{ monitor.width }} × {{ monitor.height }}
+              {{ monitor.name || ('Monitor ' + monitor.index) }} · {{ monitor.width }} × {{ monitor.height }}{{ monitor.refreshRate ? ' · ' + monitor.refreshRate + ' Hz' : '' }}
             </option>
           }
           @for (window of windows(); track window.handle) {
