@@ -357,8 +357,8 @@ public static class LightMatterDisplayConfig {
     var paths = new PATH_INFO[pathCount];
     uint pc = pathCount, mc = modeCount;
     // QueryDisplayConfig requires storage for the returned DISPLAYCONFIG_MODE_INFO entries.
-    // The native structure is 48 bytes on supported Windows x64 systems; we only inspect paths.
-    IntPtr modeBuffer = Marshal.AllocHGlobal(checked((int)Math.Max(1u, modeCount) * 48));
+    // The native structure is 64 bytes on supported Windows x64 systems; we only inspect paths.
+    IntPtr modeBuffer = Marshal.AllocHGlobal(checked((int)Math.Max(1u, modeCount) * 64));
     int result;
     try { result = QueryDisplayConfig(2, ref pc, paths, ref mc, modeBuffer, IntPtr.Zero); }
     finally { Marshal.FreeHGlobal(modeBuffer); }
@@ -700,15 +700,87 @@ ipcMain.handle(
         outputPath = path.join(folder, `${baseName}_${suffix++}.${extension}`);
       }
       if (format === 'uhdr') {
+
         logPhase(`convert FP16 scRGB frame to Float32 RGBA with brightness correction ${CAPTURE_BRIGHTNESS_CORRECTION}`);
+
         const rgb = new Float32Array(frame.width * frame.height * 3);
+        const channelNames = ['R', 'G', 'B'] as const;
+        const sourceMin = [Infinity, Infinity, Infinity];
+        const sourceMax = [-Infinity, -Infinity, -Infinity];
+        const outputMin = [Infinity, Infinity, Infinity];
+        const outputMax = [-Infinity, -Infinity, -Infinity];
+        const negativeCounts = [0, 0, 0];
+        const nonFiniteCounts = [0, 0, 0];
+        const zeroCounts = [0, 0, 0];
+
+        let alphaMin = Infinity;
+        let alphaMax = -Infinity;
+        let alphaNonFinite = 0;
+        let alphaNotOne = 0;
+
         for (let pixel = 0; pixel < frame.width * frame.height; pixel++) {
           const source = pixel * 4;
           const destination = pixel * 3;
-          rgb[destination] = halfToFloat(sourceChannels[source]) * CAPTURE_BRIGHTNESS_CORRECTION;
-          rgb[destination + 1] = halfToFloat(sourceChannels[source + 1]) * CAPTURE_BRIGHTNESS_CORRECTION;
-          rgb[destination + 2] = halfToFloat(sourceChannels[source + 2]) * CAPTURE_BRIGHTNESS_CORRECTION;
+
+          for (let channel = 0; channel < 3; channel++) {
+            const value = halfToFloat(sourceChannels[source + channel]);
+            const corrected = value * CAPTURE_BRIGHTNESS_CORRECTION;
+
+            rgb[destination + channel] = corrected;
+
+            if (Number.isFinite(value)) {
+              sourceMin[channel] = Math.min(sourceMin[channel], value);
+              sourceMax[channel] = Math.max(sourceMax[channel], value);
+
+              if (value < 0) negativeCounts[channel]++;
+              if (value === 0) zeroCounts[channel]++;
+            } else {
+              nonFiniteCounts[channel]++;
+            }
+
+            if (Number.isFinite(corrected)) {
+              outputMin[channel] = Math.min(outputMin[channel], corrected);
+              outputMax[channel] = Math.max(outputMax[channel], corrected);
+            }
+          }
+
+          const alpha = halfToFloat(sourceChannels[source + 3]);
+
+          if (Number.isFinite(alpha)) {
+            alphaMin = Math.min(alphaMin, alpha);
+            alphaMax = Math.max(alphaMax, alpha);
+            if (alpha !== 1) alphaNotOne++;
+          } else {
+            alphaNonFinite++;
+          }
         }
+
+        console.info('[HDR Capture] scRGB input diagnostics', {
+          width: frame.width,
+          height: frame.height,
+          pixelCount: frame.width * frame.height,
+          brightnessCorrection: CAPTURE_BRIGHTNESS_CORRECTION,
+          sourceRGB: channelNames.map((channel, i) => ({
+            channel,
+            min: sourceMin[i],
+            max: sourceMax[i],
+            negativeCount: negativeCounts[i],
+            zeroCount: zeroCounts[i],
+            nonFiniteCount: nonFiniteCounts[i]
+          })),
+          correctedRGB: channelNames.map((channel, i) => ({
+            channel,
+            min: outputMin[i],
+            max: outputMax[i]
+          })),
+          alpha: {
+            min: alphaMin,
+            max: alphaMax,
+            notOneCount: alphaNotOne,
+            nonFiniteCount: alphaNonFinite
+          }
+        });
+
         logPhase('initialize libvips Ultra HDR JPEG encoder');
         vipsInitPromise ??= Vips();
         const vips = await vipsInitPromise;
@@ -719,6 +791,7 @@ ipcMain.handle(
         logPhase('encode Ultra HDR JPEG with embedded gain map');
         scrgb.uhdrsave(outputPath, { Q: 90 });
         logPhase('Ultra HDR JPEG written');
+
       } else {
         let encoded: Buffer | Uint8Array;
         if (format === 'jxr') {
