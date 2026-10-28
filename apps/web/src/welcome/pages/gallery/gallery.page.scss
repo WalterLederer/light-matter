@@ -22,14 +22,12 @@ ui-side-panel {
 :host {
   .show-controls-sidebar { position:fixed; z-index:41; right:8px; top:8px; padding:8px; border-radius:4px; background:#202124; color:#fff; border:1px solid rgb(255 255 255 / 25%); cursor:pointer; }
   .gallery-controls-sidebar { position:relative; z-index:1; flex:0 0 auto; align-self:stretch; height:100%; min-width:280px; max-width:70vw; overflow-y:auto; overflow-x:hidden; box-sizing:border-box; padding:12px; color:#f5f5f5; background:#202124; border-left:1px solid rgb(255 255 255 / 16%); box-shadow:-4px 0 16px rgb(0 0 0 / 12%); font-size:13px; }
-  .gallery-controls-sidebar header { display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; font-size:15px; }
   .gallery-controls-sidebar .appearance-settings { border-top:0; padding-top:0; }
   .gallery-controls-sidebar .theme-toggle-button { display:flex; align-items:center; justify-content:flex-start; gap:8px; width:100%; min-height:28px; padding:4px 8px; font-size:13px; line-height:1.2; white-space:normal; overflow:visible; }
   .gallery-controls-sidebar .theme-toggle-icon { display:inline-flex; align-items:center; justify-content:center; flex:0 0 16px; width:16px; height:16px; font-size:16px; line-height:1; overflow:visible; }
   .gallery-controls-sidebar .gallery-sidebar-resize-handle { position:absolute; z-index:2; top:0; bottom:0; left:0; width:8px; cursor:ew-resize; touch-action:none; }
   .gallery-controls-sidebar .gallery-sidebar-resize-handle::after { content:""; position:absolute; top:0; bottom:0; left:3px; width:2px; background:transparent; }
   .gallery-controls-sidebar .gallery-sidebar-resize-handle:hover::after { background:#65a9ff; }
-  .gallery-controls-sidebar header { padding-left:8px; }
   .gallery-controls-sidebar app-settings-panel { display:block; min-width:0; }
   .gallery-controls-sidebar .sidebar-header-actions { display:flex; align-items:center; gap:6px; }
   .gallery-controls-sidebar button { cursor:pointer; color:inherit; background:rgb(255 255 255 / 7%); border:1px solid rgb(255 255 255 / 18%); border-radius:4px; padding:4px 8px; min-height:28px; }
@@ -48,8 +46,9 @@ ui-side-panel {
   .show-controls-sidebar { background:#f7f7f7; color:#202124; border-color:rgb(0 0 0 / 20%); }
 }
 
-:host .gallery-controls-sidebar .gallery-sidebar-tabs { position: sticky; top: 0; z-index: 6; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0 -12px 8px; padding: 6px 12px 10px; background: #202124; }
-:host .gallery-controls-sidebar .gallery-sidebar-tabs button { min-width: 0; padding: 5px 3px; font-size: 12px; }
+:host .gallery-controls-sidebar .gallery-sidebar-tabs { position:sticky; top:0; z-index:5; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; margin:0 -12px 8px; padding:6px 12px 10px; background:#202124; }
+:host .gallery-controls-sidebar .gallery-sidebar-tabs button { min-width:0; padding:5px 3px; font-size:12px; }
+:host .gallery-controls-sidebar .gallery-sidebar-tabs .sidebar-close-tab { flex:0 0 30px; font-size:18px; padding:2px; }
 :host .gallery-controls-sidebar .gallery-sidebar-tabs button.active { background: #31577d; border-color: #65a9ff; }
 :host-context(html[data-theme='light']) .gallery-controls-sidebar .gallery-sidebar-tabs { background: #f7f7f7; }
 
