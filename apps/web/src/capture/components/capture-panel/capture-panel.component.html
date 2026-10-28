@@ -56,7 +56,7 @@
 
       <label class="capture-field">
         <span>Save format</span>
-        <select [value]="selectedFormat()" (change)="selectedFormat.set($any($event.target).value)" [disabled]="capturing() || previewing()">
+        <select [value]="selectedFormat()" (change)="changeFormat($any($event.target).value)" [disabled]="capturing() || previewing()">
           <option value="exr">OpenEXR (.exr)</option>
           <option value="jxr">JPEG XR (.jxr)</option>
           <option value="uhdr">Ultra HDR JPEG (.jpg, gain map)</option>
