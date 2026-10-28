@@ -260,7 +260,7 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
 
   const monitors = enumerateMonitors().map(monitor => ({
     index: monitor.index,
-    name: monitor.name || monitor.deviceName || \`Monitor \${monitor.index}\`,
+    name: monitor.name || monitor.deviceName || `Monitor ${monitor.index}`,
     deviceName: monitor.deviceName,
     width: monitor.width,
     height: monitor.height,
@@ -278,7 +278,7 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
     // Use Win32 directly for visibility and process identity. DWM visibility is
     // deliberately not consulted: IsWindowVisible is the sole visibility test.
     const handles = enumeratedWindows.map(window => String(window.handle));
-    const script = String.raw\`
+    const script = String.raw`
       $ErrorActionPreference = 'Stop'
       Add-Type -TypeDefinition @'
 using System;
@@ -296,11 +296,11 @@ public static class LightMatterWindowNative {
       $result = foreach ($rawHandle in $handles) {
         $hwnd = [IntPtr]([Int64]$rawHandle)
         if (-not [LightMatterWindowNative]::IsWindowVisible($hwnd)) { continue }
-        [uint32]$pid = 0
-        [void][LightMatterWindowNative]::GetWindowThreadProcessId($hwnd, [ref]$pid)
+        [uint32]$processIdValue = 0
+        [void][LightMatterWindowNative]::GetWindowThreadProcessId($hwnd, [ref]$processIdValue)
         $exePath = $null
-        if ($pid -ne 0) {
-          $process = [LightMatterWindowNative]::OpenProcess(0x1000, $false, $pid)
+        if ($processIdValue -ne 0) {
+          $process = [LightMatterWindowNative]::OpenProcess(0x1000, $false, $processIdValue)
           if ($process -ne [IntPtr]::Zero) {
             try {
               $buffer = New-Object System.Text.StringBuilder 32768
@@ -313,10 +313,10 @@ public static class LightMatterWindowNative {
             }
           }
         }
-        [pscustomobject]@{ handle = [string]$rawHandle; visible = $true; processId = [uint32]$pid; executablePath = $exePath }
+        [pscustomobject]@{ handle = [string]$rawHandle; visible = $true; processId = [uint32]$processIdValue; executablePath = $exePath }
       }
       ConvertTo-Json -InputObject @($result) -Compress -Depth 3
-    \`;
+    `;
     const nativeJson = execFileSync('powershell.exe', [
       '-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
       '-Command', script, JSON.stringify(handles)
@@ -348,7 +348,7 @@ public static class LightMatterWindowNative {
     }).sort((a, b) => a.title.localeCompare(b.title));
   } catch (nativeError) {
     const message = nativeError instanceof Error ? nativeError.message : String(nativeError);
-    sourceErrors.push(\`Native window enumeration failed: \${message}\`);
+    sourceErrors.push(`Native window enumeration failed: ${message}`);
   }
 
   return { monitors, windows, sourceErrors };
