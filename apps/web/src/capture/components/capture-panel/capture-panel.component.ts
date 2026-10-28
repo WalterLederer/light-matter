@@ -20,7 +20,6 @@ export class CapturePanelComponent {
   private readonly viewNavigator = inject(ViewNavigator);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly expanded = signal(true);
   protected readonly monitors = signal<CaptureMonitor[]>([]);
   protected readonly windows = signal<CaptureWindow[]>([]);
   protected readonly selectedTarget = signal('monitor:1');
@@ -38,7 +37,6 @@ export class CapturePanelComponent {
   protected readonly selectedFormat = signal<CaptureFormat>('exr');
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
-  protected readonly toggleExpanded = (): void => this.expanded.update(value => !value);
 
   protected readonly windowExecutableName = (window: CaptureWindow): string => {
     const path = (window.executablePath ?? '').trim();
