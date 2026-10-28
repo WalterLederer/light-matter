@@ -15,6 +15,7 @@ import { CacheManager } from '../../../ipc/cache-manager';
 })
 export class ExifInfoComponent {
   /* Inputs */
+  readonly mode = input<'image' | 'cache'>('image');
   readonly exif = input<false | ExifTags>(false);
 
   readonly dimensions = input<ImageDimensions>({ width: 0, height: 0 });
