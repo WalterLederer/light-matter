@@ -75,6 +75,9 @@ export class CapturePanelComponent {
       };
     });
     const windows: CaptureSourceRow[] = this.windows().map(window => {
+      const resolvedMonitorIndex = window.monitorIndex >= 0
+        ? window.monitorIndex
+        : this.monitors().find(monitor => this.normalizeDisplayName(monitor.deviceName) === this.normalizeDisplayName((window as CaptureWindow & { monitorDeviceName?: string }).monitorDeviceName))?.index ?? -1;
       const value = `window:${window.handle}`;
       const executablePath = (window.executablePath ?? window.processName ?? 'Unknown executable').trim();
       const favoriteKey = `window:${executablePath.toLowerCase()}|${window.title.trim().toLowerCase()}`;
@@ -83,7 +86,7 @@ export class CapturePanelComponent {
         exe: this.windowExecutableName(window),
         title: window.title,
         size: `${window.width} × ${window.height}`,
-        displayMode: this.windowDisplayMode(window),
+        displayMode: this.windowDisplayMode({ ...window, monitorIndex: resolvedMonitorIndex }),
         status: window.width < 100 || window.height < 100 || this.unavailableTargets().includes(value) ? '[Not capturable]' : window.isMinimized ? '[Minimized]' : '',
         minimized: !!window.isMinimized,
         unavailable: window.width <= 0 || window.height <= 0 || this.unavailableTargets().includes(value)
@@ -98,6 +101,8 @@ export class CapturePanelComponent {
     );
   };
 
+
+  private readonly normalizeDisplayName = (name?: string): string => (name ?? '').trim().replace(/^\\\\\\.\\/i, '').toLowerCase();
 
   private readonly windowDisplayMode = (window: CaptureWindow): string => {
     if (window.isMinimized || window.width < 100 || window.height < 100 || window.monitorIndex === undefined || window.monitorIndex < 0) return '—';
