@@ -292,7 +292,7 @@ public static class LightMatterWindowNative {
   [DllImport("kernel32.dll", SetLastError=true)] public static extern bool CloseHandle(IntPtr handle);
 }
 '@
-      $handles = ConvertFrom-Json $args[0]
+      $handles = ConvertFrom-Json $env:LIGHT_MATTER_WINDOW_HANDLES
       $result = foreach ($rawHandle in $handles) {
         $hwnd = [IntPtr]([Int64]$rawHandle)
         if (-not [LightMatterWindowNative]::IsWindowVisible($hwnd)) { continue }
@@ -319,8 +319,13 @@ public static class LightMatterWindowNative {
     `;
     const nativeJson = execFileSync('powershell.exe', [
       '-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
-      '-Command', script, JSON.stringify(handles)
-    ], { encoding: 'utf8', windowsHide: true, timeout: 15000 }).trim();
+      '-Command', script
+    ], {
+      encoding: 'utf8',
+      windowsHide: true,
+      timeout: 15000,
+      env: { ...process.env, LIGHT_MATTER_WINDOW_HANDLES: JSON.stringify(handles) }
+    }).trim();
     const nativeRows = JSON.parse(nativeJson || '[]') as Array<{
       handle: string;
       visible: boolean;
