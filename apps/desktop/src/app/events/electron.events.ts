@@ -275,6 +275,9 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
   // protected processes for which Windows will not provide an executable path.
   const script = String.raw`
     $ErrorActionPreference = 'Stop'
+    # Windows PowerShell 5.1 otherwise may emit redirected native output using the active OEM code page.
+    [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+    $OutputEncoding = New-Object System.Text.UTF8Encoding($false)
     Add-Type -TypeDefinition @'
 using System;
 using System.Collections.Generic;
