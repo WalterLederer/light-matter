@@ -309,6 +309,18 @@ export class ImageView {
     view.addEventListener('pointercancel', onUp);
     this.sidebarResizeCleanup = onUp;
   };
+  protected readonly imageSidebarTabs = [{"id":"general","label":"General"},{"id":"capture","label":"Capture"},{"id":"cache","label":"Cache"},{"id":"view","label":"View"},{"id":"image","label":"Image"},{"id":"histogram","label":"Histogram"},{"id":"highlight","label":"Highlight"},{"id":"zoom","label":"Zoom"},{"id":"corrections","label":"Corrections"}];
+  private readActiveImageSidebarTab(): string {
+    try { const saved = this.document.defaultView?.localStorage.getItem('light-matter.activeImageSidebarTab'); return this.imageSidebarTabs.some(tab => tab.id === saved) ? saved! : 'general'; }
+    catch { return 'general'; }
+  }
+  protected readonly activeImageSidebarTab = signal(this.readActiveImageSidebarTab());
+  protected readonly setActiveImageSidebarTab = (tab: string): void => {
+    if (!this.imageSidebarTabs.some(item => item.id === tab)) return;
+    this.activeImageSidebarTab.set(tab);
+    try { this.document.defaultView?.localStorage.setItem('light-matter.activeImageSidebarTab', tab); } catch { /* Ignore unavailable storage. */ }
+  };
+
   protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, rgbLevels: false, inverse: false, loupe: true, loupeRenderer: false, highlight: true, toneCurve: false, mode: true, histogram: false, info: false, general: false });
   protected readonly sidebarSectionExpanded = (key: string): boolean => this.sidebarSections()[key] === true;
   protected readonly toggleSidebarSection = (key: string): void => {
