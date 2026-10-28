@@ -14,7 +14,7 @@
             <span class="capture-source-chevron" aria-hidden="true">▾</span>
           </button>
           @if (sourceMenuOpen()) {
-            <div class="capture-source-menu" role="listbox" aria-label="Capture sources">
+            <div class="capture-source-menu" [style]="sourceMenuStyle()" role="listbox" aria-label="Capture sources">
               <div class="capture-source-table capture-source-header" aria-hidden="true">
                 <span>Favorite</span>
                 <span>Exe</span>
@@ -23,7 +23,7 @@
                 <span>Status</span>
               </div>
               @for (row of sourceRows(); track row.value) {
-                <div class="capture-source-row" [class.is-selected]="selectedTarget() === row.value" [class.is-favorite]="row.favorite" [class.is-minimized]="row.minimized || row.unavailable" role="option" [attr.aria-selected]="selectedTarget() === row.value">
+                <div class="capture-source-row" [class.is-selected]="selectedTarget() === row.value" [class.is-favorite]="row.favorite" [class.is-minimized]="row.minimized || row.unavailable" [class.is-monitor]="row.kind === 'monitor'" role="option" [attr.aria-selected]="selectedTarget() === row.value">
                   <button
                     type="button"
                     class="capture-source-favorite"
