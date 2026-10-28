@@ -37,7 +37,7 @@
                     <span class="capture-source-exe">{{ row.exe }}</span>
                     <span class="capture-source-title" [title]="row.title">{{ row.title }}</span>
                     <span class="capture-source-size">{{ row.size }}</span>
-                    <span class="capture-source-mode">{{ row.displayMode }}</span>
+                    <span class="capture-source-mode" [class.is-hdr]="row.displayMode === 'HDR'">{{ row.displayMode }}</span>
                     <span class="capture-source-status">{{ row.status }}</span>
                   </button>
                 </div>
