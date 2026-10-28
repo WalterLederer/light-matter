@@ -701,18 +701,20 @@ ipcMain.handle(
       }
       if (format === 'uhdr') {
         logPhase(`convert FP16 scRGB frame to Float32 RGBA with brightness correction ${CAPTURE_BRIGHTNESS_CORRECTION}`);
-        const rgba = new Float32Array(frame.width * frame.height * 4);
-        for (let source = 0; source < sourceChannels.length; source++) {
-          const channel = source % 4;
-          const value = halfToFloat(sourceChannels[source]);
-          rgba[source] = channel === 3 ? value : value * CAPTURE_BRIGHTNESS_CORRECTION;
+        const rgb = new Float32Array(frame.width * frame.height * 3);
+        for (let pixel = 0; pixel < frame.width * frame.height; pixel++) {
+          const source = pixel * 4;
+          const destination = pixel * 3;
+          rgb[destination] = halfToFloat(sourceChannels[source]) * CAPTURE_BRIGHTNESS_CORRECTION;
+          rgb[destination + 1] = halfToFloat(sourceChannels[source + 1]) * CAPTURE_BRIGHTNESS_CORRECTION;
+          rgb[destination + 2] = halfToFloat(sourceChannels[source + 2]) * CAPTURE_BRIGHTNESS_CORRECTION;
         }
         logPhase('initialize libvips Ultra HDR JPEG encoder');
         vipsInitPromise ??= Vips();
         const vips = await vipsInitPromise;
         vips.Cache.max(0);
         vips.Cache.maxMem(0);
-        using image = vips.Image.newFromMemory(rgba, frame.width, frame.height, 4, vips.BandFormat.float);
+        using image = vips.Image.newFromMemory(rgb, frame.width, frame.height, 3, vips.BandFormat.float);
         using scrgb = image.copy({ interpretation: vips.Interpretation.scrgb });
         logPhase('encode Ultra HDR JPEG with embedded gain map');
         scrgb.uhdrsave(outputPath, { Q: 90 });
@@ -720,18 +722,18 @@ ipcMain.handle(
       } else {
         let encoded: Buffer | Uint8Array;
         if (format === 'jxr') {
-        logPhase('pack RGBA16F input and encode JPEG XR');
-        // Keep the native RGBA16F layout. The Windows JPEG XR encoder reported
-        // WINCODEC_ERR_INSUFFICIENTBUFFER when given a tightly packed RGB16F buffer.
-        // Use the encoder's RGBA16F pixel format so channel order and row size agree.
-        const rgba = Buffer.allocUnsafe(frame.width * frame.height * 4 * 2);
-        for (let channelIndex = 0; channelIndex < sourceChannels.length; channelIndex++) {
-          const channel = channelIndex % 4;
-          const value = halfToFloat(sourceChannels[channelIndex]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
-          rgba.writeUInt16LE(floatToHalf(value), channelIndex * 2);
-        }
-        const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
-        encoded = encoder.encode(rgba, frame.width, frame.height);
+          logPhase('pack RGBA16F input and encode JPEG XR');
+          // Keep the native RGBA16F layout. The Windows JPEG XR encoder reported
+          // WINCODEC_ERR_INSUFFICIENTBUFFER when given a tightly packed RGB16F buffer.
+          // Use the encoder's RGBA16F pixel format so channel order and row size agree.
+          const rgba = Buffer.allocUnsafe(frame.width * frame.height * 4 * 2);
+          for (let channelIndex = 0; channelIndex < sourceChannels.length; channelIndex++) {
+            const channel = channelIndex % 4;
+            const value = halfToFloat(sourceChannels[channelIndex]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
+            rgba.writeUInt16LE(floatToHalf(value), channelIndex * 2);
+          }
+          const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
+          encoded = encoder.encode(rgba, frame.width, frame.height);
         } else {
           logPhase(
             `convert native RGBA16F to Float32 RGBA (${frame.width}x${frame.height}) without brightness correction`
