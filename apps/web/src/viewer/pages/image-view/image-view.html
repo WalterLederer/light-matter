@@ -104,7 +104,7 @@
       </section>
       }
       @if (activeImageSidebarTab() === 'corrections') {
-      <section><strong class="section-title">Corrections</strong>
+      <section>
         @if(sidebarSectionExpanded('corrections')) {
           <label class="channel-control"><span><b>Brightness</b><span>{{((mainImageBrightness()-1)*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/></label>
           <label class="channel-control"><span><b>Contrast</b><span>{{(imageContrast()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/></label>
@@ -263,13 +263,7 @@
       }
       @if (activeImageSidebarTab() === 'histogram') {
         <section class="histogram-inline" aria-label="SDR and HDR image histogram">
-          <header class="histogram-inline-header">
-            <strong>Histogram</strong>
-            <button type="button" (click)="toggleHistogram()">{{histogramVisible() ? 'Hide histogram' : 'Calculate histogram'}}</button>
-          </header>
-          @if (!histogramVisible()) {
-            <p>Calculate the histogram for the currently displayed image.</p>
-          } @else {
+           
             @if (histogramLoading()) {
               <p>Calculating histogram…</p>
             } @else if (histogramError()) {
@@ -330,14 +324,13 @@
                 {{ histogramHoverStatus() ?? 'Move over the histogram to inspect values' }}
               </div>
             }
-          }
         </section>
       }
       @if (activeImageSidebarTab() === 'image') {
-      <section class="sidebar-image-information"><strong class="section-title">Image information (I)</strong>@if(sidebarSectionExpanded('info')){<app-exif-info [exif]="exif" [dimensions]="dimensions" [fileSize]="selected.size" [bitDepth]="imageBitDepth()" [path]="selected.path" [decoderName]="decoderForPath(selected.path)" [modifiedAt]="selected.modifiedAt" [loadDuration]="loadDuration()" [decodeDuration]="imageDecodeDuration()" [totalDuration]="imageTotalDuration()" [conversionDuration]="conversionDuration()" [fullSizeFromCache]="fullSizeFromCache()" [requiresConversion]="requiresConversion(selected.path)" />}</section>
+      <section class="sidebar-image-information">@if(sidebarSectionExpanded('info')){<app-exif-info [exif]="exif" [dimensions]="dimensions" [fileSize]="selected.size" [bitDepth]="imageBitDepth()" [path]="selected.path" [decoderName]="decoderForPath(selected.path)" [modifiedAt]="selected.modifiedAt" [loadDuration]="loadDuration()" [decodeDuration]="imageDecodeDuration()" [totalDuration]="imageTotalDuration()" [conversionDuration]="conversionDuration()" [fullSizeFromCache]="fullSizeFromCache()" [requiresConversion]="requiresConversion(selected.path)" />}</section>
       }
       @if (activeImageSidebarTab() === 'general') {
-      <section><strong class="section-title">General settings (G)</strong>@if(sidebarSectionExpanded('general')){<div class="image-theme-setting"><button class="image-theme-toggle" type="button" (click)="themeService.toggle()" [attr.aria-label]="themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'" [title]="themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'"><span class="image-theme-toggle-icon" aria-hidden="true">{{themeService.current()==='dark'?'☀':'●'}}</span><span>{{themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'}}</span></button></div><app-settings-panel mode="general" />}</section>
+      <section>@if(sidebarSectionExpanded('general')){<div class="image-theme-setting"><button class="image-theme-toggle" type="button" (click)="themeService.toggle()" [attr.aria-label]="themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'" [title]="themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'"><span class="image-theme-toggle-icon" aria-hidden="true">{{themeService.current()==='dark'?'☀':'●'}}</span><span>{{themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'}}</span></button></div><app-settings-panel mode="general" />}</section>
       }
     </aside>
   }
