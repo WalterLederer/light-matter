@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, ElementRef, HostListener, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CaptureFormat, CaptureMonitor, CapturePreview, CaptureTarget, CaptureWindow } from 'internal-api';
 import { filter, firstValueFrom, take } from 'rxjs';
@@ -31,6 +31,7 @@ export class CapturePanelComponent {
   private readonly galleryLocations = inject(GalleryLocations);
   private readonly viewNavigator = inject(ViewNavigator);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly hostElement = inject(ElementRef<HTMLElement>);
 
   protected readonly monitors = signal<CaptureMonitor[]>([]);
   protected readonly windows = signal<CaptureWindow[]>([]);
@@ -89,6 +90,19 @@ export class CapturePanelComponent {
 
   protected readonly toggleSourceMenu = (): void => {
     this.sourceMenuOpen.update(open => !open);
+  };
+
+  @HostListener('document:click', ['$event'])
+  protected readonly closeSourceMenuOnOutsideClick = (event: MouseEvent): void => {
+    const target = event.target;
+    if (!(target instanceof Element) || !this.hostElement.nativeElement.querySelector('.capture-source-picker')?.contains(target)) {
+      this.sourceMenuOpen.set(false);
+    }
+  };
+
+  @HostListener('document:keydown.escape')
+  protected readonly closeSourceMenuOnEscape = (): void => {
+    this.sourceMenuOpen.set(false);
   };
 
   protected readonly selectSourceRow = (value: string): void => {
