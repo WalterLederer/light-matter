@@ -1144,3 +1144,7 @@
 .image-controls-sidebar .rgb-inversion-row label:nth-child(2) {color:#55d98a}
 .image-controls-sidebar .rgb-inversion-row label:nth-child(3) {color:#58a6ff}
 .image-controls-sidebar .rgb-inversion-row input[type=checkbox] {width:auto;margin:0;accent-color:#65a9ff}
+
+.image-controls-sidebar .image-sidebar-tabs { position:sticky; top:0; z-index:5; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding:6px 0 10px; background:#202124; }
+.image-controls-sidebar .image-sidebar-tabs button { min-width:0; padding:5px 3px; font-size:12px; }
+.image-controls-sidebar .image-sidebar-tabs button.active { background:#31577d; border-color:#65a9ff; }
