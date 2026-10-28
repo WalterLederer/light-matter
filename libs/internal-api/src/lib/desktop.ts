@@ -124,7 +124,7 @@ export interface CapturePreview {
   pixels: Uint16Array;
 }
 
-export type CaptureFormat = 'exr' | 'jxr';
+export type CaptureFormat = 'exr' | 'jxr' | 'uhdr';
 
 export interface DesktopCapture {
   readonly listSources: () => Promise<CaptureSources>;
