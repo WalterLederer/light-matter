@@ -1235,3 +1235,37 @@
   border-color:#555;
   border-bottom-color:#202124;
 }
+
+ 
+/* Match gallery tab contrast and keep image-view labels from overlapping. */
+.image-controls-sidebar .image-sidebar-tabs {
+  background:#f2f2f2 !important;
+  display:flex;
+  flex-wrap:nowrap;
+  gap:0;
+}
+.image-controls-sidebar .image-sidebar-tabs button[role="tab"] {
+  flex:1 1 0;
+  width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  background:#d2d2d2 !important;
+  border-color:#bdbdbd !important;
+}
+.image-controls-sidebar .image-sidebar-tabs button[role="tab"].active {
+  background:#f7f7f7 !important;
+  border-color:#b8b8b8 !important;
+  border-bottom-color:#f7f7f7 !important;
+}
+.image-controls-sidebar .image-sidebar-tabs button[role="tab"]:not(.active):hover {
+  background:#c7c7c7 !important;
+}
+:host-context(html[data-theme='dark']) .image-controls-sidebar .image-sidebar-tabs {
+  background:#292b30 !important;
+}
+:host-context(html[data-theme='dark']) .image-controls-sidebar .image-sidebar-tabs button[role="tab"]:not(.active) {
+  background:#383b42 !important;
+  border-color:#50535b !important;
+}
