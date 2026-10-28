@@ -73,8 +73,8 @@
   z-index: 1000;
   top: calc(100% + 3px);
   left: 0;
-  width: min(1100px, calc(100vw - 48px));
-  min-width: min(760px, calc(100vw - 32px));
+  width: max-content;
+  min-width: min(900px, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
   max-height: 360px;
   overflow: auto;
@@ -88,7 +88,7 @@
 
 .capture-source-table {
   display: grid;
-  grid-template-columns: minmax(115px, 0.85fr) minmax(180px, 1.8fr) 110px 120px;
+  grid-template-columns: minmax(150px, 1fr) minmax(260px, 2fr) 130px 150px;
   align-items: center;
   gap: 0;
   min-width: 0;
@@ -98,7 +98,7 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  grid-template-columns: 48px minmax(115px, 0.85fr) minmax(180px, 1.8fr) 110px 120px;
+  grid-template-columns: 48px minmax(150px, 1fr) minmax(260px, 2fr) 130px 150px;
   min-height: 30px;
   padding: 0 8px 0 0;
   font-size: 0.78em;
@@ -184,11 +184,11 @@
   }
 
   .capture-source-table {
-    grid-template-columns: minmax(105px, 0.8fr) minmax(130px, 1.5fr) 85px 100px;
+    grid-template-columns: minmax(125px, 1fr) minmax(200px, 1.6fr) 100px 120px;
   }
 
   .capture-source-header {
-    grid-template-columns: 40px minmax(105px, 0.8fr) minmax(130px, 1.5fr) 85px 100px;
+    grid-template-columns: 40px minmax(125px, 1fr) minmax(200px, 1.6fr) 100px 120px;
   }
 
   .capture-source-row {
