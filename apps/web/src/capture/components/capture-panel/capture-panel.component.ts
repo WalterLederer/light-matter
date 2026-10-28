@@ -38,6 +38,7 @@ export class CapturePanelComponent {
   protected readonly windows = signal<CaptureWindow[]>([]);
   protected readonly selectedTarget = signal('monitor:1');
   protected readonly sourceMenuOpen = signal(false);
+  protected readonly sourceMenuStyle = signal<Record<string, string>>({});
   protected readonly favoriteKeys = signal<string[]>(this.readFavoriteKeys());
   protected readonly unavailableTargets = signal<string[]>([]);
   protected readonly destinationFolder = signal('');
@@ -80,21 +81,41 @@ export class CapturePanelComponent {
         exe: this.windowExecutableName(window),
         title: window.title,
         size: `${window.width} × ${window.height}`,
-        status: window.isMinimized ? '[Minimized]' : this.unavailableTargets().includes(value) ? '[Not capturable]' : '',
+        status: window.width <= 0 || window.height <= 0 || this.unavailableTargets().includes(value) ? '[Not capturable]' : window.isMinimized ? '[Minimized]' : '',
         minimized: !!window.isMinimized,
-        unavailable: this.unavailableTargets().includes(value)
+        unavailable: window.width <= 0 || window.height <= 0 || this.unavailableTargets().includes(value)
       };
     });
     return [...monitors, ...windows].sort((a, b) =>
       Number(a.minimized || a.unavailable) - Number(b.minimized || b.unavailable) ||
       Number(b.favorite) - Number(a.favorite) ||
+      Number(b.kind === 'monitor') - Number(a.kind === 'monitor') ||
       a.exe.localeCompare(b.exe, undefined, { sensitivity: 'base' }) ||
       a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
     );
   };
 
   protected readonly toggleSourceMenu = (): void => {
-    this.sourceMenuOpen.update(open => !open);
+    if (this.sourceMenuOpen()) {
+      this.sourceMenuOpen.set(false);
+      return;
+    }
+    const trigger = this.hostElement.nativeElement.querySelector('.capture-source-trigger');
+    if (trigger) {
+      const rect = trigger.getBoundingClientRect();
+      const viewportPadding = 16;
+      const maxWidth = Math.max(320, window.innerWidth - viewportPadding * 2);
+      const width = Math.min(900, maxWidth);
+      const left = Math.max(viewportPadding, Math.min(rect.right - width, window.innerWidth - width - viewportPadding));
+      this.sourceMenuStyle.set({
+        position: 'fixed',
+        top: `${Math.min(rect.bottom + 3, window.innerHeight - 120)}px`,
+        left: `${left}px`,
+        width: `${width}px`,
+        maxWidth: `calc(100vw - ${viewportPadding * 2}px)`
+      });
+    }
+    this.sourceMenuOpen.set(true);
   };
 
   @HostListener('document:click', ['$event'])
@@ -164,7 +185,7 @@ export class CapturePanelComponent {
   };
   protected readonly changeTarget = (value: string): void => {
     const row = this.sourceRows().find(item => item.value === value);
-    if (row?.minimized) return;
+    if (row?.minimized || row?.unavailable) return;
     this.disposeHdrPreview();
     this.selectedTarget.set(value);
     this.sourceMenuOpen.set(false);
