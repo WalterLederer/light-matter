@@ -4,19 +4,16 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signa
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
-  ActionButtonComponent,
   ConfirmationDialogComponent,
-  IconComponent,
   OverlayService,
-  SliderComponent,
-  TextComponent,
-  ToolMenuComponent
+  SliderComponent
 } from '@light-matter/ui';
 import { Desktop, ExifTags, ImageHistogram } from 'internal-api';
 import { catchError, distinctUntilChanged, filter, from, fromEvent, map, of, startWith, switchMap, take, tap } from 'rxjs';
 import { ExifService } from '../../../ipc/exif';
 import { HistogramService } from '../../../ipc/histogram';
 import { ProcessManager } from '../../../ipc/process-manager';
+import { CacheManager } from '../../../ipc/cache-manager';
 import { SettingsPanelComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
 import { Configuration } from '../../../system/services/configuration/configuration';
 import { ThemeService } from '../../../system/services/theme/theme.service';
@@ -42,10 +39,6 @@ const HDR_WEBGPU_BRIGHTNESS_CORRECTION = 0.4;
     ImageRendererComponent,
     SettingsPanelComponent,
     CapturePanelComponent,
-    ToolMenuComponent,
-    ActionButtonComponent,
-    IconComponent,
-    TextComponent,
     SliderComponent,
     ReactiveFormsModule,
     DecimalPipe,
@@ -71,6 +64,8 @@ export class ImageView {
   private readonly histogram = inject(HistogramService);
 
   private readonly processManager = inject(ProcessManager);
+
+  private readonly cacheManager = inject(CacheManager);
 
   private appTitleSuffix = '';
 
@@ -315,14 +310,25 @@ export class ImageView {
     catch { return 'general'; }
   }
   protected readonly activeImageSidebarTab = signal(this.readActiveImageSidebarTab());
+  protected readonly currentImageCacheStatus = signal('Cache status not loaded.');
+  protected readonly refreshCurrentImageCache = (): void => {
+    this.selectedImage$.pipe(take(1)).subscribe(image => {
+      if (!image) { this.currentImageCacheStatus.set('No image selected.'); return; }
+      this.currentImageCacheStatus.set('Checking cache…');
+      void this.cacheManager.imageCachePath(image.path).then(path => {
+        this.currentImageCacheStatus.set(path ? `Full-size cache exists: ${path}` : 'No valid full-size cache entry for this image.');
+      }).catch(error => this.currentImageCacheStatus.set(`Could not read cache status: ${error instanceof Error ? error.message : String(error)}`));
+    });
+  };
   protected readonly setActiveImageSidebarTab = (tab: string): void => {
     if (!this.imageSidebarTabs.some(item => item.id === tab)) return;
     this.activeImageSidebarTab.set(tab);
+    if (tab === 'cache') this.refreshCurrentImageCache();
     try { this.document.defaultView?.localStorage.setItem('light-matter.activeImageSidebarTab', tab); } catch { /* Ignore unavailable storage. */ }
   };
 
   protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, rgbLevels: false, inverse: false, loupe: true, loupeRenderer: false, highlight: true, toneCurve: false, mode: true, histogram: false, info: false, general: false });
-  protected readonly sidebarSectionExpanded = (key: string): boolean => this.sidebarSections()[key] === true;
+  protected readonly sidebarSectionExpanded = (key: string): boolean => ['zoom', 'corrections', 'highlight', 'mode', 'info', 'general'].includes(key) || this.sidebarSections()[key] === true;
   protected readonly toggleSidebarSection = (key: string): void => {
     const sections = { ...this.sidebarSections(), [key]: !this.sidebarSectionExpanded(key) };
     this.sidebarSections.set(sections);
