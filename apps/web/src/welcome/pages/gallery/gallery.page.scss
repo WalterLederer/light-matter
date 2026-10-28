@@ -118,3 +118,16 @@ ui-side-panel {
   border-color:#555;
   border-bottom-color:#202124;
 }
+
+
+/* Keep the tab strip visibly lighter than inactive tabs. */
+:host .gallery-controls-sidebar .gallery-sidebar-tabs {
+  background:#f2f2f2 !important;
+}
+:host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"]:not(.active) {
+  background:#d2d2d2 !important;
+  border-color:#bdbdbd !important;
+}
+:host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"]:not(.active):hover {
+  background:#c7c7c7 !important;
+}
