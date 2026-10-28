@@ -7,6 +7,17 @@ import { GalleryLocations } from '../../../gallery/services/gallery-locations/ga
 import { GalleryState } from '../../../gallery/services/gallery-state/gallery-state';
 import { ViewNavigator } from '../../../viewer/services/view-navigator/view-navigator';
 
+type CaptureSourceRow = {
+  value: string;
+  kind: 'monitor' | 'window';
+  favoriteKey: string;
+  favorite: boolean;
+  exe: string;
+  title: string;
+  size: string;
+  status: string;
+};
+
 @Component({
   selector: 'app-capture-panel',
   templateUrl: './capture-panel.component.html',
@@ -23,6 +34,8 @@ export class CapturePanelComponent {
   protected readonly monitors = signal<CaptureMonitor[]>([]);
   protected readonly windows = signal<CaptureWindow[]>([]);
   protected readonly selectedTarget = signal('monitor:1');
+  protected readonly sourceMenuOpen = signal(false);
+  protected readonly favoriteKeys = signal<string[]>(this.readFavoriteKeys());
   protected readonly destinationFolder = signal('');
   protected readonly loadingSources = signal(false);
   protected readonly capturing = signal(false);
@@ -38,6 +51,65 @@ export class CapturePanelComponent {
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
   protected readonly lastOutputPath = signal('');
+
+  protected readonly sourceRows = (): CaptureSourceRow[] => {
+    const favorites = new Set(this.favoriteKeys());
+    const monitors: CaptureSourceRow[] = this.monitors().map(monitor => {
+      const value = `monitor:${monitor.index}`;
+      const favoriteKey = value;
+      return {
+        value, kind: 'monitor', favoriteKey, favorite: favorites.has(favoriteKey),
+        exe: 'Monitor',
+        title: monitor.name || monitor.deviceName || `Monitor ${monitor.index}`,
+        size: `${monitor.width} × ${monitor.height}`,
+        status: monitor.refreshRate ? `${monitor.refreshRate} Hz` : ''
+      };
+    });
+    const windows: CaptureSourceRow[] = this.windows().map(window => {
+      const value = `window:${window.handle}`;
+      const executablePath = (window.executablePath ?? window.processName ?? 'Unknown executable').trim();
+      const favoriteKey = `window:${executablePath.toLowerCase()}|${window.title.trim().toLowerCase()}`;
+      return {
+        value, kind: 'window', favoriteKey, favorite: favorites.has(favoriteKey),
+        exe: this.windowExecutableName(window),
+        title: window.title,
+        size: `${window.width} × ${window.height}`,
+        status: window.isMinimized ? '[Minimized]' : ''
+      };
+    });
+    return [...monitors, ...windows].sort((a, b) =>
+      Number(b.favorite) - Number(a.favorite) ||
+      a.exe.localeCompare(b.exe, undefined, { sensitivity: 'base' }) ||
+      a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+    );
+  };
+
+  protected readonly toggleSourceMenu = (): void => {
+    this.sourceMenuOpen.update(open => !open);
+  };
+
+  protected readonly selectSourceRow = (value: string): void => {
+    this.sourceMenuOpen.set(false);
+    this.changeTarget(value);
+  };
+
+  protected readonly toggleFavorite = (row: CaptureSourceRow, event: MouseEvent): void => {
+    event.stopPropagation();
+    const next = new Set(this.favoriteKeys());
+    if (next.has(row.favoriteKey)) next.delete(row.favoriteKey);
+    else next.add(row.favoriteKey);
+    const keys = [...next];
+    this.favoriteKeys.set(keys);
+    try { localStorage.setItem('capture.source.favorites', JSON.stringify(keys)); }
+    catch { /* keep the current-session preference if storage is unavailable */ }
+  };
+
+  private readFavoriteKeys(): string[] {
+    try {
+      const value: unknown = JSON.parse(localStorage.getItem('capture.source.favorites') ?? '[]');
+      return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+    } catch { return []; }
+  }
 
   protected readonly selectedSourceLabel = (): string => {
     const target = this.selectedCaptureTarget();
@@ -69,6 +141,7 @@ export class CapturePanelComponent {
   protected readonly changeTarget = (value: string): void => {
     this.disposeHdrPreview();
     this.selectedTarget.set(value);
+    this.sourceMenuOpen.set(false);
     this.previewFrame.set(null);
     this.previewSize.set('');
     this.status.set('');
