@@ -276,8 +276,8 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
   const script = String.raw`
     $ErrorActionPreference = 'Stop'
     # Windows PowerShell 5.1 otherwise may emit redirected native output using the active OEM code page.
-    [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
-    $OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
     Add-Type -TypeDefinition @'
 using System;
 using System.Collections.Generic;
