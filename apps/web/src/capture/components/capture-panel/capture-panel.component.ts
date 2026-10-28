@@ -16,6 +16,7 @@ type CaptureSourceRow = {
   title: string;
   size: string;
   status: string;
+  minimized: boolean;
 };
 
 @Component({
@@ -62,7 +63,8 @@ export class CapturePanelComponent {
         exe: 'Monitor',
         title: monitor.name || monitor.deviceName || `Monitor ${monitor.index}`,
         size: `${monitor.width} × ${monitor.height}`,
-        status: monitor.refreshRate ? `${monitor.refreshRate} Hz` : ''
+        status: monitor.refreshRate ? `${monitor.refreshRate} Hz` : '',
+        minimized: false
       };
     });
     const windows: CaptureSourceRow[] = this.windows().map(window => {
@@ -74,7 +76,8 @@ export class CapturePanelComponent {
         exe: this.windowExecutableName(window),
         title: window.title,
         size: `${window.width} × ${window.height}`,
-        status: window.isMinimized ? '[Minimized]' : ''
+        status: window.isMinimized ? '[Minimized]' : '',
+        minimized: !!window.isMinimized
       };
     });
     return [...monitors, ...windows].sort((a, b) =>
@@ -89,6 +92,8 @@ export class CapturePanelComponent {
   };
 
   protected readonly selectSourceRow = (value: string): void => {
+    const row = this.sourceRows().find(item => item.value === value);
+    if (row?.minimized) return;
     this.sourceMenuOpen.set(false);
     this.changeTarget(value);
   };
@@ -139,6 +144,8 @@ export class CapturePanelComponent {
     return 'Unknown executable';
   };
   protected readonly changeTarget = (value: string): void => {
+    const row = this.sourceRows().find(item => item.value === value);
+    if (row?.minimized) return;
     this.disposeHdrPreview();
     this.selectedTarget.set(value);
     this.sourceMenuOpen.set(false);
