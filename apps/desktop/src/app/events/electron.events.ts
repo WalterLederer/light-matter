@@ -284,7 +284,11 @@ public static class LightMatterDisplayConfig {
   [DllImport("user32.dll")] public static extern int DisplayConfigGetDeviceInfo(ref ADVANCED_COLOR_INFO_2 requestPacket);
   public static LightMatterDisplayMode[] GetModes() {
     uint pathCount, modeCount;
-    if (GetDisplayConfigBufferSizes(2, out pathCount, out modeCount) != 0) return new LightMatterDisplayMode[0];
+    int sizeResult = GetDisplayConfigBufferSizes(2, out pathCount, out modeCount);
+    if (sizeResult != 0) {
+      Console.Error.WriteLine("[Capture HDR modes] GetDisplayConfigBufferSizes failed: " + sizeResult);
+      return new LightMatterDisplayMode[0];
+    }
     var paths = new PATH_INFO[pathCount];
     uint pc = pathCount, mc = modeCount, topology;
     // QueryDisplayConfig requires storage for the returned DISPLAYCONFIG_MODE_INFO entries.
@@ -293,7 +297,10 @@ public static class LightMatterDisplayConfig {
     int result;
     try { result = QueryDisplayConfig(2, ref pc, paths, ref mc, modeBuffer, out topology); }
     finally { Marshal.FreeHGlobal(modeBuffer); }
-    if (result != 0) return new LightMatterDisplayMode[0];
+    if (result != 0) {
+      Console.Error.WriteLine("[Capture HDR modes] QueryDisplayConfig failed: " + result + "; paths=" + pc + "; modes=" + mc);
+      return new LightMatterDisplayMode[0];
+    }
     var rows = new List<LightMatterDisplayMode>();
     for (int i = 0; i < pc; i++) {
       var source = new SOURCE_NAME();
@@ -301,7 +308,11 @@ public static class LightMatterDisplayConfig {
       source.header.size = (uint)Marshal.SizeOf(typeof(SOURCE_NAME));
       source.header.adapterId = new LUID { LowPart = paths[i].sourceInfo.adapterIdLow, HighPart = paths[i].sourceInfo.adapterIdHigh };
       source.header.id = paths[i].sourceInfo.id;
-      if (DisplayConfigGetDeviceInfo(ref source) != 0 || String.IsNullOrEmpty(source.viewGdiDeviceName)) continue;
+      int sourceResult = DisplayConfigGetDeviceInfo(ref source);
+      if (sourceResult != 0 || String.IsNullOrEmpty(source.viewGdiDeviceName)) {
+        Console.Error.WriteLine("[Capture HDR modes] DisplayConfigGetDeviceInfo(source) failed: " + sourceResult);
+        continue;
+      }
       var targetAdapter = new LUID { LowPart = paths[i].targetInfo.adapterIdLow, HighPart = paths[i].targetInfo.adapterIdHigh };
       bool? hdr = null;
       // Windows 11 24H2+ distinguishes HDR from wide-color-gamut (WCG).
@@ -311,8 +322,10 @@ public static class LightMatterDisplayConfig {
       color2.header.size = (uint)Marshal.SizeOf(typeof(ADVANCED_COLOR_INFO_2));
       color2.header.adapterId = targetAdapter;
       color2.header.id = paths[i].targetInfo.id;
-      if (DisplayConfigGetDeviceInfo(ref color2) == 0) {
+      int color2Result = DisplayConfigGetDeviceInfo(ref color2);
+      if (color2Result == 0) {
         hdr = color2.activeColorMode == 2u; // DISPLAYCONFIG_ADVANCED_COLOR_MODE_HDR; SDR=0, WCG=1
+        Console.Error.WriteLine("[Capture HDR modes] " + source.viewGdiDeviceName + ": API v2 activeColorMode=" + color2.activeColorMode);
       } else {
         // Legacy API for earlier Windows versions: bit 1 is advancedColorEnabled.
         // On those versions Windows does not expose a distinct HDR/WCG active mode.
@@ -321,7 +334,13 @@ public static class LightMatterDisplayConfig {
         color.header.size = (uint)Marshal.SizeOf(typeof(ADVANCED_COLOR_INFO));
         color.header.adapterId = targetAdapter;
         color.header.id = paths[i].targetInfo.id;
-        if (DisplayConfigGetDeviceInfo(ref color) == 0) hdr = (color.value & 2u) != 0;
+        int legacyResult = DisplayConfigGetDeviceInfo(ref color);
+        if (legacyResult == 0) {
+          hdr = (color.value & 2u) != 0;
+          Console.Error.WriteLine("[Capture HDR modes] " + source.viewGdiDeviceName + ": legacy advancedColorEnabled=" + ((color.value & 2u) != 0));
+        } else {
+          Console.Error.WriteLine("[Capture HDR modes] " + source.viewGdiDeviceName + ": API v2 failed=" + color2Result + "; legacy failed=" + legacyResult);
+        }
       }
       rows.Add(new LightMatterDisplayMode { deviceName = source.viewGdiDeviceName, isHdr = hdr });
     }
@@ -338,6 +357,7 @@ public static class LightMatterDisplayConfig {
     const rows = Array.isArray(parsed) ? parsed : [parsed];
     const modes: Record<string, boolean | null> = {};
     for (const row of rows) modes[row.deviceName.toLowerCase().replace(/[^a-z0-9]/g, '')] = row.isHdr;
+    console.info('[Capture HDR modes] Windows API rows:', rows, 'normalized keys:', Object.keys(modes));
     return modes;
   } catch (error) {
     console.warn('[Capture] Failed to query Windows HDR monitor modes:', error instanceof Error ? error.message : String(error));
