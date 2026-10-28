@@ -1,16 +1,22 @@
-import { app, desktopCapturer, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
-import { enumerateMonitors, enumerateWindows, ImageEncoder, ImageEncoderPixelFormat, ImageFormat, ScreenCapture } from '@screen-capture/node';
+import {
+  enumerateMonitors,
+  ImageEncoder,
+  ImageEncoderPixelFormat,
+  ImageFormat,
+  ScreenCapture
+} from '@screen-capture/node';
+import { app, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
 import { encodeExr, init as initExr } from 'exrs';
 import { CaptureResult, CaptureSources, CaptureTarget, FileListing, supportedFileExtensions } from 'internal-api';
+import { execFileSync } from 'node:child_process';
 import * as fsSync from 'node:fs';
 import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import * as os from 'node:os';
-import { execFileSync } from 'node:child_process';
+import * as path from 'node:path';
 import { Injector } from '../../injector/injector';
-import { IpcRegistry } from '../decorators/ipc-registry';
-import { captureLoupeFrame, releaseLoupeFrame, sampleLoupeRegion, sampleLoupeRectangle } from '../loupe-capture';
 import App from '../app';
+import { IpcRegistry } from '../decorators/ipc-registry';
+import { captureLoupeFrame, releaseLoupeFrame, sampleLoupeRectangle, sampleLoupeRegion } from '../loupe-capture';
 
 let exrInitPromise: Promise<void> | undefined;
 
@@ -18,8 +24,12 @@ const halfToFloat = (half: number): number => {
   const sign = (half & 0x8000) !== 0 ? -1 : 1;
   const exponent = (half >> 10) & 0x1f;
   const fraction = half & 0x03ff;
-  if (exponent === 0) return fraction === 0 ? sign * 0 : sign * 2 ** -14 * (fraction / 1024);
-  if (exponent === 0x1f) return fraction === 0 ? sign * Infinity : NaN;
+  if (exponent === 0) {
+    return fraction === 0 ? sign * 0 : sign * 2 ** -14 * (fraction / 1024);
+  }
+  if (exponent === 0x1f) {
+    return fraction === 0 ? sign * Infinity : NaN;
+  }
   return sign * 2 ** (exponent - 15) * (1 + fraction / 1024);
 };
 
@@ -34,13 +44,18 @@ interface CapturedHdrFrame {
 
 let cachedHdrFrame: CapturedHdrFrame | null = null;
 
-const captureTargetKey = (target: CaptureTarget): string => target.kind === 'monitor'
-  ? `monitor:${target.index}`
-  : `window:${target.handle}`;
+const captureTargetKey = (target: CaptureTarget): string =>
+  target.kind === 'monitor'
+    ? `monitor:${target.index}`
+    : `window:${target.handle}`;
 
 const captureHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame> => {
-  if (process.platform !== 'win32') throw new Error('HDR capture is currently supported on Windows only.');
-  if (target?.kind !== 'monitor' && target?.kind !== 'window') throw new Error('Choose a monitor or application window to capture.');
+  if (process.platform !== 'win32') {
+    throw new Error('HDR capture is currently supported on Windows only.');
+  }
+  if (target?.kind !== 'monitor' && target?.kind !== 'window') {
+    throw new Error('Choose a monitor or application window to capture.');
+  }
   const targetKey = captureTargetKey(target);
   const options = target.kind === 'monitor' ? { monitorIndex: target.index } : { windowHandle: target.handle };
   const capture = new ScreenCapture({
@@ -62,11 +77,22 @@ const captureHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame>
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const frame = await Promise.race([
       capture.nextFrame(),
-      new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new Error('Timed out waiting for the HDR capture frame.')), 10000); })
-    ]).finally(() => { if (timeout !== undefined) clearTimeout(timeout); });
-    if (!frame) throw new Error('The selected capture source is no longer available.');
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error('Timed out waiting for the HDR capture frame.')), 10000);
+      })
+    ]).finally(() => {
+      if (timeout !== undefined) {
+        clearTimeout(timeout);
+      }
+    });
+    if (!frame) {
+      throw new Error('The selected capture source is no longer available.');
+    }
     logPhase('validate FP16 frame');
-    if (frame.colorFormat !== 'rgba16F' || frame.rowPitch !== frame.width * 8 || frame.buffer.byteLength !== frame.width * frame.height * 8) {
+    if (
+      frame.colorFormat !== 'rgba16F' || frame.rowPitch !== frame.width * 8
+      || frame.buffer.byteLength !== frame.width * frame.height * 8
+    ) {
       throw new Error('The capture did not return the expected packed FP16 HDR frame.');
     }
     const captured: CapturedHdrFrame = {
@@ -89,7 +115,7 @@ const captureHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame>
 const getHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame> => {
   const key = captureTargetKey(target);
   if (cachedHdrFrame?.targetKey === key) {
-    console.info('[HDR Capture] reuse cached FP16 HDR frame');
+    // console.info('[HDR Capture] reuse cached FP16 HDR frame');
     return cachedHdrFrame;
   }
   return captureHdrFrame(target);
@@ -102,18 +128,20 @@ const floatToHalf = (value: number): number => {
   halfConversionFloat[0] = value;
   const bits = halfConversionBits[0];
   const sign = (bits >>> 16) & 0x8000;
-  let exponent = ((bits >>> 23) & 0xff) - 127 + 15;
+  const exponent = ((bits >>> 23) & 0xff) - 127 + 15;
   let mantissa = bits & 0x7fffff;
   if (exponent <= 0) {
-    if (exponent < -10) return sign;
+    if (exponent < -10) {
+      return sign;
+    }
     mantissa = (mantissa | 0x800000) >> (1 - exponent);
     return sign | ((mantissa + 0x1000) >> 13);
   }
-  if (exponent >= 31) return sign | 0x7c00 | (mantissa ? 0x0200 : 0);
+  if (exponent >= 31) {
+    return sign | 0x7c00 | (mantissa ? 0x0200 : 0);
+  }
   return sign | (exponent << 10) | ((mantissa + 0x1000) >> 13);
 };
-
-
 
 export default class ElectronEvents {
   static bootstrapElectronEvents(): Electron.IpcMain {
@@ -213,16 +241,20 @@ ipcMain.handle('Loupe.capture', async () => {
     // dimensions show they do not, use the closest physical-size match instead.
     let monitorIndex = displayPosition >= 0 ? displayPosition + 1 : 1;
     const indexedMonitor = monitors[monitorIndex - 1];
-    if (!indexedMonitor ||
-        Math.abs(indexedMonitor.width - expectedWidth) > 2 ||
-        Math.abs(indexedMonitor.height - expectedHeight) > 2) {
+    if (
+      !indexedMonitor
+      || Math.abs(indexedMonitor.width - expectedWidth) > 2
+      || Math.abs(indexedMonitor.height - expectedHeight) > 2
+    ) {
       const closest = monitors
         .map(monitor => ({
           index: monitor.index,
           score: Math.abs(monitor.width - expectedWidth) + Math.abs(monitor.height - expectedHeight)
         }))
         .sort((a, b) => a.score - b.score)[0];
-      if (closest) monitorIndex = closest.index;
+      if (closest) {
+        monitorIndex = closest.index;
+      }
     }
 
     phase = 'capture FP16 monitor frame';
@@ -241,20 +273,35 @@ ipcMain.handle('Loupe.capture', async () => {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const gpuInfo = await app.getGPUInfo('complete').catch(() => null);
-    const devices = (gpuInfo as { gpuDevice?: Array<{ description?: string; driverVersion?: string; driverDate?: string; vendorId?: number; deviceId?: number }> } | null)?.gpuDevice ?? [];
+    const devices = (gpuInfo as {
+      gpuDevice?: Array<
+        { description?: string; driverVersion?: string; driverDate?: string; vendorId?: number; deviceId?: number; }
+      >;
+    } | null)?.gpuDevice ?? [];
     const gpu = devices.length
-      ? devices.map(device => `${device.description ?? 'Unknown GPU'} (vendor ${device.vendorId ?? '?'}, device ${device.deviceId ?? '?'}, driver ${device.driverVersion ?? 'unknown'}${device.driverDate ? `, ${device.driverDate}` : ''})`).join(' | ')
+      ? devices.map(device =>
+        `${device.description ?? 'Unknown GPU'} (vendor ${device.vendorId ?? '?'}, device ${
+          device.deviceId ?? '?'
+        }, driver ${device.driverVersion ?? 'unknown'}${device.driverDate ? `, ${device.driverDate}` : ''})`
+      ).join(' | ')
       : 'GPU/driver information unavailable from Electron';
-    throw new Error(`${message}\nDiagnostics: phase=${phase}; OS=${os.version()} [${os.release()}]; Electron=${process.versions.electron}; API=@screen-capture/node; requested format=rgba16F (FP16 / R16G16B16A16_FLOAT); GPU=${gpu}`);
+    throw new Error(
+      `${message}\nDiagnostics: phase=${phase}; OS=${os.version()} [${os.release()}]; Electron=${process.versions.electron}; API=@screen-capture/node; requested format=rgba16F (FP16 / R16G16B16A16_FLOAT); GPU=${gpu}`
+    );
   }
 });
 
 ipcMain.handle('Loupe.sample', (_event, x: number, y: number, radius?: number) => sampleLoupeRegion(x, y, radius));
-ipcMain.handle('Loupe.region', (_event, x: number, y: number, width: number, height: number) => sampleLoupeRectangle(x, y, width, height));
+ipcMain.handle(
+  'Loupe.region',
+  (_event, x: number, y: number, width: number, height: number) => sampleLoupeRectangle(x, y, width, height)
+);
 ipcMain.handle('Loupe.release', () => releaseLoupeFrame());
 
 const queryWindowsMonitorHdrModes = (): Record<string, boolean | null> => {
-  if (process.platform !== 'win32') return {};
+  if (process.platform !== 'win32') {
+    return {};
+  }
   const script = String.raw`
     $ErrorActionPreference = 'Stop'
     [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
@@ -274,11 +321,27 @@ public static class LightMatterDisplayConfig {
   [StructLayout(LayoutKind.Sequential)] public struct PATH_SOURCE { public uint adapterIdLow; public int adapterIdHigh; public uint id; public uint modeInfoIdx; public uint statusFlags; }
   [StructLayout(LayoutKind.Sequential)] public struct PATH_TARGET { public uint adapterIdLow; public int adapterIdHigh; public uint id; public uint modeInfoIdx; public uint outputTechnology; public uint rotation; public uint scaling; public uint refreshNumerator; public uint refreshDenominator; public uint scanLineOrdering; public int targetAvailable; public uint statusFlags; }
   [StructLayout(LayoutKind.Sequential)] public struct PATH_INFO { public PATH_SOURCE sourceInfo; public PATH_TARGET targetInfo; public uint flags; }
-  [StructLayout(LayoutKind.Sequential)] public struct SOURCE_NAME { public HEADER header; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string viewGdiDeviceName; }
+
+  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+  public struct SOURCE_NAME {
+    public HEADER header;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)]
+    public string viewGdiDeviceName;
+  }
+
   [StructLayout(LayoutKind.Sequential)] public struct ADVANCED_COLOR_INFO { public HEADER header; public uint value; public uint colorEncoding; public uint bitsPerColorChannel; }
   [StructLayout(LayoutKind.Sequential)] public struct ADVANCED_COLOR_INFO_2 { public HEADER header; public uint value; public uint colorEncoding; public uint bitsPerColorChannel; public uint activeColorMode; }
   [DllImport("user32.dll")] public static extern int GetDisplayConfigBufferSizes(uint flags, out uint pathCount, out uint modeCount);
-  [DllImport("user32.dll")] public static extern int QueryDisplayConfig(uint flags, ref uint pathCount, [Out] PATH_INFO[] paths, ref uint modeCount, IntPtr modes, out uint topologyId);
+
+  [DllImport("user32.dll")]
+  public static extern int QueryDisplayConfig(
+    uint flags,
+    ref uint pathCount,
+    [Out] PATH_INFO[] paths,
+    ref uint modeCount,
+    IntPtr modes,
+    IntPtr currentTopologyId);
+
   [DllImport("user32.dll")] public static extern int DisplayConfigGetDeviceInfo(ref SOURCE_NAME requestPacket);
   [DllImport("user32.dll")] public static extern int DisplayConfigGetDeviceInfo(ref ADVANCED_COLOR_INFO requestPacket);
   [DllImport("user32.dll")] public static extern int DisplayConfigGetDeviceInfo(ref ADVANCED_COLOR_INFO_2 requestPacket);
@@ -290,18 +353,26 @@ public static class LightMatterDisplayConfig {
       return new LightMatterDisplayMode[0];
     }
     var paths = new PATH_INFO[pathCount];
-    uint pc = pathCount, mc = modeCount, topology;
+    uint pc = pathCount, mc = modeCount;
     // QueryDisplayConfig requires storage for the returned DISPLAYCONFIG_MODE_INFO entries.
     // The native structure is 48 bytes on supported Windows x64 systems; we only inspect paths.
     IntPtr modeBuffer = Marshal.AllocHGlobal(checked((int)Math.Max(1u, modeCount) * 48));
     int result;
-    try { result = QueryDisplayConfig(2, ref pc, paths, ref mc, modeBuffer, out topology); }
+    try { result = QueryDisplayConfig(2, ref pc, paths, ref mc, modeBuffer, IntPtr.Zero); }
     finally { Marshal.FreeHGlobal(modeBuffer); }
     if (result != 0) {
       Console.Error.WriteLine("[Capture HDR modes] QueryDisplayConfig failed: " + result + "; paths=" + pc + "; modes=" + mc);
       return new LightMatterDisplayMode[0];
     }
     var rows = new List<LightMatterDisplayMode>();
+
+/*
+    Console.Error.WriteLine(
+      "[Capture HDR modes] HEADER size=" + Marshal.SizeOf(typeof(HEADER)) +
+      "; SOURCE_NAME size=" + Marshal.SizeOf(typeof(SOURCE_NAME)) +
+      "; paths=" + pc);
+*/
+
     for (int i = 0; i < pc; i++) {
       var source = new SOURCE_NAME();
       source.header.type = 1;
@@ -325,7 +396,7 @@ public static class LightMatterDisplayConfig {
       int color2Result = DisplayConfigGetDeviceInfo(ref color2);
       if (color2Result == 0) {
         hdr = color2.activeColorMode == 2u; // DISPLAYCONFIG_ADVANCED_COLOR_MODE_HDR; SDR=0, WCG=1
-        Console.Error.WriteLine("[Capture HDR modes] " + source.viewGdiDeviceName + ": API v2 activeColorMode=" + color2.activeColorMode);
+        // Console.Error.WriteLine("[Capture HDR modes] " + source.viewGdiDeviceName + ": API v2 activeColorMode=" + color2.activeColorMode);
       } else {
         // Legacy API for earlier Windows versions: bit 1 is advancedColorEnabled.
         // On those versions Windows does not expose a distinct HDR/WCG active mode.
@@ -337,7 +408,7 @@ public static class LightMatterDisplayConfig {
         int legacyResult = DisplayConfigGetDeviceInfo(ref color);
         if (legacyResult == 0) {
           hdr = (color.value & 2u) != 0;
-          Console.Error.WriteLine("[Capture HDR modes] " + source.viewGdiDeviceName + ": legacy advancedColorEnabled=" + ((color.value & 2u) != 0));
+          // Console.Error.WriteLine("[Capture HDR modes] " + source.viewGdiDeviceName + ": legacy advancedColorEnabled=" + ((color.value & 2u) != 0));
         } else {
           Console.Error.WriteLine("[Capture HDR modes] " + source.viewGdiDeviceName + ": API v2 failed=" + color2Result + "; legacy failed=" + legacyResult);
         }
@@ -351,16 +422,39 @@ public static class LightMatterDisplayConfig {
     [LightMatterDisplayConfig]::GetModes() | ConvertTo-Json -Compress -Depth 4
   `;
   try {
-    const raw = execFileSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
-      { encoding: 'utf8', windowsHide: true, timeout: 10000 }).trim();
-    const parsed = JSON.parse(raw || '[]') as { deviceName: string; isHdr: boolean | null } | Array<{ deviceName: string; isHdr: boolean | null }>;
-    const rows = Array.isArray(parsed) ? parsed : [parsed];
+    const raw = execFileSync('powershell.exe', [
+      '-NoLogo',
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-Command',
+      script
+    ], { encoding: 'utf8', windowsHide: true, timeout: 10000 }).trim();
+    const parsed = JSON.parse(raw || '[]') as
+      | { deviceName: string; isHdr: boolean | null; }
+      | Array<{ deviceName: string; isHdr: boolean | null; }>;
+    const rows = Array.isArray(parsed) ? parsed : [ parsed ];
     const modes: Record<string, boolean | null> = {};
-    for (const row of rows) modes[row.deviceName.toLowerCase().replace(/[^a-z0-9]/g, '')] = row.isHdr;
-    console.info('[Capture HDR modes] Windows API rows:', rows, 'normalized keys:', Object.keys(modes));
+    for (const row of rows) {
+      modes[row.deviceName.toLowerCase().replace(/[^a-z0-9]/g, '')] = row.isHdr;
+    }
+    // console.info('[Capture HDR modes] Windows API rows:', rows, 'normalized keys:', Object.keys(modes));
     return modes;
   } catch (error) {
-    console.warn('[Capture] Failed to query Windows HDR monitor modes:', error instanceof Error ? error.message : String(error));
+    const e = error as NodeJS.ErrnoException & {
+      status?: number;
+      stdout?: string | Buffer;
+      stderr?: string | Buffer;
+    };
+
+    console.warn('[Capture] Failed to query Windows HDR monitor modes:', {
+      message: e.message,
+      status: e.status,
+      stdout: e.stdout?.toString(),
+      stderr: e.stderr?.toString()
+    });
+
     return {};
   }
 };
@@ -371,6 +465,20 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
   }
 
   const hdrModes = queryWindowsMonitorHdrModes();
+
+  /*
+  const enumeratedMonitors = enumerateMonitors();
+  console.info('[Capture HDR modes] Raw Windows mapping:', JSON.stringify({
+    hdrModes,
+    monitors: enumeratedMonitors.map(m => ({
+      index: m.index,
+      name: m.name,
+      deviceName: m.deviceName,
+      normalizedDeviceName: (m.deviceName ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+    }))
+  }, null, 2));
+  */
+
   const monitors = enumerateMonitors().map(monitor => {
     const deviceKey = (monitor.deviceName ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
     return {
@@ -485,12 +593,24 @@ public static class LightMatterWindowEnumerator {
 
   try {
     const nativeJson = execFileSync('powershell.exe', [
-      '-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
-      '-Command', script
+      '-NoLogo',
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-Command',
+      script
     ], { encoding: 'utf8', windowsHide: true, timeout: 20000 }).trim();
     const nativeRows = JSON.parse(nativeJson || '[]') as Array<{
-      handle: string; title: string; processId: number; executablePath?: string | null;
-      width: number; height: number; monitorIndex: number; monitorDeviceName?: string | null; isMinimized: boolean;
+      handle: string;
+      title: string;
+      processId: number;
+      executablePath?: string | null;
+      width: number;
+      height: number;
+      monitorIndex: number;
+      monitorDeviceName?: string | null;
+      isMinimized: boolean;
     }>;
     windows = nativeRows
       .filter(window => Number(window.processId) !== process.pid)
@@ -509,7 +629,10 @@ public static class LightMatterWindowEnumerator {
           isMinimized: Boolean(window.isMinimized)
         };
       })
-      .sort((a, b) => a.processName.localeCompare(b.processName, undefined, { sensitivity: 'base' }) || a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
+      .sort((a, b) =>
+        a.processName.localeCompare(b.processName, undefined, { sensitivity: 'base' })
+        || a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+      );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     sourceErrors.push(`PowerShell Win32 window enumeration failed: ${message}`);
@@ -522,80 +645,107 @@ ipcMain.handle('Capture.chooseFolder', async (_event, initialPath?: string): Pro
   const result = await dialog.showOpenDialog(App.mainWindow, {
     title: 'Choose HDR capture folder',
     defaultPath: initialPath || undefined,
-    properties: ['openDirectory', 'createDirectory']
+    properties: [ 'openDirectory', 'createDirectory' ]
   });
   return result.canceled || result.filePaths.length === 0 ? null : result.filePaths[0];
 });
 
-ipcMain.handle('Capture.preview', async (_event, target: CaptureTarget): Promise<{ width: number; height: number; pixels: Uint16Array }> => {
-  console.info('[HDR Capture] preview requested');
-  // Always capture a fresh frame for Preview. The resulting frame remains cached
-  // so Save can reuse exactly the image the user just inspected.
-  const frame = await captureHdrFrame(target);
-  const pixels = new Uint16Array(frame.buffer.buffer.slice(frame.buffer.byteOffset, frame.buffer.byteOffset + frame.buffer.byteLength));
-  console.info(`[HDR Capture] send FP16 frame to WebGPU preview (${frame.width}x${frame.height})`);
-  return { width: frame.width, height: frame.height, pixels };
-});
-
-ipcMain.handle('Capture.capture', async (_event, target: CaptureTarget, folder: string, format: 'exr' | 'jxr' = 'exr'): Promise<CaptureResult> => {
-  if (format !== 'exr' && format !== 'jxr') throw new Error('Choose EXR or JXR as the capture format.');
-  if (process.platform !== 'win32') throw new Error('HDR capture is currently supported on Windows only.');
-  if (!folder || !path.isAbsolute(folder)) throw new Error('Choose a valid destination folder before capturing.');
-  if (target?.kind !== 'monitor' && target?.kind !== 'window') throw new Error('Choose a monitor or application window to capture.');
-
-  let phase = 'get FP16 HDR frame';
-  const logPhase = (nextPhase: string): void => {
-    phase = nextPhase;
-    console.info(`[HDR Capture] ${phase}`);
-  };
-  try {
-    const frame = await getHdrFrame(target);
-    const sourceChannels = new Uint16Array(frame.buffer.buffer, frame.buffer.byteOffset, frame.buffer.byteLength / 2);
-    let encoded: Buffer | Uint8Array;
-    if (format === 'jxr') {
-      logPhase('pack RGBA16F input and encode JPEG XR');
-      // Keep the native RGBA16F layout. The Windows JPEG XR encoder reported
-      // WINCODEC_ERR_INSUFFICIENTBUFFER when given a tightly packed RGB16F buffer.
-      // Use the encoder's RGBA16F pixel format so channel order and row size agree.
-      const rgba = Buffer.allocUnsafe(frame.width * frame.height * 4 * 2);
-      for (let channelIndex = 0; channelIndex < sourceChannels.length; channelIndex++) {
-        const channel = channelIndex % 4;
-        const value = halfToFloat(sourceChannels[channelIndex]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
-        rgba.writeUInt16LE(floatToHalf(value), channelIndex * 2);
-      }
-      const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
-      encoded = encoder.encode(rgba, frame.width, frame.height);
-    } else {
-      logPhase(`convert native RGBA16F to Float32 RGBA (${frame.width}x${frame.height}) without brightness correction`);
-      const rgba = new Float32Array(frame.width * frame.height * 4);
-      for (let source = 0; source < sourceChannels.length; source++) {
-        rgba[source] = halfToFloat(sourceChannels[source]);
-      }
-      logPhase('initialize OpenEXR encoder');
-      exrInitPromise ??= initExr();
-      await exrInitPromise;
-      logPhase('encode OpenEXR');
-      encoded = encodeExr({
-        width: frame.width,
-        height: frame.height,
-        layers: [{ name: 'rgba', channelNames: ['R', 'G', 'B', 'A'], interleavedPixels: rgba, precision: 'f32', compression: 'piz' }]
-      });
-    }
-    logPhase(`write ${format.toUpperCase()} file`);
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const baseName = `LightMatter_Capture_${stamp}`;
-    let outputPath = path.join(folder, `${baseName}.${format}`);
-    let suffix = 1;
-    while (fsSync.existsSync(outputPath)) outputPath = path.join(folder, `${baseName}_${suffix++}.${format}`);
-    await fs.writeFile(outputPath, encoded, { flag: 'wx' });
-    if (cachedHdrFrame === frame) cachedHdrFrame = null;
-    return { path: outputPath, width: frame.width, height: frame.height };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`[HDR Capture] Failed during "${phase}": ${message}`);
+ipcMain.handle(
+  'Capture.preview',
+  async (_event, target: CaptureTarget): Promise<{ width: number; height: number; pixels: Uint16Array; }> => {
+    // console.info('[HDR Capture] preview requested');
+    // Always capture a fresh frame for Preview. The resulting frame remains cached
+    // so Save can reuse exactly the image the user just inspected.
+    const frame = await captureHdrFrame(target);
+    const pixels = new Uint16Array(
+      frame.buffer.buffer.slice(frame.buffer.byteOffset, frame.buffer.byteOffset + frame.buffer.byteLength)
+    );
+    console.info(`[HDR Capture] send FP16 frame to WebGPU preview (${frame.width}x${frame.height})`);
+    return { width: frame.width, height: frame.height, pixels };
   }
-});
+);
 
+ipcMain.handle(
+  'Capture.capture',
+  async (_event, target: CaptureTarget, folder: string, format: 'exr' | 'jxr' = 'exr'): Promise<CaptureResult> => {
+    if (format !== 'exr' && format !== 'jxr') {
+      throw new Error('Choose EXR or JXR as the capture format.');
+    }
+    if (process.platform !== 'win32') {
+      throw new Error('HDR capture is currently supported on Windows only.');
+    }
+    if (!folder || !path.isAbsolute(folder)) {
+      throw new Error('Choose a valid destination folder before capturing.');
+    }
+    if (target?.kind !== 'monitor' && target?.kind !== 'window') {
+      throw new Error('Choose a monitor or application window to capture.');
+    }
+
+    let phase = 'get FP16 HDR frame';
+    const logPhase = (nextPhase: string): void => {
+      phase = nextPhase;
+      console.info(`[HDR Capture] ${phase}`);
+    };
+    try {
+      const frame = await getHdrFrame(target);
+      const sourceChannels = new Uint16Array(frame.buffer.buffer, frame.buffer.byteOffset, frame.buffer.byteLength / 2);
+      let encoded: Buffer | Uint8Array;
+      if (format === 'jxr') {
+        logPhase('pack RGBA16F input and encode JPEG XR');
+        // Keep the native RGBA16F layout. The Windows JPEG XR encoder reported
+        // WINCODEC_ERR_INSUFFICIENTBUFFER when given a tightly packed RGB16F buffer.
+        // Use the encoder's RGBA16F pixel format so channel order and row size agree.
+        const rgba = Buffer.allocUnsafe(frame.width * frame.height * 4 * 2);
+        for (let channelIndex = 0; channelIndex < sourceChannels.length; channelIndex++) {
+          const channel = channelIndex % 4;
+          const value = halfToFloat(sourceChannels[channelIndex]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
+          rgba.writeUInt16LE(floatToHalf(value), channelIndex * 2);
+        }
+        const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
+        encoded = encoder.encode(rgba, frame.width, frame.height);
+      } else {
+        logPhase(
+          `convert native RGBA16F to Float32 RGBA (${frame.width}x${frame.height}) without brightness correction`
+        );
+        const rgba = new Float32Array(frame.width * frame.height * 4);
+        for (let source = 0; source < sourceChannels.length; source++) {
+          rgba[source] = halfToFloat(sourceChannels[source]);
+        }
+        logPhase('initialize OpenEXR encoder');
+        exrInitPromise ??= initExr();
+        await exrInitPromise;
+        logPhase('encode OpenEXR');
+        encoded = encodeExr({
+          width: frame.width,
+          height: frame.height,
+          layers: [ {
+            name: 'rgba',
+            channelNames: [ 'R', 'G', 'B', 'A' ],
+            interleavedPixels: rgba,
+            precision: 'f32',
+            compression: 'piz'
+          } ]
+        });
+      }
+      logPhase(`write ${format.toUpperCase()} file`);
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const baseName = `LightMatter_Capture_${stamp}`;
+      let outputPath = path.join(folder, `${baseName}.${format}`);
+      let suffix = 1;
+      while (fsSync.existsSync(outputPath)) {
+        outputPath = path.join(folder, `${baseName}_${suffix++}.${format}`);
+      }
+      await fs.writeFile(outputPath, encoded, { flag: 'wx' });
+      if (cachedHdrFrame === frame) {
+        cachedHdrFrame = null;
+      }
+      return { path: outputPath, width: frame.width, height: frame.height };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`[HDR Capture] Failed during "${phase}": ${message}`);
+    }
+  }
+);
 
 ipcMain.on('quit', (_, code) => app.exit(code));
 
