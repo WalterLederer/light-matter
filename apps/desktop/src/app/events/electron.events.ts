@@ -51,6 +51,78 @@ const captureTargetKey = (target: CaptureTarget): string =>
     ? `monitor:${target.index}`
     : `window:${target.handle}`;
 
+interface CaptureWindowState {
+  exists: boolean;
+  minimized: boolean;
+}
+
+const queryCaptureWindowState = (handle: number): CaptureWindowState => {
+  if (!Number.isSafeInteger(handle) || handle <= 0) {
+    throw new Error('The selected application window has an invalid handle.');
+  }
+
+  const script = String.raw`
+    $ErrorActionPreference = 'Stop'
+
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class LightMatterCaptureWindowState {
+  [DllImport("user32.dll")]
+  public static extern bool IsWindow(IntPtr hWnd);
+
+  [DllImport("user32.dll")]
+  public static extern bool IsIconic(IntPtr hWnd);
+}
+'@
+
+    $handle = [long]::Parse(
+      $env:LIGHT_MATTER_CAPTURE_HWND,
+      [System.Globalization.CultureInfo]::InvariantCulture
+    )
+    $hwnd = [IntPtr]::new($handle)
+
+    [PSCustomObject]@{
+      exists = [LightMatterCaptureWindowState]::IsWindow($hwnd)
+      minimized = [LightMatterCaptureWindowState]::IsIconic($hwnd)
+    } | ConvertTo-Json -Compress
+  `;
+
+  const output = execFileSync(
+    'powershell.exe',
+    [
+      '-NoLogo',
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-Command',
+      script
+    ],
+    {
+      encoding: 'utf8',
+      windowsHide: true,
+      timeout: 5000,
+      env: {
+        ...process.env,
+        LIGHT_MATTER_CAPTURE_HWND: String(handle)
+      }
+    }
+  ).trim();
+
+  const state = JSON.parse(output) as CaptureWindowState;
+
+  if (
+    typeof state.exists !== 'boolean'
+    || typeof state.minimized !== 'boolean'
+  ) {
+    throw new Error('Windows returned an invalid window-state response.');
+  }
+
+  return state;
+};
+
 const captureHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame> => {
   if (process.platform !== 'win32') {
     throw new Error('HDR capture is currently supported on Windows only.');
@@ -115,6 +187,20 @@ const captureHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame>
 };
 
 const getHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame> => {
+  if (target.kind === 'window') {
+    const state = queryCaptureWindowState(target.handle);
+    if (!state.exists) {
+      throw new Error(
+        'The selected application window no longer exists. Refresh the capture sources and select it again.'
+      );
+    }
+    if (state.minimized) {
+      throw new Error(
+        'The selected application window is minimized. Restore it before capturing.'
+      );
+    }
+  }
+
   const key = captureTargetKey(target);
   if (cachedHdrFrame?.targetKey === key) {
     // console.info('[HDR Capture] reuse cached FP16 HDR frame');

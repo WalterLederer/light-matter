@@ -87,7 +87,13 @@ export class CapturePanelComponent {
         title: window.title,
         size: `${window.width} × ${window.height}`,
         displayMode: this.windowDisplayMode({ ...window, monitorIndex: resolvedMonitorIndex }),
-        status: window.width < 100 || window.height < 100 || this.unavailableTargets().includes(value) ? '[Not capturable]' : window.isMinimized ? '[Minimized]' : '',
+        status: window.isMinimized
+          ? '[Minimized]'
+          : window.width < 100
+            || window.height < 100
+            || this.unavailableTargets().includes(value)
+              ? '[Not capturable]'
+              : '',
         minimized: !!window.isMinimized,
         unavailable: window.width < 100 || window.height < 100 || !!window.isMinimized || this.unavailableTargets().includes(value)
       };
