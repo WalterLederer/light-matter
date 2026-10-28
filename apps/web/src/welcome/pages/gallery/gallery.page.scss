@@ -47,3 +47,8 @@ ui-side-panel {
   .gallery-controls-sidebar .section-heading { background:transparent; }
   .show-controls-sidebar { background:#f7f7f7; color:#202124; border-color:rgb(0 0 0 / 20%); }
 }
+
+:host .gallery-controls-sidebar .gallery-sidebar-tabs { position: sticky; top: 0; z-index: 6; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0 -12px 8px; padding: 6px 12px 10px; background: #202124; }
+:host .gallery-controls-sidebar .gallery-sidebar-tabs button { min-width: 0; padding: 5px 3px; font-size: 12px; }
+:host .gallery-controls-sidebar .gallery-sidebar-tabs button.active { background: #31577d; border-color: #65a9ff; }
+:host-context(html[data-theme='light']) .gallery-controls-sidebar .gallery-sidebar-tabs { background: #f7f7f7; }
