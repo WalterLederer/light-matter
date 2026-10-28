@@ -2,6 +2,7 @@
 @let clearResult = lastClearResult();
 
 <div class="settings-panel">
+  @if (mode() !== 'cache') {
   <section>
     <div class="setting-row setting-config-path">
       <div class="cache-path-details">
@@ -19,6 +20,8 @@
       <p class="cache-status error" role="alert">Could not open settings file: {{ configFileError() }}</p>
     }
   </section>
+
+  }
 
   <section>
     <details class="cache-details">
@@ -97,6 +100,7 @@
 
     </details>
 
+    @if (mode() !== 'general') {
     <section class="format-details info-box">
       <details>
       <summary>Supported image formats · {{ formatSummary.hdr }} HDR formats · {{ formatSummary.sdr }} SDR formats · {{ formatSummary.decoders }} decoders</summary>
@@ -145,6 +149,7 @@
       </details>
     </section>
   </section>
+    }
   <section class="debug-settings">
     <details>
       <summary>Debug</summary>
@@ -182,5 +187,7 @@
       </div>
     </details>
   </section>
+
+  }
 
 </div>
