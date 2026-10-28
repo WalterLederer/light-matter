@@ -227,3 +227,16 @@ ui-side-panel {
   border-color:#103b61 !important;
   border-bottom-color:#174f80 !important;
 }
+
+
+/* Slightly brighten inactive tabs in light mode without changing dark mode. */
+:host-context(html[data-theme='light']) :host .gallery-controls-sidebar .gallery-sidebar-tabs {
+  background:#f7f7f7 !important;
+}
+:host-context(html[data-theme='light']) :host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"]:not(.active) {
+  background:#dedede !important;
+  border-color:#bdbdbd !important;
+}
+:host-context(html[data-theme='light']) :host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"]:not(.active):hover {
+  background:#d3d3d3 !important;
+}
