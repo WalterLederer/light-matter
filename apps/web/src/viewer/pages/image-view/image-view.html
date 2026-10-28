@@ -215,12 +215,18 @@
   }
   @if (!fullScreen && controlsSidebarVisible()) {
     <aside class="image-controls-sidebar" aria-label="Image controls" [style.width.px]="sidebarWidth()">
-      <header><strong>Image Controls</strong><div class="sidebar-header-actions"><button type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></div></header>
+      <header class="image-controls-header"><strong>Image Controls</strong><div class="sidebar-header-actions"><button type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></div></header>
+      <nav class="image-sidebar-tabs" role="tablist" aria-label="Image settings tabs">@for (tab of imageSidebarTabs; track tab.id) { <button type="button" role="tab" [class.active]="activeImageSidebarTab() === tab.id" [attr.aria-selected]="activeImageSidebarTab() === tab.id" (click)="setActiveImageSidebarTab(tab.id)">{{tab.label}}</button> }</nav>
       <div class="sidebar-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize sidebar" title="Drag to resize sidebar" (pointerdown)="startSidebarResize($event)"></div>
+      @if (activeImageSidebarTab() === 'capture') {
       <app-capture-panel />
+      }
+      @if (activeImageSidebarTab() === 'zoom') {
       <section><button class="section-heading" (click)="toggleSidebarSection('zoom')"><span class="section-chevron">{{sidebarSectionExpanded('zoom') ? 'v' : '>'}}</span>Zoom</button>
         @if (sidebarSectionExpanded('zoom')) { <div class="control-row"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div><button (click)="fitToWindow()">Fit to window</button> }
       </section>
+      }
+      @if (activeImageSidebarTab() === 'corrections') {
       <section><button class="section-heading" (click)="toggleSidebarSection('corrections')"><span class="section-chevron">{{sidebarSectionExpanded('corrections') ? 'v' : '>'}}</span>Corrections</button>
         @if(sidebarSectionExpanded('corrections')) {
           <label class="channel-control"><span><b>Brightness</b><span>{{((mainImageBrightness()-1)*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/></label>
@@ -265,6 +271,8 @@
           <button (click)="resetCorrections()">Reset corrections</button>
         }
       </section>
+      }
+      @if (activeImageSidebarTab() === 'highlight') {
       <section><button class="section-heading" (click)="toggleSidebarSection('highlight')"><span class="section-chevron">{{sidebarSectionExpanded('highlight') ? 'v' : '>'}}</span>Highlight</button>
         @if (sidebarSectionExpanded('highlight')) {
           <label class="hdr-highlight-toggle"><input type="checkbox" [checked]="highlightHdrPixels()" (change)="setHdrPixelHighlight($any($event.target).checked)"/> Highlight HDR pixels</label>
@@ -290,6 +298,8 @@
           }
         }
       </section>
+      }
+      @if (activeImageSidebarTab() === 'zoom') {
       <section><button class="section-heading" (click)="toggleSidebarSection('loupe')"><span class="section-chevron">{{sidebarSectionExpanded('loupe') ? 'v' : '>'}}</span>Magnifier (M)</button>
         @if(sidebarSectionExpanded('loupe')) { <label class="channel-control"><span><b>Magnifier zoom (mouse wheel)</b><span>{{(loupePixelSize() * 2).toFixed(1)}}×</span></span><div class="control-row"><ui-slider [formControl]="loupeSlider" [min]="0.1" [max]="64"/></div></label><label class="channel-control"><span><b>Magnifier size</b><span>{{(loupeSizeScale()*100).toFixed(0)}}%</span></span><input type="range" min="0.5" max="1.2" step="0.1" [value]="loupeSizeScale()" (input)="setLoupeSize($any($event.target).value)"/></label><label class="channel-control"><span><b>Magnifier brightness</b><span>{{(loupeBrightness()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="4" step=".01" [value]="loupeBrightness()" (input)="setLoupeBrightness($any($event.target).value)"/></label><div class="channel-control"><b>Magnifier Shape</b><div class="shape-row"><button [class.active]="loupeShape()==='circular'" title="Circle" (click)="setLoupeShape('circular')">◯</button><button [class.active]="loupeShape()==='rectangular'" title="Rectangle" (click)="setLoupeShape('rectangular')">▭</button><button [class.active]="loupeShape()==='ruler'" title="Horizontal ruler" (click)="setLoupeShape('ruler')">↔</button><button [class.active]="loupeShape()==='vertical-ruler'" title="Vertical ruler" (click)="setLoupeShape('vertical-ruler')">↕</button></div></div><section><button class="section-heading" (click)="toggleSidebarSection('loupeRenderer')"><span class="section-chevron">{{sidebarSectionExpanded('loupeRenderer') ? 'v' : '>'}}</span>Magnifier renderer</button>@if(sidebarSectionExpanded('loupeRenderer')) {<button (click)="toggleLoupeRenderer()">{{loupeRendererMode()==='webgpu'?'WebGPU (HDR)':'CSS (SDR)'}}</button>}</section> }
       @if (sidebarSectionExpanded('loupe') && loupeEnabled()) {
@@ -361,6 +371,8 @@
         </section>
       }
       </section>
+      }
+      @if (activeImageSidebarTab() === 'view') {
       <section><button class="section-heading" (click)="toggleSidebarSection('mode')"><span class="section-chevron">{{sidebarSectionExpanded('mode') ? 'v' : '>'}}</span>View mode (V)</button>
         @if(sidebarSectionExpanded('mode')) { <div class="mode-row">
 <button class="mode-button" [class.active]="comparisonMode()==='hdr'" [disabled]="!isHdrImage" (click)="setComparisonMode('hdr')" aria-label="HDR view" title="HDR view"><img class="mode-logo-image" src="hdr-logo.png" alt="HDR logo"></button>
@@ -371,9 +383,16 @@
 <button class="mode-button" [class.active]="comparisonMode()==='dual-stacked'" [disabled]="!isHdrImage" (click)="setComparisonMode('dual-stacked')" aria-label="Full size stacked without overlay" title="Full size stacked · No overlay"><span class="mode-layout-icon fullsize" aria-hidden="true"><span></span></span><span class="mode-logo-pair vertical"><img class="mode-logo-image sdr-logo-image" src="sdr-logo.png" alt="SDR logo"><img class="mode-logo-image" src="hdr-logo.png" alt="HDR logo"></span></button>
 </div>@if(isHdrImage&&(comparisonMode()==='side-by-side'||comparisonMode()==='stacked')){<label>Split {{comparisonSplit()}}%</label><input type="range" min="1" max="99" [value]="comparisonSplit()" (input)="previewComparisonSplit($any($event.target).value)" (change)="setComparisonSplit($any($event.target).value)"/>} }
       </section>
+      }
+      @if (activeImageSidebarTab() === 'histogram') {
       <section><button class="section-heading" (click)="toggleSidebarSection('histogram')"><span class="section-chevron">{{sidebarSectionExpanded('histogram') ? 'v' : '>'}}</span>Histogram (H)</button>@if(sidebarSectionExpanded('histogram')){<button (click)="toggleHistogram()">{{histogramVisible()?'Close histogram':'Calculate and open histogram'}}</button>}</section>
+      }
+      @if (activeImageSidebarTab() === 'image') {
       <section class="sidebar-image-information"><button class="section-heading" (click)="toggleSidebarSection('info')"><span class="section-chevron">{{sidebarSectionExpanded('info') ? 'v' : '>'}}</span>Image information (I)</button>@if(sidebarSectionExpanded('info')){<app-exif-info [exif]="exif" [dimensions]="dimensions" [fileSize]="selected.size" [bitDepth]="imageBitDepth()" [path]="selected.path" [decoderName]="decoderForPath(selected.path)" [modifiedAt]="selected.modifiedAt" [loadDuration]="loadDuration()" [decodeDuration]="imageDecodeDuration()" [totalDuration]="imageTotalDuration()" [conversionDuration]="conversionDuration()" [fullSizeFromCache]="fullSizeFromCache()" [requiresConversion]="requiresConversion(selected.path)" />}</section>
+      }
+      @if (activeImageSidebarTab() === 'general') {
       <section><button class="section-heading" (click)="toggleSidebarSection('general')"><span class="section-chevron">{{sidebarSectionExpanded('general') ? 'v' : '>'}}</span>General settings (G)</button>@if(sidebarSectionExpanded('general')){<div class="image-theme-setting"><button class="image-theme-toggle" type="button" (click)="themeService.toggle()" [attr.aria-label]="themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'" [title]="themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'"><span class="image-theme-toggle-icon" aria-hidden="true">{{themeService.current()==='dark'?'☀':'●'}}</span><span>{{themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'}}</span></button></div><app-settings-panel />}</section>
+      }
     </aside>
   }
 }
