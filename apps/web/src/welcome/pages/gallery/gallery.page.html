@@ -50,18 +50,26 @@
   <button class="show-controls-sidebar" type="button" title="Show general settings" (click)="toggleControlsSidebar()">⚙</button>
 }
 @if (controlsSidebarVisible()) {
-  <aside class="gallery-controls-sidebar" aria-label="General settings" [style.width.px]="controlsSidebarWidth()">
-     <div class="gallery-sidebar-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize general settings sidebar" title="Drag to resize sidebar" (pointerdown)="startControlsSidebarResize($event)"></div>
-    <header><strong>General settings</strong><div class="sidebar-header-actions"><button type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></div></header>
-    <app-capture-panel />
-    <section class="appearance-settings">
-      <strong>Appearance</strong>
-      <button class="theme-toggle-button" type="button" (click)="themeService.toggle()">
-        <span class="theme-toggle-icon" aria-hidden="true">{{themeService.current()==='dark'?'☀':'●'}}</span>
-        <span>{{themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'}}</span>
-      </button>
-    </section>
-    <app-settings-panel />
+  <aside class="gallery-controls-sidebar" aria-label="Gallery settings" [style.width.px]="controlsSidebarWidth()">
+    <div class="gallery-sidebar-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize settings sidebar" title="Drag to resize sidebar" (pointerdown)="startControlsSidebarResize($event)"></div>
+    <header><strong>Gallery Settings</strong><div class="sidebar-header-actions"><button type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></div></header>
+    <nav class="gallery-sidebar-tabs" role="tablist" aria-label="Gallery settings tabs">@for (tab of gallerySidebarTabs; track tab.id) { <button type="button" role="tab" [class.active]="activeGallerySidebarTab() === tab.id" [attr.aria-selected]="activeGallerySidebarTab() === tab.id" (click)="setActiveGallerySidebarTab(tab.id)">{{tab.label}}</button> }</nav>
+    @if (activeGallerySidebarTab() === 'capture') {
+      <app-capture-panel />
+    }
+    @if (activeGallerySidebarTab() === 'general') {
+      <section class="appearance-settings">
+        <strong>Appearance</strong>
+        <button class="theme-toggle-button" type="button" (click)="themeService.toggle()">
+          <span class="theme-toggle-icon" aria-hidden="true">{{themeService.current()==='dark'?'☀':'●'}}</span>
+          <span>{{themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'}}</span>
+        </button>
+      </section>
+      <app-settings-panel mode="general" />
+    }
+    @if (activeGallerySidebarTab() === 'cache') {
+      <app-settings-panel mode="cache" />
+    }
   </aside>
 }
 
