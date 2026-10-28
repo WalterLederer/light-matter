@@ -269,11 +269,41 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
 
   let windows: CaptureSources['windows'] = [];
   const sourceErrors: string[] = [];
-  const enumeratedWindows = enumerateWindows()
-    .filter(window => window.isValid && window.title.trim().length > 0 &&
-      window.processId !== process.pid &&
-      !window.title.trim().toLowerCase().startsWith('light matter'));
+  let enumeratedWindows: ReturnType<typeof enumerateWindows> = [];
   try {
+    // The native enumerator can fail for an individual Windows API access-denied
+    // condition. Fall back to Electron's window source list rather than failing IPC.
+    try {
+      enumeratedWindows = enumerateWindows();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      sourceErrors.push(`@screen-capture/node window enumeration failed: ${message}`);
+      const electronSources = await desktopCapturer.getSources({
+        types: ['window'],
+        thumbnailSize: { width: 0, height: 0 },
+        fetchWindowIcons: false
+      });
+      enumeratedWindows = electronSources.flatMap(source => {
+        const match = /^window:(\\d+):/.exec(source.id);
+        if (!match || !source.name.trim()) return [];
+        const handle = Number(match[1]);
+        if (!Number.isSafeInteger(handle) || handle <= 0) return [];
+        return [{
+          handle,
+          title: source.name,
+          processId: 0,
+          processName: 'Unknown executable',
+          isValid: true,
+          width: 0,
+          height: 0,
+          monitorIndex: -1
+        }];
+      }) as ReturnType<typeof enumerateWindows>;
+    }
+    enumeratedWindows = enumeratedWindows
+      .filter(window => window.isValid && window.title.trim().length > 0 &&
+        window.processId !== process.pid &&
+        !window.title.trim().toLowerCase().startsWith('light matter'));
 
     // Use Win32 directly for visibility and process identity. DWM visibility is
     // deliberately not consulted: IsWindowVisible is the sole visibility test.
