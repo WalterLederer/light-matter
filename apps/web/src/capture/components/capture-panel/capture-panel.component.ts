@@ -41,9 +41,17 @@ export class CapturePanelComponent {
   protected readonly toggleExpanded = (): void => this.expanded.update(value => !value);
 
   protected readonly windowExecutableName = (window: CaptureWindow): string => {
-    const path = window.executablePath ?? '';
-    const executable = path.split(/[\\/]/).pop();
-    return executable || window.processName || 'Unknown executable';
+    const path = (window.executablePath ?? '').trim();
+    const executable = path.split(/[\\/]/).pop()?.trim();
+    const processName = (window.processName ?? '').trim();
+    // Some capture backends return a placeholder instead of the real executable.
+    // Never show the bare "Windows application -" prefix as if it were a filename.
+    const usable = (value: string | undefined): value is string =>
+      !!value && !/^Windows application\s*-?\s*$/i.test(value) && value !== 'Unknown executable';
+    if (usable(executable)) return executable;
+    if (usable(processName)) return processName;
+    const title = (window.title ?? '').trim();
+    return title || 'Application window';
   };
   protected readonly changeTarget = (value: string): void => {
     this.disposeHdrPreview();
