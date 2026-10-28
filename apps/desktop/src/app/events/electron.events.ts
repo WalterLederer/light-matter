@@ -359,7 +359,7 @@ public static class LightMatterWindowNative {
     windows = enumeratedWindows.map(window => ({
       title: window.title.trim(),
       processName: window.processName || 'Unknown executable',
-      executablePath: window.executablePath || undefined,
+      executablePath: undefined,
       processId: window.processId,
       handle: window.handle,
       width: window.width,
