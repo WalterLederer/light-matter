@@ -88,7 +88,7 @@
 
 .capture-source-table {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(260px, 2fr) 130px 150px;
+  grid-template-columns: minmax(150px, 1fr) minmax(260px, 2fr) 130px 100px 150px;
   align-items: center;
   gap: 0;
   min-width: 0;
@@ -99,7 +99,7 @@
   top: 0;
   z-index: 1;
   display: grid;
-  grid-template-columns: 48px minmax(150px, 1fr) minmax(260px, 2fr) 130px 150px;
+  grid-template-columns: 48px minmax(150px, 1fr) minmax(260px, 2fr) 130px 100px 150px;
   min-height: 30px;
   padding: 0 8px 0 0;
   font-size: 0.78em;
@@ -186,11 +186,11 @@
   }
 
   .capture-source-table {
-    grid-template-columns: minmax(125px, 1fr) minmax(200px, 1.6fr) 100px 120px;
+    grid-template-columns: minmax(125px, 1fr) minmax(200px, 1.6fr) 100px 90px 120px;
   }
 
   .capture-source-header {
-    grid-template-columns: 40px minmax(125px, 1fr) minmax(200px, 1.6fr) 100px 120px;
+    grid-template-columns: 40px minmax(125px, 1fr) minmax(200px, 1.6fr) 100px 90px 120px;
   }
 
   .capture-source-row {
