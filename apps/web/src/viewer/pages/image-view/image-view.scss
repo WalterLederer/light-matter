@@ -1159,3 +1159,34 @@
 .image-controls-sidebar .histogram-chart { min-width: 0; width: 100%; }
 .image-controls-sidebar .histogram-plot { width: 100%; }
 :host-context(html[data-theme='light']) .image-controls-sidebar .image-controls-header { background: #f7f7f7; }
+
+/* Theme-aware tab strip: selected text remains readable in light mode. */
+.image-controls-sidebar .image-sidebar-tabs {
+  display: flex; flex-wrap: wrap; align-items: stretch; gap: 4px;
+  position: sticky; top: -12px; z-index: 6;
+  margin: -12px -12px 8px; padding: 12px 12px 8px; background: #202124;
+}
+.image-controls-sidebar .image-sidebar-tabs button {
+  flex: 1 1 auto; min-width: 0; color: #f5f5f5;
+  background: rgb(255 255 255 / 7%); border: 1px solid rgb(255 255 255 / 18%);
+}
+.image-controls-sidebar .image-sidebar-tabs button.active { color: #fff; background: #31577d; border-color: #65a9ff; }
+.image-controls-sidebar .image-sidebar-tabs .sidebar-close-tab { flex: 0 0 30px; font-size: 18px; padding: 2px; }
+.image-controls-sidebar .section-title { display: block; font-weight: 700; padding: 2px 4px 6px; }
+.image-controls-sidebar .histogram-inline .histogram-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: .8rem; }
+.image-controls-sidebar .histogram-inline .white-legend { color: #fff; }
+.image-controls-sidebar .histogram-inline .red-legend { color: #ff5a5f; }
+.image-controls-sidebar .histogram-inline .green-legend { color: #55d98a; }
+.image-controls-sidebar .histogram-inline .blue-legend { color: #58a6ff; }
+.image-controls-sidebar .histogram-inline .histogram-white { fill: none; stroke: #fff; stroke-width: 1.5; }
+.image-controls-sidebar .histogram-inline .histogram-red { fill: none; stroke: #ff5a5f; stroke-width: 1.5; }
+.image-controls-sidebar .histogram-inline .histogram-green { fill: none; stroke: #55d98a; stroke-width: 1.5; }
+.image-controls-sidebar .histogram-inline .histogram-blue { fill: none; stroke: #58a6ff; stroke-width: 1.5; }
+.image-controls-sidebar .histogram-inline .histogram-grid { fill: none; stroke: rgb(128 128 128 / 35%); stroke-width: 1; }
+.image-controls-sidebar .histogram-inline .histogram-y-label { fill: currentColor; font-size: 7px; }
+.image-controls-sidebar .histogram-inline .histogram-divider { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-dasharray: 3 3; }
+.image-controls-sidebar .histogram-inline .histogram-plot { display: block; width: 100%; overflow: visible; color: inherit; background: rgb(128 128 128 / 8%); }
+.image-controls-sidebar .histogram-inline .histogram-axis { display: flex; justify-content: space-between; gap: 6px; font-size: .65rem; }
+:host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs { background: #f7f7f7; }
+:host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs button { color: #202124; background: #fff; border-color: #b8b8b8; }
+:host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs button.active { color: #fff; background: #245b8f; border-color: #17436b; }
