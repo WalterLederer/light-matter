@@ -67,7 +67,7 @@ export class CapturePanelComponent {
         exe: 'Monitor',
         title: monitor.name || monitor.deviceName || `Monitor ${monitor.index}`,
         size: `${monitor.width} × ${monitor.height}`,
-        status: `${monitor.isHdr ? 'HDR' : 'SDR'}${monitor.refreshRate ? ` · ${monitor.refreshRate} Hz` : ''}`,
+        status: `${monitor.isHdr === undefined ? 'Mode unknown' : monitor.isHdr ? 'HDR' : 'SDR'}${monitor.refreshRate ? ` · ${monitor.refreshRate} Hz` : ''}`,
         minimized: false,
         unavailable: this.unavailableTargets().includes(value)
       };
