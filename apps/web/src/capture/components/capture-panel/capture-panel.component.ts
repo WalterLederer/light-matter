@@ -92,8 +92,14 @@ export class CapturePanelComponent {
         unavailable: window.width < 100 || window.height < 100 || !!window.isMinimized || this.unavailableTargets().includes(value)
       };
     });
+    // Sort by an explicit capturability tier first. Favorites and source type
+    // must never pull disabled rows back above capturable sources.
+    const capturabilityTier = (row: CaptureSourceRow): number =>
+      row.status.startsWith('[Not capturable]') ? 2 :
+      row.minimized ? 1 :
+      row.unavailable ? 2 : 0;
     return [...monitors, ...windows].sort((a, b) =>
-      Number(a.unavailable || a.minimized) - Number(b.unavailable || b.minimized) ||
+      capturabilityTier(a) - capturabilityTier(b) ||
       Number(b.favorite) - Number(a.favorite) ||
       Number(b.kind === 'monitor') - Number(a.kind === 'monitor') ||
       a.exe.localeCompare(b.exe, undefined, { sensitivity: 'base' }) ||
