@@ -3,6 +3,7 @@
 @let timestamp = modifiedAt();
 @let rangeInfo = dynamicRangeDiagnostics();
 
+@if (mode() !== 'cache') {
 <section class="info-box file-info">
   <div class="full-path-row">
     <div class="full-path-value" [title]="normalizedPath()">{{ normalizedPath() }}</div>
@@ -38,8 +39,10 @@
   </details>
 </section>
 
+}
+@if (mode() === 'cache') {
 <section class="info-box cache-info">
-  <details>
+  <details open>
     <summary>Cache · {{ cachePathLoading() ? 'Checking…' : cachePath() ? 'Full-size JPEG derivative found' : 'No full-size cache file found' }}</summary>
     <div class="full-path-row">
       <div class="full-path-value" [title]="rawImageUrl()"><strong>Raw image URL:</strong> {{ rawImageUrl() }}</div>
@@ -67,6 +70,8 @@
   </details>
 </section>
 
+}
+@if (mode() !== 'cache') {
 <section class="info-box color-info">
   <details>
     <summary>Color · {{ exifData === false ? 'Loading…' : rangeInfo.result }} · {{ bitDepth() ?? 'Bit depth —' }} · {{ exifData === false ? '—' : (exifData.YCbCrSubSampling ?? exifData.ChromaFormat ?? '—') }}</summary>
@@ -116,11 +121,6 @@
       } @else {
         Conversion time not recorded
       }
-      @if (fullSizeFromCache() === false) {
-        <span class="cache-status">Full-size image: not loaded from cache (converted/generated now)</span>
-      } @else if (fullSizeFromCache() === true) {
-        <span class="cache-status">Full-size image: cache hit</span>
-      }
     </dd>
   </dl>
   <details class="measurement-details">
@@ -132,3 +132,5 @@
   </details>
   </details>
 </section>
+
+}
