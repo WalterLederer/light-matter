@@ -27,7 +27,6 @@ import {
 import { ImagesComponent } from '../images/images.component';
 import { ExifService } from '../../../ipc/exif';
 import { imageDynamicRange } from '../../../viewer/utils/image-dynamic-range';
-import { ThemeService } from '../../../system/services/theme/theme.service';
 
 @Component({
   selector: 'app-image-grid',
@@ -83,7 +82,6 @@ export class ImageGridComponent {
 
   private readonly document = inject(DOCUMENT);
 
-  protected readonly theme = inject(ThemeService);
 
   private readonly destroyRef = inject(DestroyRef);
 
