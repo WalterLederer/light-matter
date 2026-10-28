@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { CacheClearResult, CacheInfo, supportedFileFormats } from 'internal-api';
 import { CacheManager } from '../../../ipc/cache-manager';
 import { ProcessManager } from '../../../ipc/process-manager';
@@ -15,6 +15,7 @@ import { ByteSizePipe } from '../../../ui/pipes/byte-size/byte-size.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SettingsPanelComponent {
+  readonly mode = input<'all' | 'general' | 'cache'>('all');
   /* DI */
   readonly cacheManager = inject(CacheManager);
 
