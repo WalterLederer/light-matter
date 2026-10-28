@@ -82,6 +82,7 @@ export class CapturePanelComponent {
       };
     });
     return [...monitors, ...windows].sort((a, b) =>
+      Number(a.minimized) - Number(b.minimized) ||
       Number(b.favorite) - Number(a.favorite) ||
       a.exe.localeCompare(b.exe, undefined, { sensitivity: 'base' }) ||
       a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
