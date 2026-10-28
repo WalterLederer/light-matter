@@ -304,3 +304,24 @@
   font-size: 0.78em;
   opacity: 0.7;
 }
+
+
+.capture-source-row.is-minimized {
+  color: #888;
+  background: rgb(128 128 128 / 5%);
+}
+
+.capture-source-row.is-minimized:hover,
+.capture-source-row.is-minimized.is-selected {
+  background: rgb(128 128 128 / 8%);
+}
+
+.capture-source-row.is-minimized .capture-source-select,
+.capture-source-row.is-minimized .capture-source-favorite {
+  color: #888;
+  cursor: not-allowed;
+}
+
+.capture-source-row.is-minimized .capture-source-status {
+  color: #888;
+}
