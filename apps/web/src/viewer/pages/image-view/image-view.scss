@@ -1190,3 +1190,16 @@
 :host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs { background: #f7f7f7; }
 :host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs button { color: #202124; background: #fff; border-color: #b8b8b8; }
 :host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs button.active { color: #fff; background: #245b8f; border-color: #17436b; }
+
+/* Histogram legend uses a dark backing so the white luminance label stays legible in both themes. */
+.image-controls-sidebar .histogram-inline .histogram-legend {
+  background: #252525;
+  color: #fff;
+  border-radius: 4px;
+  padding: 5px 7px;
+}
+:host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs button.active {
+  color: #fff !important;
+  background: #174f80 !important;
+  border-color: #103b61 !important;
+}
