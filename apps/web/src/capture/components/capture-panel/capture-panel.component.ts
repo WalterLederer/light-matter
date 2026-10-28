@@ -15,6 +15,7 @@ type CaptureSourceRow = {
   exe: string;
   title: string;
   size: string;
+  displayMode: string;
   status: string;
   minimized: boolean;
   unavailable: boolean;
@@ -67,6 +68,7 @@ export class CapturePanelComponent {
         exe: 'Monitor',
         title: monitor.name || monitor.deviceName || `Monitor ${monitor.index}`,
         size: `${monitor.width} × ${monitor.height}`,
+        displayMode: monitor.isHdr === undefined ? 'Unknown' : monitor.isHdr ? 'HDR' : 'SDR',
         status: `${monitor.isHdr === undefined ? 'Mode unknown' : monitor.isHdr ? 'HDR' : 'SDR'}${monitor.refreshRate ? ` · ${monitor.refreshRate} Hz` : ''}`,
         minimized: false,
         unavailable: this.unavailableTargets().includes(value)
@@ -81,6 +83,7 @@ export class CapturePanelComponent {
         exe: this.windowExecutableName(window),
         title: window.title,
         size: `${window.width} × ${window.height}`,
+        displayMode: this.windowDisplayMode(window),
         status: window.width < 100 || window.height < 100 || this.unavailableTargets().includes(value) ? '[Not capturable]' : window.isMinimized ? '[Minimized]' : '',
         minimized: !!window.isMinimized,
         unavailable: window.width <= 0 || window.height <= 0 || this.unavailableTargets().includes(value)
@@ -93,6 +96,13 @@ export class CapturePanelComponent {
       a.exe.localeCompare(b.exe, undefined, { sensitivity: 'base' }) ||
       a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
     );
+  };
+
+
+  private readonly windowDisplayMode = (window: CaptureWindow): string => {
+    if (window.isMinimized || window.width < 100 || window.height < 100 || window.monitorIndex === undefined || window.monitorIndex < 0) return '—';
+    const monitor = this.monitors().find(item => item.index === window.monitorIndex);
+    return monitor?.isHdr === undefined ? 'Unknown' : monitor.isHdr ? 'HDR' : 'SDR';
   };
 
   protected readonly toggleSourceMenu = (): void => {
