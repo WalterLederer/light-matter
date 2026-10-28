@@ -88,12 +88,7 @@
       <nav class="image-sidebar-tabs" role="tablist" aria-label="Image settings tabs">@for (tab of imageSidebarTabs; track tab.id) { <button type="button" role="tab" [class.active]="activeImageSidebarTab() === tab.id" [attr.aria-selected]="activeImageSidebarTab() === tab.id" (click)="setActiveImageSidebarTab(tab.id)">{{tab.label}}</button> }<button class="sidebar-close-tab" type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></nav>
       <div class="sidebar-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize sidebar" title="Drag to resize sidebar" (pointerdown)="startSidebarResize($event)"></div>
       @if (activeImageSidebarTab() === 'cache') {
-        <section class="current-image-cache">
-          <strong class="section-title">Cache for current image</strong>
-          <p>Full-size conversion cache for the displayed image.</p>
-          <div class="cache-file-status">{{ currentImageCacheStatus() }}</div>
-          <button type="button" (click)="refreshCurrentImageCache()">Refresh status</button>
-        </section>
+        <app-exif-info mode="cache" [path]="selected.path" />
       }
       @if (activeImageSidebarTab() === 'capture') {
       <app-capture-panel />
