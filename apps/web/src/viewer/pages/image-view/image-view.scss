@@ -1148,3 +1148,14 @@
 .image-controls-sidebar .image-sidebar-tabs { position:sticky; top:0; z-index:5; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding:6px 0 10px; background:#202124; }
 .image-controls-sidebar .image-sidebar-tabs button { min-width:0; padding:5px 3px; font-size:12px; }
 .image-controls-sidebar .image-sidebar-tabs button.active { background:#31577d; border-color:#65a9ff; }
+
+
+/* Keep the sidebar tabs visible while the selected tab content scrolls. */
+.image-controls-sidebar .image-controls-header { position: sticky; top: -12px; z-index: 6; margin: -12px -12px 0; padding: 12px 12px 10px; background: #202124; }
+.image-controls-sidebar .image-sidebar-tabs { top: 45px; margin: 0 -12px; padding: 6px 12px 10px; }
+.image-controls-sidebar .histogram-inline { min-width: 0; }
+.image-controls-sidebar .histogram-inline-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.image-controls-sidebar .histogram-plots-stacked { display: flex; flex-direction: column; gap: 16px; }
+.image-controls-sidebar .histogram-chart { min-width: 0; width: 100%; }
+.image-controls-sidebar .histogram-plot { width: 100%; }
+:host-context(html[data-theme='light']) .image-controls-sidebar .image-controls-header { background: #f7f7f7; }
