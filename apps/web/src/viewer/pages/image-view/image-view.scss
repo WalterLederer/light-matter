@@ -1145,7 +1145,7 @@
 .image-controls-sidebar .rgb-inversion-row label:nth-child(3) {color:#58a6ff}
 .image-controls-sidebar .rgb-inversion-row input[type=checkbox] {width:auto;margin:0;accent-color:#65a9ff}
 
-.image-controls-sidebar .image-sidebar-tabs { position:sticky; top:0; z-index:5; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding:6px 0 10px; background:#202124; }
+.image-controls-sidebar .image-sidebar-tabs { position:sticky; top:0; z-index:5; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding:6px 0 10px; background:#e5e5e5; }
 .image-controls-sidebar .image-sidebar-tabs button { min-width:0; padding:5px 3px; font-size:12px; }
 .image-controls-sidebar .image-sidebar-tabs button.active { background:#31577d; border-color:#65a9ff; }
 
@@ -1187,8 +1187,8 @@
 .image-controls-sidebar .histogram-inline .histogram-divider { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-dasharray: 3 3; }
 .image-controls-sidebar .histogram-inline .histogram-plot { display: block; width: 100%; overflow: visible; color: inherit; background: rgb(128 128 128 / 8%); }
 .image-controls-sidebar .histogram-inline .histogram-axis { display: flex; justify-content: space-between; gap: 6px; font-size: .65rem; }
-:host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs { background: #f7f7f7; }
-:host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs button { color: #202124; background: #fff; border-color: #b8b8b8; }
+:host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs { background: #e5e5e5; }
+:host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs button { color: #202124; background: #e5e5e5; border-color: #b8b8b8; }
 :host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs button.active { color: #fff; background: #245b8f; border-color: #17436b; }
 
 /* Histogram legend uses a dark backing so the white luminance label stays legible in both themes. */
