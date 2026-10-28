@@ -24,7 +24,6 @@ import { GalleryState } from '../../../gallery/services/gallery-state/gallery-st
 import { ProcessManager } from '../../../ipc/process-manager';
 import { defaultSortMode, treeNode } from '../../../gallery/services/gallery-state/gallery-state.types';
 import { Dialogs } from '../../../ipc/dialogs';
-import { ThemeService } from '../../../system/services/theme/theme.service';
 import { CapturePanelComponent } from '../../../capture/components/capture-panel/capture-panel.component';
 import { SettingsPanelComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
 import { DefaultPipe } from '../../../system/pipes/default/default.pipe';
@@ -57,8 +56,6 @@ import { ViewNavigator } from '../../../viewer/services/view-navigator/view-navi
 export class GalleryPage {
   /* DI */
   private readonly galleryState = inject(GalleryState);
-
-  protected readonly themeService = inject(ThemeService);
 
   private readonly dialogs = inject(Dialogs);
 
