@@ -292,6 +292,7 @@ public sealed class LightMatterWindowRow {
   public int width { get; set; }
   public int height { get; set; }
   public int monitorIndex { get; set; }
+  public bool isMinimized { get; set; }
 }
 
 public static class LightMatterWindowEnumerator {
@@ -300,6 +301,7 @@ public static class LightMatterWindowEnumerator {
   private struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
   [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
   [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hWnd);
+  [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr hWnd);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int maxCount);
   [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
   [DllImport("user32.dll", SetLastError=true)] private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
@@ -331,7 +333,7 @@ public static class LightMatterWindowEnumerator {
       RECT rect;
       int width = 0, height = 0;
       if (GetWindowRect(hWnd, out rect)) { width = Math.Max(0, rect.Right - rect.Left); height = Math.Max(0, rect.Bottom - rect.Top); }
-      rows.Add(new LightMatterWindowRow { handle = hWnd.ToInt64().ToString(), title = title, processId = pid, executablePath = exePath, width = width, height = height, monitorIndex = -1 });
+      rows.Add(new LightMatterWindowRow { handle = hWnd.ToInt64().ToString(), title = title, processId = pid, executablePath = exePath, width = width, height = height, monitorIndex = -1, isMinimized = IsIconic(hWnd) });
       return true;
     }, IntPtr.Zero);
     return rows.ToArray();
@@ -348,7 +350,7 @@ public static class LightMatterWindowEnumerator {
     ], { encoding: 'utf8', windowsHide: true, timeout: 20000 }).trim();
     const nativeRows = JSON.parse(nativeJson || '[]') as Array<{
       handle: string; title: string; processId: number; executablePath?: string | null;
-      width: number; height: number; monitorIndex: number;
+      width: number; height: number; monitorIndex: number; isMinimized: boolean;
     }>;
     windows = nativeRows
       .filter(window => Number(window.processId) !== process.pid)
@@ -362,10 +364,11 @@ public static class LightMatterWindowEnumerator {
           handle: Number(window.handle),
           width: Number(window.width) || 0,
           height: Number(window.height) || 0,
-          monitorIndex: Number(window.monitorIndex) || -1
+          monitorIndex: Number(window.monitorIndex) || -1,
+          isMinimized: Boolean(window.isMinimized)
         };
       })
-      .sort((a, b) => a.title.localeCompare(b.title));
+      .sort((a, b) => a.processName.localeCompare(b.processName, undefined, { sensitivity: 'base' }) || a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     sourceErrors.push(`PowerShell Win32 window enumeration failed: ${message}`);
