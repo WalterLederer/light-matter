@@ -7,7 +7,8 @@ import {
 } from '@screen-capture/node';
 import { app, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
 import { encodeExr, init as initExr } from 'exrs';
-import { CaptureResult, CaptureSources, CaptureTarget, FileListing, supportedFileExtensions } from 'internal-api';
+import { CaptureFormat, CaptureResult, CaptureSources, CaptureTarget, FileListing, supportedFileExtensions } from 'internal-api';
+import Vips from 'wasm-vips';
 import { execFileSync } from 'node:child_process';
 import * as fsSync from 'node:fs';
 import * as fs from 'node:fs/promises';
@@ -19,6 +20,7 @@ import { IpcRegistry } from '../decorators/ipc-registry';
 import { captureLoupeFrame, releaseLoupeFrame, sampleLoupeRectangle, sampleLoupeRegion } from '../loupe-capture';
 
 let exrInitPromise: Promise<void> | undefined;
+let vipsInitPromise: Promise<typeof Vips> | undefined;
 
 const halfToFloat = (half: number): number => {
   const sign = (half & 0x8000) !== 0 ? -1 : 1;
@@ -667,9 +669,9 @@ ipcMain.handle(
 
 ipcMain.handle(
   'Capture.capture',
-  async (_event, target: CaptureTarget, folder: string, format: 'exr' | 'jxr' = 'exr'): Promise<CaptureResult> => {
-    if (format !== 'exr' && format !== 'jxr') {
-      throw new Error('Choose EXR or JXR as the capture format.');
+  async (_event, target: CaptureTarget, folder: string, format: CaptureFormat = 'exr'): Promise<CaptureResult> => {
+    if (format !== 'exr' && format !== 'jxr' && format !== 'uhdr') {
+      throw new Error('Choose OpenEXR, JPEG XR, or Ultra HDR JPEG as the capture format.');
     }
     if (process.platform !== 'win32') {
       throw new Error('HDR capture is currently supported on Windows only.');
@@ -689,8 +691,35 @@ ipcMain.handle(
     try {
       const frame = await getHdrFrame(target);
       const sourceChannels = new Uint16Array(frame.buffer.buffer, frame.buffer.byteOffset, frame.buffer.byteLength / 2);
-      let encoded: Buffer | Uint8Array;
-      if (format === 'jxr') {
+      const extension = format === 'uhdr' ? 'jpg' : format;
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const baseName = `LightMatter_Capture_${stamp}`;
+      let outputPath = path.join(folder, `${baseName}.${extension}`);
+      let suffix = 1;
+      while (fsSync.existsSync(outputPath)) {
+        outputPath = path.join(folder, `${baseName}_${suffix++}.${extension}`);
+      }
+      if (format === 'uhdr') {
+        logPhase(`convert FP16 scRGB frame to Float32 RGBA with brightness correction ${CAPTURE_BRIGHTNESS_CORRECTION}`);
+        const rgba = new Float32Array(frame.width * frame.height * 4);
+        for (let source = 0; source < sourceChannels.length; source++) {
+          const channel = source % 4;
+          const value = halfToFloat(sourceChannels[source]);
+          rgba[source] = channel === 3 ? value : value * CAPTURE_BRIGHTNESS_CORRECTION;
+        }
+        logPhase('initialize libvips Ultra HDR JPEG encoder');
+        vipsInitPromise ??= Vips();
+        const vips = await vipsInitPromise;
+        vips.Cache.max(0);
+        vips.Cache.maxMem(0);
+        using image = vips.Image.newFromMemory(rgba, frame.width, frame.height, 4, vips.BandFormat.float);
+        using scrgb = image.copy({ interpretation: vips.Interpretation.scrgb });
+        logPhase('encode Ultra HDR JPEG with embedded gain map');
+        scrgb.uhdrsave(outputPath, { Q: 90 });
+        logPhase('Ultra HDR JPEG written');
+      } else {
+        let encoded: Buffer | Uint8Array;
+        if (format === 'jxr') {
         logPhase('pack RGBA16F input and encode JPEG XR');
         // Keep the native RGBA16F layout. The Windows JPEG XR encoder reported
         // WINCODEC_ERR_INSUFFICIENTBUFFER when given a tightly packed RGB16F buffer.
@@ -703,39 +732,33 @@ ipcMain.handle(
         }
         const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
         encoded = encoder.encode(rgba, frame.width, frame.height);
-      } else {
-        logPhase(
-          `convert native RGBA16F to Float32 RGBA (${frame.width}x${frame.height}) without brightness correction`
-        );
-        const rgba = new Float32Array(frame.width * frame.height * 4);
-        for (let source = 0; source < sourceChannels.length; source++) {
-          rgba[source] = halfToFloat(sourceChannels[source]);
+        } else {
+          logPhase(
+            `convert native RGBA16F to Float32 RGBA (${frame.width}x${frame.height}) without brightness correction`
+          );
+          const rgba = new Float32Array(frame.width * frame.height * 4);
+          for (let source = 0; source < sourceChannels.length; source++) {
+            rgba[source] = halfToFloat(sourceChannels[source]);
+          }
+          logPhase('initialize OpenEXR encoder');
+          exrInitPromise ??= initExr();
+          await exrInitPromise;
+          logPhase('encode OpenEXR');
+          encoded = encodeExr({
+            width: frame.width,
+            height: frame.height,
+            layers: [ {
+              name: 'rgba',
+              channelNames: [ 'R', 'G', 'B', 'A' ],
+              interleavedPixels: rgba,
+              precision: 'f32',
+              compression: 'piz'
+            } ]
+          });
         }
-        logPhase('initialize OpenEXR encoder');
-        exrInitPromise ??= initExr();
-        await exrInitPromise;
-        logPhase('encode OpenEXR');
-        encoded = encodeExr({
-          width: frame.width,
-          height: frame.height,
-          layers: [ {
-            name: 'rgba',
-            channelNames: [ 'R', 'G', 'B', 'A' ],
-            interleavedPixels: rgba,
-            precision: 'f32',
-            compression: 'piz'
-          } ]
-        });
+        logPhase(`write ${format.toUpperCase()} file`);
+        await fs.writeFile(outputPath, encoded, { flag: 'wx' });
       }
-      logPhase(`write ${format.toUpperCase()} file`);
-      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const baseName = `LightMatter_Capture_${stamp}`;
-      let outputPath = path.join(folder, `${baseName}.${format}`);
-      let suffix = 1;
-      while (fsSync.existsSync(outputPath)) {
-        outputPath = path.join(folder, `${baseName}_${suffix++}.${format}`);
-      }
-      await fs.writeFile(outputPath, encoded, { flag: 'wx' });
       if (cachedHdrFrame === frame) {
         cachedHdrFrame = null;
       }
