@@ -78,9 +78,9 @@
         <p class="capture-status" role="status">{{ status() }}</p>
       }
       <div class="capture-selection-summary">
-        <div><strong>Selected source:</strong> {{ selectedSourceLabel() }}</div>
-        <div><strong>Selected format:</strong> {{ selectedFormat() === 'exr' ? 'OpenEXR (.exr)' : 'JPEG XR (.jxr)' }}</div>
-        <div><strong>Selected folder:</strong> {{ destinationFolder() || 'No folder selected' }}</div>
+        <div><strong>Source:</strong> {{ selectedSourceLabel() }}</div>
+        <div><strong>Format:</strong> {{ selectedFormat() === 'exr' ? 'OpenEXR (.exr)' : 'JPEG XR (.jxr)' }}</div>
+        <div><strong>Folder:</strong> {{ destinationFolder() || 'No folder selected' }}</div>
         <div><strong>Full output filename:</strong> {{ lastOutputPath() || 'Generated automatically when captured' }}</div>
       </div>
 
