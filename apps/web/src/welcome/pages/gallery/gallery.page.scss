@@ -69,6 +69,8 @@ ui-side-panel {
   padding:8px 12px 0;
 }
 :host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"] {
+  background:#dedede;
+  border-color:#d0d0d0;
   flex:1 1 0;
   min-width:0;
   border:1px solid transparent;
@@ -82,6 +84,8 @@ ui-side-panel {
   box-shadow:none;
 }
 :host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"]:not(.active):hover {
+  background:#d4d4d4;
+  border-color:#c4c4c4;
   background:rgb(0 0 0 / 5%);
 }
 :host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"].active {
@@ -103,6 +107,10 @@ ui-side-panel {
 }
 :host .gallery-controls-sidebar .gallery-sidebar-tabs .sidebar-close-tab:hover {
   background:rgb(0 0 0 / 8%);
+}
+:host-context(html[data-theme='dark']) .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"]:not(.active) {
+  background:#303238;
+  border-color:#45484f;
 }
 :host-context(html[data-theme='dark']) .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"].active {
   background:#202124;
