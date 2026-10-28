@@ -203,3 +203,27 @@ ui-side-panel {
   border-color:#555 !important;
   border-bottom-color:#202124 !important;
 }
+
+
+/* Content-sized tabs; preserve full labels and keep the selected tab blue. */
+:host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"] {
+  flex:0 1 auto !important;
+  width:auto !important;
+  max-width:100% !important;
+  min-width:0;
+  white-space:normal !important;
+  overflow-wrap:normal !important;
+  text-align:center;
+}
+:host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"].active {
+  background:#174f80 !important;
+  color:#fff !important;
+  border-color:#103b61 !important;
+  border-bottom-color:#174f80 !important;
+}
+:host-context(html[data-theme='dark']) :host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"].active {
+  background:#174f80 !important;
+  color:#fff !important;
+  border-color:#103b61 !important;
+  border-bottom-color:#174f80 !important;
+}
