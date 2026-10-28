@@ -23,15 +23,16 @@
                 <span>Status</span>
               </div>
               @for (row of sourceRows(); track row.value) {
-                <div class="capture-source-row" [class.is-selected]="selectedTarget() === row.value" [class.is-favorite]="row.favorite" role="option" [attr.aria-selected]="selectedTarget() === row.value">
+                <div class="capture-source-row" [class.is-selected]="selectedTarget() === row.value" [class.is-favorite]="row.favorite" [class.is-minimized]="row.minimized" role="option" [attr.aria-selected]="selectedTarget() === row.value">
                   <button
                     type="button"
                     class="capture-source-favorite"
+                    [disabled]="row.minimized"
                     [class.is-favorite]="row.favorite"
                     [attr.aria-label]="(row.favorite ? 'Remove favorite: ' : 'Add favorite: ') + row.exe + ' — ' + row.title"
                     [attr.title]="row.favorite ? 'Remove favorite' : 'Add favorite'"
                     (click)="toggleFavorite(row, $event)">{{ row.favorite ? '★' : '☆' }}</button>
-                  <button type="button" class="capture-source-select capture-source-table" (click)="selectSourceRow(row.value)">
+                  <button type="button" class="capture-source-select capture-source-table" [disabled]="row.minimized" (click)="selectSourceRow(row.value)">
                     <span class="capture-source-exe">{{ row.favorite ? '* ' : '' }}{{ row.exe }}</span>
                     <span class="capture-source-title" [title]="row.title">{{ row.title }}</span>
                     <span class="capture-source-size">{{ row.size }}</span>
