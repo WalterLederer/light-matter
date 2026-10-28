@@ -59,6 +59,7 @@
         <select [value]="selectedFormat()" (change)="selectedFormat.set($any($event.target).value)" [disabled]="capturing() || previewing()">
           <option value="exr">OpenEXR (.exr)</option>
           <option value="jxr">JPEG XR (.jxr)</option>
+          <option value="uhdr">Ultra HDR JPEG (.jpg, gain map)</option>
         </select>
       </label>
 
@@ -81,7 +82,7 @@
       }
       <div class="capture-selection-summary">
         <div><strong>Source:</strong> {{ selectedSourceLabel() }}</div>
-        <div><strong>Format:</strong> {{ selectedFormat() === 'exr' ? 'OpenEXR (.exr)' : 'JPEG XR (.jxr)' }}</div>
+        <div><strong>Format:</strong> {{ selectedFormat() === 'exr' ? 'OpenEXR (.exr)' : selectedFormat() === 'jxr' ? 'JPEG XR (.jxr)' : 'Ultra HDR JPEG (.jpg, gain map)' }}</div>
         <div><strong>Folder:</strong> {{ destinationFolder() || 'No folder selected' }}</div>
         <div><strong>Full output filename:</strong> {{ lastOutputPath() || 'Generated automatically when captured' }}</div>
       </div>
