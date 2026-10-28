@@ -169,6 +169,17 @@
   opacity: 0.9;
 }
 
+.capture-source-mode.is-hdr {
+  display: inline-block;
+  justify-self: center;
+  padding: 2px 7px;
+  color: #fff;
+  background: #d62828;
+  border-radius: 3px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .capture-source-status {
   color: #d7a54a;
   font-size: 0.82em;
