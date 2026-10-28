@@ -269,11 +269,11 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
 
   let windows: CaptureSources['windows'] = [];
   const sourceErrors: string[] = [];
+  const enumeratedWindows = enumerateWindows()
+    .filter(window => window.isValid && window.title.trim().length > 0 &&
+      window.processId !== process.pid &&
+      !window.title.trim().toLowerCase().startsWith('light matter'));
   try {
-    const enumeratedWindows = enumerateWindows()
-      .filter(window => window.isValid && window.title.trim().length > 0 &&
-        window.processId !== process.pid &&
-        !window.title.trim().toLowerCase().startsWith('light matter'));
 
     // Use Win32 directly for visibility and process identity. DWM visibility is
     // deliberately not consulted: IsWindowVisible is the sole visibility test.
@@ -353,7 +353,19 @@ public static class LightMatterWindowNative {
     }).sort((a, b) => a.title.localeCompare(b.title));
   } catch (nativeError) {
     const message = nativeError instanceof Error ? nativeError.message : String(nativeError);
-    sourceErrors.push(`Native window enumeration failed: ${message}`);
+    sourceErrors.push(`Win32 window metadata lookup failed; showing enumerated windows without native visibility filtering: ${message}`);
+    // Do not make the entire source list disappear if PowerShell/native metadata
+    // lookup fails. Preserve the capture library's valid window list as a fallback.
+    windows = enumeratedWindows.map(window => ({
+      title: window.title.trim(),
+      processName: window.processName || 'Unknown executable',
+      executablePath: window.executablePath || undefined,
+      processId: window.processId,
+      handle: window.handle,
+      width: window.width,
+      height: window.height,
+      monitorIndex: window.monitorIndex
+    })).sort((a, b) => a.title.localeCompare(b.title));
   }
 
   return { monitors, windows, sourceErrors };
