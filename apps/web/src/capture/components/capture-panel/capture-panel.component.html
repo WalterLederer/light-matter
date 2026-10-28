@@ -20,6 +20,7 @@
                 <span>Exe</span>
                 <span>Window title</span>
                 <span>Size</span>
+                <span>Display mode</span>
                 <span>Status</span>
               </div>
               @for (row of sourceRows(); track row.value) {
@@ -36,6 +37,7 @@
                     <span class="capture-source-exe">{{ row.exe }}</span>
                     <span class="capture-source-title" [title]="row.title">{{ row.title }}</span>
                     <span class="capture-source-size">{{ row.size }}</span>
+                    <span class="capture-source-mode">{{ row.displayMode }}</span>
                     <span class="capture-source-status">{{ row.status }}</span>
                   </button>
                 </div>
