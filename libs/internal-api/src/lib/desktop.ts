@@ -93,6 +93,8 @@ export interface CaptureWindow {
   width: number;
   height: number;
   monitorIndex?: number;
+  /** Whether the window is currently minimized. */
+  isMinimized?: boolean;
 }
 
 export interface CaptureSources {
