@@ -67,6 +67,19 @@
   cursor: pointer;
 }
 
+.capture-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+}
+
+.capture-action-row .capture-secondary-button,
+.capture-action-row .capture-primary-button {
+  width: 100%;
+  min-width: 0;
+}
+
 .capture-primary-button {
   font-weight: 700;
   background: rgb(70 140 230 / 20%);
@@ -89,6 +102,20 @@
 }
 
 .capture-status { opacity: 0.85; }
+
+.capture-selection-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.82em;
+  line-height: 1.4;
+}
+
+.capture-selection-summary strong {
+  font-weight: 600;
+}
 .capture-error { color: #e45a5a; }
 .capture-format-note { opacity: 0.65; }
 
