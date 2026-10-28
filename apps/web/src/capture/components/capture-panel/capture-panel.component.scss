@@ -69,11 +69,10 @@
 }
 
 .capture-source-menu {
-  position: absolute;
-  z-index: 1000;
-  top: calc(100% + 3px);
-  right: 0;
-  left: auto;
+  position: fixed;
+  z-index: 10000;
+  top: 0;
+  left: 0;
   width: max-content;
   min-width: min(900px, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
@@ -335,4 +334,13 @@
 .capture-source-row.is-minimized .capture-source-select,
 .capture-source-row.is-minimized .capture-source-favorite {
   color: #888;
+}
+
+.capture-source-row.is-monitor {
+  color: #4d9bcf;
+  background: rgb(60 145 205 / 9%);
+}
+
+.capture-source-row.is-monitor .capture-source-status {
+  color: #4d9bcf;
 }
