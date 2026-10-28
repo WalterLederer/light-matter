@@ -305,9 +305,9 @@ public static class LightMatterDisplayConfig {
       var targetAdapter = new LUID { LowPart = paths[i].targetInfo.adapterIdLow, HighPart = paths[i].targetInfo.adapterIdHigh };
       bool? hdr = null;
       // Windows 11 24H2+ distinguishes HDR from wide-color-gamut (WCG).
-      // DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO_2 = 15;
+      // DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO_2 = 20 (Windows 11 24H2+).
       var color2 = new ADVANCED_COLOR_INFO_2();
-      color2.header.type = 15;
+      color2.header.type = 20;
       color2.header.size = (uint)Marshal.SizeOf(typeof(ADVANCED_COLOR_INFO_2));
       color2.header.adapterId = targetAdapter;
       color2.header.id = paths[i].targetInfo.id;
