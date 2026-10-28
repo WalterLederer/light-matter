@@ -37,6 +37,22 @@ export class CapturePanelComponent {
   protected readonly selectedFormat = signal<CaptureFormat>('exr');
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
+  protected readonly lastOutputPath = signal('');
+
+  protected readonly selectedSourceLabel = (): string => {
+    const target = this.selectedCaptureTarget();
+    if (!target) return 'None';
+    if (target.kind === 'monitor') {
+      const monitor = this.monitors().find(item => item.index === target.index);
+      return monitor
+        ? `Monitor ${monitor.index} · ${monitor.name || monitor.deviceName || 'Unknown monitor'} · ${monitor.width} × ${monitor.height}${monitor.refreshRate ? ` · ${monitor.refreshRate} Hz` : ''}`
+        : `Monitor ${target.index}`;
+    }
+    const window = this.windows().find(item => item.handle === target.handle);
+    return window
+      ? `${this.windowExecutableName(window)} · ${window.title} · ${window.width} × ${window.height}`
+      : `Window ${target.handle}`;
+  };
 
   protected readonly windowExecutableName = (window: CaptureWindow): string => {
     const path = (window.executablePath ?? '').trim();
@@ -57,6 +73,7 @@ export class CapturePanelComponent {
     this.previewSize.set('');
     this.status.set('');
     this.error.set(null);
+    this.lastOutputPath.set('');
     void this.previewNow();
   };
 
@@ -275,6 +292,7 @@ export class CapturePanelComponent {
       this.galleryLocations.addLocation(folder);
       await firstValueFrom(this.galleryState.navigateTo(folder).pipe(take(1)));
       await firstValueFrom(this.viewNavigator.selectImage(result.path).pipe(take(1)));
+      this.lastOutputPath.set(result.path);
       this.status.set(`Saved ${result.width} × ${result.height} HDR · ${result.path}`);
     } catch (error) {
       this.status.set('');
