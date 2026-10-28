@@ -130,6 +130,20 @@ const captureHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame>
   if (target?.kind !== 'monitor' && target?.kind !== 'window') {
     throw new Error('Choose a monitor or application window to capture.');
   }
+  if (target.kind === 'window') {
+    const state = queryCaptureWindowState(target.handle);
+    if (!state.exists) {
+      throw new Error(
+        'The selected application window no longer exists. Refresh the capture sources and select it again.'
+      );
+    }
+    if (state.minimized) {
+      throw new Error(
+        'The selected application window is minimized. Restore it before capturing.'
+      );
+    }
+  }
+
   const targetKey = captureTargetKey(target);
   const options = target.kind === 'monitor' ? { monitorIndex: target.index } : { windowHandle: target.handle };
   const capture = new ScreenCapture({
@@ -187,20 +201,6 @@ const captureHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame>
 };
 
 const getHdrFrame = async (target: CaptureTarget): Promise<CapturedHdrFrame> => {
-  if (target.kind === 'window') {
-    const state = queryCaptureWindowState(target.handle);
-    if (!state.exists) {
-      throw new Error(
-        'The selected application window no longer exists. Refresh the capture sources and select it again.'
-      );
-    }
-    if (state.minimized) {
-      throw new Error(
-        'The selected application window is minimized. Restore it before capturing.'
-      );
-    }
-  }
-
   const key = captureTargetKey(target);
   if (cachedHdrFrame?.targetKey === key) {
     // console.info('[HDR Capture] reuse cached FP16 HDR frame');
