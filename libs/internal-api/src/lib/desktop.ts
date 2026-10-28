@@ -81,6 +81,8 @@ export interface CaptureMonitor {
   width: number;
   height: number;
   refreshRate: number;
+  /** Windows advanced-color mode for this monitor, when available. */
+  isHdr?: boolean;
 }
 
 export interface CaptureWindow {
