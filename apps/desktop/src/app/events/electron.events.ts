@@ -881,18 +881,26 @@ ipcMain.handle(
       } else {
         let encoded: Buffer | Uint8Array;
         if (format === 'jxr') {
-          logPhase('pack RGBA16F input and encode JPEG XR');
-          // Keep the native RGBA16F layout. The Windows JPEG XR encoder reported
-          // WINCODEC_ERR_INSUFFICIENTBUFFER when given a tightly packed RGB16F buffer.
-          // Use the encoder's RGBA16F pixel format so channel order and row size agree.
-          const rgba = Buffer.allocUnsafe(frame.width * frame.height * 4 * 2);
-          for (let channelIndex = 0; channelIndex < sourceChannels.length; channelIndex++) {
-            const channel = channelIndex % 4;
-            const value = halfToFloat(sourceChannels[channelIndex]) * (channel === 3 ? 1 : CAPTURE_BRIGHTNESS_CORRECTION);
-            rgba.writeUInt16LE(floatToHalf(value), channelIndex * 2);
+          logPhase('pack tightly packed RGB16F input and encode JPEG XR');
+          // ImageEncoderPixelFormat.Rgb16F expects 6 bytes per pixel (R, G, B),
+          // not the native capture's 8-byte RGBA16F layout. Passing RGBA data
+          // here shifts every pixel after the first because the encoder advances
+          // by 6 bytes while the source advances by 8.
+          const rgb = Buffer.allocUnsafe(frame.width * frame.height * 3 * 2);
+          for (let pixel = 0; pixel < frame.width * frame.height; pixel++) {
+            const source = pixel * 4;
+            const destination = pixel * 3;
+            for (let channel = 0; channel < 3; channel++) {
+              const value = halfToFloat(sourceChannels[source + channel]) * CAPTURE_BRIGHTNESS_CORRECTION;
+              rgb.writeUInt16LE(floatToHalf(value), (destination + channel) * 2);
+            }
+          }
+          const expectedByteLength = frame.width * frame.height * 6;
+          if (rgb.byteLength !== expectedByteLength) {
+            throw new Error('Packed RGB16F buffer has an unexpected byte length.');
           }
           const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
-          encoded = encoder.encode(rgba, frame.width, frame.height);
+          encoded = encoder.encode(rgb, frame.width, frame.height);
         } else {
           logPhase(
             `convert native RGBA16F to Float32 RGBA (${frame.width}x${frame.height}) without brightness correction`
