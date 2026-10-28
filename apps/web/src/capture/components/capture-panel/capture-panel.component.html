@@ -1,11 +1,5 @@
 <section class="capture-panel">
-  <button class="capture-heading" type="button" (click)="toggleExpanded()" [attr.aria-expanded]="expanded()">
-    <span class="capture-chevron">{{ expanded() ? 'v' : '>' }}</span>
-    Capture
-  </button>
-
-  @if (expanded()) {
-    <div class="capture-content">
+  <div class="capture-content">
       <label class="capture-field">
         <span>Source</span>
         <select [value]="selectedTarget()" (change)="changeTarget($any($event.target).value)" [disabled]="loadingSources() || capturing() || previewing()">
@@ -64,6 +58,5 @@
         <p class="capture-error" role="alert">No monitors were detected by the capture API.</p>
       }
       <p class="capture-format-note">Brightness correction: 0.4 · Selected format: {{ selectedFormat() === 'exr' ? 'OpenEXR (.exr)' : 'JPEG XR (.jxr)' }}.</p>
-    </div>
-  }
+  </div>
 </section>
