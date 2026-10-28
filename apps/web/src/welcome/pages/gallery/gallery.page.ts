@@ -92,7 +92,11 @@ export class GalleryPage {
   protected readonly setActiveGallerySidebarTab = (tab: string): void => {
     if (!this.gallerySidebarTabs.some(item => item.id === tab)) return;
     this.activeGallerySidebarTab.set(tab);
+    if (tab === 'cache') this.expandGalleryCache();
     try { globalThis.localStorage.setItem('light-matter.activeGallerySidebarTab', tab); } catch { /* Keep the session selection. */ }
+  };
+  private readonly expandGalleryCache = (): void => {
+    // The cache panel's summary is opened by its mode input; changing tabs recreates the panel.
   };
   private readonly readStoredControlsSidebarWidth = (): number => {
     try {
