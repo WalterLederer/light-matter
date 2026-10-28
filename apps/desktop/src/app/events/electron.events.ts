@@ -6,6 +6,7 @@ import * as fsSync from 'node:fs';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { Injector } from '../../injector/injector';
 import { IpcRegistry } from '../decorators/ipc-registry';
 import { captureLoupeFrame, releaseLoupeFrame, sampleLoupeRegion, sampleLoupeRectangle } from '../loupe-capture';
@@ -259,68 +260,95 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
 
   const monitors = enumerateMonitors().map(monitor => ({
     index: monitor.index,
-    name: monitor.name || monitor.deviceName || `Monitor ${monitor.index}`,
+    name: monitor.name || monitor.deviceName || \`Monitor \${monitor.index}\`,
     deviceName: monitor.deviceName,
     width: monitor.width,
     height: monitor.height,
     refreshRate: monitor.refreshRate
   }));
 
-  // Enumerating top-level windows can fail independently on some Windows
-  // configurations (for example, when the native API cannot inspect a window).
-  // Keep monitor capture available instead of failing the entire source list.
   let windows: CaptureSources['windows'] = [];
   const sourceErrors: string[] = [];
   try {
-    windows = enumerateWindows()
-      .filter(window => window.isValid && window.title.trim().length > 0 && window.processId !== process.pid && !window.title.trim().toLowerCase().startsWith('light matter'))
-      .map(window => ({
+    const enumeratedWindows = enumerateWindows()
+      .filter(window => window.isValid && window.title.trim().length > 0 &&
+        window.processId !== process.pid &&
+        !window.title.trim().toLowerCase().startsWith('light matter'));
+
+    // Use Win32 directly for visibility and process identity. DWM visibility is
+    // deliberately not consulted: IsWindowVisible is the sole visibility test.
+    const handles = enumeratedWindows.map(window => String(window.handle));
+    const script = String.raw\`
+      $ErrorActionPreference = 'Stop'
+      Add-Type -TypeDefinition @'
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+public static class LightMatterWindowNative {
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+  [DllImport("kernel32.dll", SetLastError=true)] public static extern IntPtr OpenProcess(uint access, bool inheritHandle, uint processId);
+  [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern bool QueryFullProcessImageNameW(IntPtr process, uint flags, StringBuilder path, ref uint size);
+  [DllImport("kernel32.dll", SetLastError=true)] public static extern bool CloseHandle(IntPtr handle);
+}
+'@
+      $handles = ConvertFrom-Json $args[0]
+      $result = foreach ($rawHandle in $handles) {
+        $hwnd = [IntPtr]([Int64]$rawHandle)
+        if (-not [LightMatterWindowNative]::IsWindowVisible($hwnd)) { continue }
+        [uint32]$pid = 0
+        [void][LightMatterWindowNative]::GetWindowThreadProcessId($hwnd, [ref]$pid)
+        $exePath = $null
+        if ($pid -ne 0) {
+          $process = [LightMatterWindowNative]::OpenProcess(0x1000, $false, $pid)
+          if ($process -ne [IntPtr]::Zero) {
+            try {
+              $buffer = New-Object System.Text.StringBuilder 32768
+              [uint32]$size = $buffer.Capacity
+              if ([LightMatterWindowNative]::QueryFullProcessImageNameW($process, 0, $buffer, [ref]$size)) {
+                $exePath = $buffer.ToString()
+              }
+            } finally {
+              [void][LightMatterWindowNative]::CloseHandle($process)
+            }
+          }
+        }
+        [pscustomobject]@{ handle = [string]$rawHandle; visible = $true; processId = [uint32]$pid; executablePath = $exePath }
+      }
+      ConvertTo-Json -InputObject @($result) -Compress -Depth 3
+    \`;
+    const nativeJson = execFileSync('powershell.exe', [
+      '-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+      '-Command', script, JSON.stringify(handles)
+    ], { encoding: 'utf8', windowsHide: true, timeout: 15000 }).trim();
+    const nativeRows = JSON.parse(nativeJson || '[]') as Array<{
+      handle: string;
+      visible: boolean;
+      processId: number;
+      executablePath?: string | null;
+    }>;
+    const nativeByHandle = new Map(nativeRows.map(row => [String(row.handle), row]));
+
+    windows = enumeratedWindows.flatMap(window => {
+      const native = nativeByHandle.get(String(window.handle));
+      // Only IsWindowVisible determines whether the window is included.
+      if (!native?.visible) return [];
+      const executablePath = native.executablePath || undefined;
+      const processName = executablePath ? path.basename(executablePath) : 'Unknown executable';
+      return [{
         title: window.title.trim(),
-        processName: window.processName || 'Unknown application',
-        executablePath: (window as typeof window & { executablePath?: string; processPath?: string }).executablePath ?? (window as typeof window & { processPath?: string }).processPath,
-        processId: window.processId,
+        processName,
+        executablePath,
+        processId: native.processId || window.processId,
         handle: window.handle,
         width: window.width,
         height: window.height,
         monitorIndex: window.monitorIndex
-      }))
-      .sort((a, b) => a.title.localeCompare(b.title));
+      }];
+    }).sort((a, b) => a.title.localeCompare(b.title));
   } catch (nativeError) {
-    // The native enumerator can fail with E_ACCESSDENIED on some windows.
-    // Try Electron's own source list as a fallback so window capture remains
-    // available when its source IDs expose a native HWND.
-    try {
-      const sources = await desktopCapturer.getSources({
-        types: ['window'],
-        thumbnailSize: { width: 0, height: 0 },
-        fetchWindowIcons: false
-      });
-      windows = sources.flatMap(source => {
-        const match = /^window:(\d+):/.exec(source.id);
-        if (!match) return [];
-        const handle = Number(match[1]);
-        if (!Number.isSafeInteger(handle) || handle <= 0) return [];
-        const title = source.name.trim();
-        if (!title || title.toLowerCase().startsWith('light matter')) return [];
-        return [{
-          title,
-          processName: 'Windows application',
-          executablePath: undefined,
-          processId: 0,
-          handle,
-          width: 0,
-          height: 0
-        }];
-      }).sort((a, b) => a.title.localeCompare(b.title));
-      if (windows.length === 0) {
-        const message = nativeError instanceof Error ? nativeError.message : String(nativeError);
-        sourceErrors.push(`Native window enumeration failed (${message}); Electron fallback did not return usable window handles.`);
-      }
-    } catch (fallbackError) {
-      const nativeMessage = nativeError instanceof Error ? nativeError.message : String(nativeError);
-      const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
-      sourceErrors.push(`Window enumeration failed. Native API: ${nativeMessage}. Electron fallback: ${fallbackMessage}`);
-    }
+    const message = nativeError instanceof Error ? nativeError.message : String(nativeError);
+    sourceErrors.push(\`Native window enumeration failed: \${message}\`);
   }
 
   return { monitors, windows, sourceErrors };
