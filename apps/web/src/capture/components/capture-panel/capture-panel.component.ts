@@ -67,7 +67,7 @@ export class CapturePanelComponent {
         exe: 'Monitor',
         title: monitor.name || monitor.deviceName || `Monitor ${monitor.index}`,
         size: `${monitor.width} × ${monitor.height}`,
-        status: monitor.refreshRate ? `${monitor.refreshRate} Hz` : '',
+        status: `${monitor.isHdr ? 'HDR' : 'SDR'}${monitor.refreshRate ? ` · ${monitor.refreshRate} Hz` : ''}`,
         minimized: false,
         unavailable: this.unavailableTargets().includes(value)
       };
@@ -81,7 +81,7 @@ export class CapturePanelComponent {
         exe: this.windowExecutableName(window),
         title: window.title,
         size: `${window.width} × ${window.height}`,
-        status: window.width <= 0 || window.height <= 0 || this.unavailableTargets().includes(value) ? '[Not capturable]' : window.isMinimized ? '[Minimized]' : '',
+        status: window.width < 100 || window.height < 100 || this.unavailableTargets().includes(value) ? '[Not capturable]' : window.isMinimized ? '[Minimized]' : '',
         minimized: !!window.isMinimized,
         unavailable: window.width <= 0 || window.height <= 0 || this.unavailableTargets().includes(value)
       };
