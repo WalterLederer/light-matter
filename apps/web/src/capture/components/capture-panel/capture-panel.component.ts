@@ -53,7 +53,7 @@ export class CapturePanelComponent {
   private previewTexture: { destroy(): void } | null = null;
   private previewContext: { unconfigure(): void; configure(options: any): void; getCurrentTexture(): any } | null = null;
   private previewRequestId = 0;
-  protected readonly selectedFormat = signal<CaptureFormat>('exr');
+  protected readonly selectedFormat = signal<CaptureFormat>(this.readSavedFormat());
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
   protected readonly lastOutputPath = signal('');
@@ -167,6 +167,22 @@ export class CapturePanelComponent {
     const keys = [...next];
     this.favoriteKeys.set(keys);
     try { localStorage.setItem('capture.source.favorites', JSON.stringify(keys)); }
+    catch { /* keep the current-session preference if storage is unavailable */ }
+  };
+
+  private readSavedFormat(): CaptureFormat {
+    try {
+      const value = localStorage.getItem('capture.format');
+      if (value === 'exr' || value === 'jxr' || value === 'uhdr') return value;
+    } catch { /* use the default when storage is unavailable */ }
+    return 'exr';
+  }
+
+  protected readonly changeFormat = (value: string): void => {
+    if (value !== 'exr' && value !== 'jxr' && value !== 'uhdr') return;
+    const format = value as CaptureFormat;
+    this.selectedFormat.set(format);
+    try { localStorage.setItem('capture.format', format); }
     catch { /* keep the current-session preference if storage is unavailable */ }
   };
 
