@@ -30,7 +30,7 @@
                     [class.is-favorite]="row.favorite"
                     [attr.aria-label]="(row.favorite ? 'Remove favorite: ' : 'Add favorite: ') + row.exe + ' — ' + row.title"
                     [attr.title]="row.favorite ? 'Remove favorite' : 'Add favorite'"
-                    (click)="toggleFavorite(row, $event)">{{ row.favorite ? '*' : '☆' }}</button>
+                    (click)="toggleFavorite(row, $event)">{{ row.favorite ? '★' : '☆' }}</button>
                   <button type="button" class="capture-source-select capture-source-table" (click)="selectSourceRow(row.value)">
                     <span class="capture-source-exe">{{ row.favorite ? '* ' : '' }}{{ row.exe }}</span>
                     <span class="capture-source-title" [title]="row.title">{{ row.title }}</span>
