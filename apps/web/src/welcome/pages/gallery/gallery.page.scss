@@ -131,3 +131,75 @@ ui-side-panel {
 :host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"]:not(.active):hover {
   background:#c7c7c7 !important;
 }
+
+
+/* Shared wrapped tab layout: full labels and the same connected-tab appearance. */
+:host .gallery-controls-sidebar .gallery-sidebar-tabs {
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:stretch;
+  gap:0 !important;
+  padding:8px 12px 0 !important;
+  background:#f2f2f2 !important;
+  border-bottom:1px solid #b8b8b8;
+}
+:host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"] {
+  flex:1 0 28% !important;
+  width:auto !important;
+  max-width:none !important;
+  min-width:0;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere;
+  text-align:center;
+  background:#cccccc !important;
+  border:1px solid #b7b7b7 !important;
+  border-bottom:0 !important;
+  border-radius:6px 6px 0 0 !important;
+  color:#202124 !important;
+  padding:7px 5px 8px !important;
+  margin:0 1px -1px !important;
+  min-height:32px;
+  box-shadow:none !important;
+}
+:host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"]:not(.active):hover {
+  background:#bfbfbf !important;
+  border-color:#a8a8a8 !important;
+}
+:host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"].active {
+  background:#f7f7f7 !important;
+  color:#202124 !important;
+  border-color:#b8b8b8 !important;
+  border-bottom:1px solid #f7f7f7 !important;
+  font-weight:600;
+}
+:host .gallery-controls-sidebar .gallery-sidebar-tabs .sidebar-close-tab {
+  flex:0 0 30px !important;
+  width:30px !important;
+  align-self:center;
+  margin:0 0 4px 6px !important;
+  border:0 !important;
+  border-radius:4px !important;
+  background:transparent !important;
+  padding:2px !important;
+  min-height:28px;
+}
+:host .gallery-controls-sidebar .gallery-sidebar-tabs .sidebar-close-tab:hover {
+  background:rgb(0 0 0 / 8%) !important;
+}
+:host-context(html[data-theme='dark']) :host .gallery-controls-sidebar .gallery-sidebar-tabs {
+  background:#292b30 !important;
+  border-bottom-color:#50535b;
+}
+:host-context(html[data-theme='dark']) :host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"] {
+  background:#383b42 !important;
+  border-color:#50535b !important;
+  color:#f5f5f5 !important;
+}
+:host-context(html[data-theme='dark']) :host .gallery-controls-sidebar .gallery-sidebar-tabs button[role="tab"].active {
+  background:#202124 !important;
+  color:#f5f5f5 !important;
+  border-color:#555 !important;
+  border-bottom-color:#202124 !important;
+}
