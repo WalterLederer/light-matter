@@ -5,7 +5,7 @@
         <select [value]="selectedTarget()" (change)="changeTarget($any($event.target).value)" [disabled]="loadingSources() || capturing() || previewing()">
           @for (monitor of monitors(); track monitor.index) {
             <option [value]="'monitor:' + monitor.index">
-              {{ monitor.name || ('Monitor ' + monitor.index) }} · {{ monitor.width }} × {{ monitor.height }}{{ monitor.refreshRate ? ' · ' + monitor.refreshRate + ' Hz' : '' }}
+              Monitor {{ monitor.index }} · {{ monitor.name || ('Monitor ' + monitor.index) }} · {{ monitor.width }} × {{ monitor.height }}{{ monitor.refreshRate ? ' · ' + monitor.refreshRate + ' Hz' : '' }}
             </option>
           }
           @for (window of windows(); track window.handle) {
@@ -28,9 +28,14 @@
         </select>
       </label>
 
-      <button type="button" class="capture-secondary-button" (click)="previewNow()" [disabled]="previewing() || capturing() || loadingSources() || !selectedTarget()">
-        {{ previewing() ? 'Creating preview…' : 'Preview source' }}
-      </button>
+      <div class="capture-action-row">
+        <button type="button" class="capture-secondary-button" (click)="previewNow()" [disabled]="previewing() || capturing() || loadingSources() || !selectedTarget()">
+          {{ previewing() ? 'Creating preview…' : 'Preview source' }}
+        </button>
+        <button type="button" class="capture-primary-button" (click)="captureNow()" [disabled]="capturing() || previewing() || loadingSources() || !selectedTarget() || !destinationFolder()">
+          {{ capturing() ? 'Capturing…' : 'Capture HDR image' }}
+        </button>
+      </div>
       @if (previewFrame()) {
         <figure class="capture-preview">
           <canvas #previewCanvas aria-label="HDR capture source preview"></canvas>
@@ -44,13 +49,15 @@
         <button type="button" class="capture-secondary-button" (click)="chooseFolder()" [disabled]="capturing() || previewing()">Choose folder…</button>
       </div>
 
-      <button type="button" class="capture-primary-button" (click)="captureNow()" [disabled]="capturing() || previewing() || loadingSources() || !selectedTarget() || !destinationFolder()">
-        {{ capturing() ? 'Capturing…' : 'Capture HDR image' }}
-      </button>
-
       @if (status()) {
         <p class="capture-status" role="status">{{ status() }}</p>
       }
+      <div class="capture-selection-summary">
+        <div><strong>Selected source:</strong> {{ selectedSourceLabel() }}</div>
+        <div><strong>Selected format:</strong> {{ selectedFormat() === 'exr' ? 'OpenEXR (.exr)' : 'JPEG XR (.jxr)' }}</div>
+        <div><strong>Selected folder:</strong> {{ destinationFolder() || 'No folder selected' }}</div>
+        <div><strong>Full output filename:</strong> {{ lastOutputPath() || 'Generated automatically when captured' }}</div>
+      </div>
       @if (error()) {
         <p class="capture-error" role="alert">{{ error() }}</p>
       }
