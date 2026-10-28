@@ -77,11 +77,11 @@ export class GalleryPage {
 
   protected readonly defaultThumbnailSize = defaultThumbnailSize;
 
-  protected readonly controlsSidebarVisible = signal(this.readControlsSidebarVisible());
   private readonly readControlsSidebarVisible = (): boolean => {
     try { return globalThis.localStorage.getItem('light-matter.gallerySidebarVisible') === 'true'; }
     catch { return false; }
   };
+  protected readonly controlsSidebarVisible = signal(this.readControlsSidebarVisible());
   protected readonly gallerySidebarTabs = [{ id: 'general', label: 'General' }, { id: 'capture', label: 'Capture' }, { id: 'cache', label: 'Cache' }];
   private readonly readActiveGallerySidebarTab = (): string => {
     try {
