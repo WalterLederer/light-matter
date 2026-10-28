@@ -267,135 +267,105 @@ ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
     refreshRate: monitor.refreshRate
   }));
 
-  let windows: CaptureSources['windows'] = [];
   const sourceErrors: string[] = [];
-  let enumeratedWindows: ReturnType<typeof enumerateWindows> = [];
-  try {
-    // The native enumerator can fail for an individual Windows API access-denied
-    // condition. Fall back to Electron's window source list rather than failing IPC.
-    try {
-      enumeratedWindows = enumerateWindows();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      sourceErrors.push(`@screen-capture/node window enumeration failed: ${message}`);
-      const electronSources = await desktopCapturer.getSources({
-        types: ['window'],
-        thumbnailSize: { width: 0, height: 0 },
-        fetchWindowIcons: false
-      });
-      enumeratedWindows = electronSources.flatMap(source => {
-        const match = /^window:(\\d+):/.exec(source.id);
-        if (!match || !source.name.trim()) return [];
-        const handle = Number(match[1]);
-        if (!Number.isSafeInteger(handle) || handle <= 0) return [];
-        return [{
-          handle,
-          title: source.name,
-          processId: 0,
-          processName: 'Unknown executable',
-          isValid: true,
-          width: 0,
-          height: 0,
-          monitorIndex: -1
-        }];
-      }) as ReturnType<typeof enumerateWindows>;
-    }
-    enumeratedWindows = enumeratedWindows
-      .filter(window => window.isValid && window.title.trim().length > 0 &&
-        window.processId !== process.pid &&
-        !window.title.trim().toLowerCase().startsWith('light matter'));
+  let windows: CaptureSources['windows'] = [];
 
-    // Use Win32 directly for visibility and process identity. DWM visibility is
-    // deliberately not consulted: IsWindowVisible is the sole visibility test.
-    const handles = enumeratedWindows.map(window => String(window.handle));
-    const script = String.raw`
-      $ErrorActionPreference = 'Stop'
-      Add-Type -TypeDefinition @'
+  // @screen-capture/node's enumerateWindows() throws ACCESS_DENIED on some
+  // systems. Enumerate top-level windows through Win32 instead, and tolerate
+  // protected processes for which Windows will not provide an executable path.
+  const script = String.raw`
+    $ErrorActionPreference = 'Stop'
+    Add-Type -TypeDefinition @'
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
-public static class LightMatterWindowNative {
-  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
-  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-  [DllImport("kernel32.dll", SetLastError=true)] public static extern IntPtr OpenProcess(uint access, bool inheritHandle, uint processId);
-  [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern bool QueryFullProcessImageNameW(IntPtr process, uint flags, StringBuilder path, ref uint size);
-  [DllImport("kernel32.dll", SetLastError=true)] public static extern bool CloseHandle(IntPtr handle);
+
+public sealed class LightMatterWindowRow {
+  public string handle { get; set; }
+  public string title { get; set; }
+  public uint processId { get; set; }
+  public string executablePath { get; set; }
+  public int width { get; set; }
+  public int height { get; set; }
+  public int monitorIndex { get; set; }
+}
+
+public static class LightMatterWindowEnumerator {
+  private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+  [StructLayout(LayoutKind.Sequential)]
+  private struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+  [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
+  [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hWnd);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int maxCount);
+  [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+  [DllImport("user32.dll", SetLastError=true)] private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+  [DllImport("kernel32.dll", SetLastError=true)] private static extern IntPtr OpenProcess(uint access, bool inheritHandle, uint processId);
+  [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] private static extern bool QueryFullProcessImageNameW(IntPtr process, uint flags, StringBuilder path, ref uint size);
+  [DllImport("kernel32.dll", SetLastError=true)] private static extern bool CloseHandle(IntPtr handle);
+
+  public static LightMatterWindowRow[] GetWindows() {
+    var rows = new List<LightMatterWindowRow>();
+    EnumWindows((hWnd, lParam) => {
+      if (!IsWindowVisible(hWnd)) return true;
+      var titleBuffer = new StringBuilder(1024);
+      GetWindowText(hWnd, titleBuffer, titleBuffer.Capacity);
+      var title = titleBuffer.ToString().Trim();
+      if (title.Length == 0 || title.StartsWith("Light Matter", StringComparison.OrdinalIgnoreCase)) return true;
+      uint pid;
+      GetWindowThreadProcessId(hWnd, out pid);
+      string exePath = null;
+      if (pid != 0) {
+        IntPtr process = OpenProcess(0x1000, false, pid);
+        if (process != IntPtr.Zero) {
+          try {
+            var pathBuffer = new StringBuilder(32768);
+            uint size = (uint)pathBuffer.Capacity;
+            if (QueryFullProcessImageNameW(process, 0, pathBuffer, ref size)) exePath = pathBuffer.ToString();
+          } finally { CloseHandle(process); }
+        }
+      }
+      RECT rect;
+      int width = 0, height = 0;
+      if (GetWindowRect(hWnd, out rect)) { width = Math.Max(0, rect.Right - rect.Left); height = Math.Max(0, rect.Bottom - rect.Top); }
+      rows.Add(new LightMatterWindowRow { handle = hWnd.ToInt64().ToString(), title = title, processId = pid, executablePath = exePath, width = width, height = height, monitorIndex = -1 });
+      return true;
+    }, IntPtr.Zero);
+    return rows.ToArray();
+  }
 }
 '@
-      $handles = ConvertFrom-Json $env:LIGHT_MATTER_WINDOW_HANDLES
-      $result = foreach ($rawHandle in $handles) {
-        $hwnd = [IntPtr]([Int64]$rawHandle)
-        if (-not [LightMatterWindowNative]::IsWindowVisible($hwnd)) { continue }
-        [uint32]$processIdValue = 0
-        [void][LightMatterWindowNative]::GetWindowThreadProcessId($hwnd, [ref]$processIdValue)
-        $exePath = $null
-        if ($processIdValue -ne 0) {
-          $process = [LightMatterWindowNative]::OpenProcess(0x1000, $false, $processIdValue)
-          if ($process -ne [IntPtr]::Zero) {
-            try {
-              $buffer = New-Object System.Text.StringBuilder 32768
-              [uint32]$size = $buffer.Capacity
-              if ([LightMatterWindowNative]::QueryFullProcessImageNameW($process, 0, $buffer, [ref]$size)) {
-                $exePath = $buffer.ToString()
-              }
-            } finally {
-              [void][LightMatterWindowNative]::CloseHandle($process)
-            }
-          }
-        }
-        [pscustomobject]@{ handle = [string]$rawHandle; visible = $true; processId = [uint32]$processIdValue; executablePath = $exePath }
-      }
-      ConvertTo-Json -InputObject @($result) -Compress -Depth 3
-    `;
+    [LightMatterWindowEnumerator]::GetWindows() | ConvertTo-Json -Compress -Depth 4
+  `;
+
+  try {
     const nativeJson = execFileSync('powershell.exe', [
       '-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
       '-Command', script
-    ], {
-      encoding: 'utf8',
-      windowsHide: true,
-      timeout: 15000,
-      env: { ...process.env, LIGHT_MATTER_WINDOW_HANDLES: JSON.stringify(handles) }
-    }).trim();
+    ], { encoding: 'utf8', windowsHide: true, timeout: 20000 }).trim();
     const nativeRows = JSON.parse(nativeJson || '[]') as Array<{
-      handle: string;
-      visible: boolean;
-      processId: number;
-      executablePath?: string | null;
+      handle: string; title: string; processId: number; executablePath?: string | null;
+      width: number; height: number; monitorIndex: number;
     }>;
-    const nativeByHandle = new Map(nativeRows.map(row => [String(row.handle), row]));
-
-    windows = enumeratedWindows.flatMap(window => {
-      const native = nativeByHandle.get(String(window.handle));
-      // Only IsWindowVisible determines whether the window is included.
-      if (!native?.visible) return [];
-      const executablePath = native.executablePath || undefined;
-      const processName = executablePath ? path.basename(executablePath) : 'Unknown executable';
-      return [{
-        title: window.title.trim(),
-        processName,
-        executablePath,
-        processId: native.processId || window.processId,
-        handle: window.handle,
-        width: window.width,
-        height: window.height,
-        monitorIndex: window.monitorIndex
-      }];
-    }).sort((a, b) => a.title.localeCompare(b.title));
-  } catch (nativeError) {
-    const message = nativeError instanceof Error ? nativeError.message : String(nativeError);
-    sourceErrors.push(`Win32 window metadata lookup failed; showing enumerated windows without native visibility filtering: ${message}`);
-    // Do not make the entire source list disappear if PowerShell/native metadata
-    // lookup fails. Preserve the capture library's valid window list as a fallback.
-    windows = enumeratedWindows.map(window => ({
-      title: window.title.trim(),
-      processName: window.processName || 'Unknown executable',
-      executablePath: undefined,
-      processId: window.processId,
-      handle: window.handle,
-      width: window.width,
-      height: window.height,
-      monitorIndex: window.monitorIndex
-    })).sort((a, b) => a.title.localeCompare(b.title));
+    windows = nativeRows
+      .filter(window => Number(window.processId) !== process.pid)
+      .map(window => {
+        const executablePath = window.executablePath || undefined;
+        return {
+          title: window.title.trim(),
+          processName: executablePath ? path.basename(executablePath) : 'Unknown executable',
+          executablePath,
+          processId: Number(window.processId) || 0,
+          handle: Number(window.handle),
+          width: Number(window.width) || 0,
+          height: Number(window.height) || 0,
+          monitorIndex: Number(window.monitorIndex) || -1
+        };
+      })
+      .sort((a, b) => a.title.localeCompare(b.title));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    sourceErrors.push(`PowerShell Win32 window enumeration failed: ${message}`);
   }
 
   return { monitors, windows, sourceErrors };
