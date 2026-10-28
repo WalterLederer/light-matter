@@ -324,10 +324,11 @@ export class ImageView {
     if (!this.imageSidebarTabs.some(item => item.id === tab)) return;
     this.activeImageSidebarTab.set(tab);
     if (tab === 'cache') this.refreshCurrentImageCache();
+    if (tab === 'histogram' && !this.histogramVisible()) this.toggleHistogram();
     try { this.document.defaultView?.localStorage.setItem('light-matter.activeImageSidebarTab', tab); } catch { /* Ignore unavailable storage. */ }
   };
 
-  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, rgbLevels: false, inverse: false, loupe: true, loupeRenderer: false, highlight: true, toneCurve: false, mode: true, histogram: false, info: false, general: false });
+  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, rgb: true, rgbLevels: false, inverse: false, loupe: true, loupeRenderer: false, highlight: true, toneCurve: false, mode: true, histogram: false, info: true, general: true });
   protected readonly sidebarSectionExpanded = (key: string): boolean => ['zoom', 'corrections', 'highlight', 'mode', 'info', 'general'].includes(key) || this.sidebarSections()[key] === true;
   protected readonly toggleSidebarSection = (key: string): void => {
     const sections = { ...this.sidebarSections(), [key]: !this.sidebarSectionExpanded(key) };
