@@ -253,19 +253,94 @@ ipcMain.handle('Loupe.sample', (_event, x: number, y: number, radius?: number) =
 ipcMain.handle('Loupe.region', (_event, x: number, y: number, width: number, height: number) => sampleLoupeRectangle(x, y, width, height));
 ipcMain.handle('Loupe.release', () => releaseLoupeFrame());
 
+const queryWindowsMonitorHdrModes = (): Record<string, boolean | null> => {
+  if (process.platform !== 'win32') return {};
+  const script = String.raw\`
+    $ErrorActionPreference = 'Stop'
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+
+public sealed class LightMatterDisplayMode {
+  public string deviceName { get; set; }
+  public bool? isHdr { get; set; }
+}
+public static class LightMatterDisplayConfig {
+  [StructLayout(LayoutKind.Sequential)] public struct LUID { public uint LowPart; public int HighPart; }
+  [StructLayout(LayoutKind.Sequential)] public struct HEADER { public int type; public uint size; public LUID adapterId; public uint id; }
+  [StructLayout(LayoutKind.Sequential)] public struct PATH_SOURCE { public uint adapterIdLow; public int adapterIdHigh; public uint id; public uint modeInfoIdx; public uint statusFlags; }
+  [StructLayout(LayoutKind.Sequential)] public struct PATH_TARGET { public uint adapterIdLow; public int adapterIdHigh; public uint id; public uint modeInfoIdx; public uint outputTechnology; public uint rotation; public uint scaling; public uint refreshNumerator; public uint refreshDenominator; public uint scanLineOrdering; public int targetAvailable; public uint statusFlags; }
+  [StructLayout(LayoutKind.Sequential)] public struct PATH_INFO { public PATH_SOURCE sourceInfo; public PATH_TARGET targetInfo; public uint flags; }
+  [StructLayout(LayoutKind.Sequential)] public struct SOURCE_NAME { public HEADER header; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string viewGdiDeviceName; }
+  [StructLayout(LayoutKind.Sequential)] public struct ADVANCED_COLOR_INFO { public HEADER header; public uint value; public uint colorEncoding; public uint bitsPerColorChannel; }
+  [DllImport("user32.dll")] public static extern int GetDisplayConfigBufferSizes(uint flags, out uint pathCount, out uint modeCount);
+  [DllImport("user32.dll")] public static extern int QueryDisplayConfig(uint flags, ref uint pathCount, [Out] PATH_INFO[] paths, ref uint modeCount, IntPtr modes, out uint topologyId);
+  [DllImport("user32.dll")] public static extern int DisplayConfigGetDeviceInfo(ref SOURCE_NAME requestPacket);
+  [DllImport("user32.dll")] public static extern int DisplayConfigGetDeviceInfo(ref ADVANCED_COLOR_INFO requestPacket);
+  public static LightMatterDisplayMode[] GetModes() {
+    uint pathCount, modeCount;
+    if (GetDisplayConfigBufferSizes(2, out pathCount, out modeCount) != 0) return new LightMatterDisplayMode[0];
+    var paths = new PATH_INFO[pathCount];
+    uint pc = pathCount, mc = modeCount, topology;
+    int result = QueryDisplayConfig(2, ref pc, paths, ref mc, IntPtr.Zero, out topology);
+    if (result != 0) return new LightMatterDisplayMode[0];
+    var rows = new List<LightMatterDisplayMode>();
+    for (int i = 0; i < pc; i++) {
+      var source = new SOURCE_NAME();
+      source.header.type = 1;
+      source.header.size = (uint)Marshal.SizeOf(typeof(SOURCE_NAME));
+      source.header.adapterId = new LUID { LowPart = paths[i].sourceInfo.adapterIdLow, HighPart = paths[i].sourceInfo.adapterIdHigh };
+      source.header.id = paths[i].sourceInfo.id;
+      if (DisplayConfigGetDeviceInfo(ref source) != 0 || String.IsNullOrEmpty(source.viewGdiDeviceName)) continue;
+      var color = new ADVANCED_COLOR_INFO();
+      color.header.type = 9;
+      color.header.size = (uint)Marshal.SizeOf(typeof(ADVANCED_COLOR_INFO));
+      color.header.adapterId = new LUID { LowPart = paths[i].targetInfo.adapterIdLow, HighPart = paths[i].targetInfo.adapterIdHigh };
+      color.header.id = paths[i].targetInfo.id;
+      bool? hdr = null;
+      if (DisplayConfigGetDeviceInfo(ref color) == 0) hdr = (color.value & 2u) != 0;
+      rows.Add(new LightMatterDisplayMode { deviceName = source.viewGdiDeviceName, isHdr = hdr });
+    }
+    return rows.ToArray();
+  }
+}
+'@
+    [LightMatterDisplayConfig]::GetModes() | ConvertTo-Json -Compress -Depth 4
+  \`;
+  try {
+    const raw = execFileSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
+      { encoding: 'utf8', windowsHide: true, timeout: 10000 }).trim();
+    const rows = JSON.parse(raw || '[]') as Array<{ deviceName: string; isHdr: boolean | null }>;
+    const modes: Record<string, boolean | null> = {};
+    for (const row of rows) modes[row.deviceName.toLowerCase().replace(/[^a-z0-9]/g, '')] = row.isHdr;
+    return modes;
+  } catch (error) {
+    console.warn('[Capture] Failed to query Windows HDR monitor modes:', error instanceof Error ? error.message : String(error));
+    return {};
+  }
+};
+
 ipcMain.handle('Capture.listSources', async (): Promise<CaptureSources> => {
   if (process.platform !== 'win32') {
     throw new Error('HDR capture of individual windows and monitors is currently supported on Windows only.');
   }
 
-  const monitors = enumerateMonitors().map(monitor => ({
-    index: monitor.index,
-    name: monitor.name || monitor.deviceName || `Monitor ${monitor.index}`,
-    deviceName: monitor.deviceName,
-    width: monitor.width,
-    height: monitor.height,
-    refreshRate: monitor.refreshRate
-  }));
+  const hdrModes = queryWindowsMonitorHdrModes();
+  const monitors = enumerateMonitors().map(monitor => {
+    const deviceKey = (monitor.deviceName ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return {
+      index: monitor.index,
+      name: monitor.name || monitor.deviceName || `Monitor ${monitor.index}`,
+      deviceName: monitor.deviceName,
+      width: monitor.width,
+      height: monitor.height,
+      refreshRate: monitor.refreshRate,
+      isHdr: deviceKey in hdrModes ? hdrModes[deviceKey] ?? undefined : undefined
+    };
+  });
 
   const sourceErrors: string[] = [];
   let windows: CaptureSources['windows'] = [];
