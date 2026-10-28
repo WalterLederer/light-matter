@@ -42,13 +42,6 @@
           <figcaption>{{ previewSize() }} · HDR preview via WebGPU · brightness 0.4</figcaption>
         </figure>
       }
-
-      <div class="capture-destination">
-        <span>Save folder</span>
-        <div class="capture-folder-path">{{ destinationFolder() || 'No folder selected' }}</div>
-        <button type="button" class="capture-secondary-button" (click)="chooseFolder()" [disabled]="capturing() || previewing()">Choose folder…</button>
-      </div>
-
       @if (status()) {
         <p class="capture-status" role="status">{{ status() }}</p>
       }
@@ -58,6 +51,13 @@
         <div><strong>Selected folder:</strong> {{ destinationFolder() || 'No folder selected' }}</div>
         <div><strong>Full output filename:</strong> {{ lastOutputPath() || 'Generated automatically when captured' }}</div>
       </div>
+
+      <div class="capture-destination">
+        <span>Save folder</span>
+        <div class="capture-folder-path">{{ destinationFolder() || 'No folder selected' }}</div>
+        <button type="button" class="capture-secondary-button" (click)="chooseFolder()" [disabled]="capturing() || previewing()">Choose folder…</button>
+      </div>
+
       @if (error()) {
         <p class="capture-error" role="alert">{{ error() }}</p>
       }
