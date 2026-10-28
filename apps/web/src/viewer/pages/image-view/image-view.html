@@ -1,7 +1,4 @@
 @let selected = selectedImage$ | async;
-@let hasPrevious = hasPrevious$ | async;
-@let hasNext = hasNext$ | async;
-@let imagePosition = imagePosition$ | async;
 @let fullScreen = isFullScreen();
 @let dimensions = imageDimensions();
 @let exif = exifState();
@@ -88,19 +85,26 @@
   }
   @if (!fullScreen && controlsSidebarVisible()) {
     <aside class="image-controls-sidebar" aria-label="Image controls" [style.width.px]="sidebarWidth()">
-      <header class="image-controls-header"><strong>Image Controls</strong><div class="sidebar-header-actions"><button type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></div></header>
-      <nav class="image-sidebar-tabs" role="tablist" aria-label="Image settings tabs">@for (tab of imageSidebarTabs; track tab.id) { <button type="button" role="tab" [class.active]="activeImageSidebarTab() === tab.id" [attr.aria-selected]="activeImageSidebarTab() === tab.id" (click)="setActiveImageSidebarTab(tab.id)">{{tab.label}}</button> }</nav>
+      <nav class="image-sidebar-tabs" role="tablist" aria-label="Image settings tabs">@for (tab of imageSidebarTabs; track tab.id) { <button type="button" role="tab" [class.active]="activeImageSidebarTab() === tab.id" [attr.aria-selected]="activeImageSidebarTab() === tab.id" (click)="setActiveImageSidebarTab(tab.id)">{{tab.label}}</button> }<button class="sidebar-close-tab" type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></nav>
       <div class="sidebar-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize sidebar" title="Drag to resize sidebar" (pointerdown)="startSidebarResize($event)"></div>
+      @if (activeImageSidebarTab() === 'cache') {
+        <section class="current-image-cache">
+          <strong class="section-title">Cache for current image</strong>
+          <p>Full-size conversion cache for the displayed image.</p>
+          <div class="cache-file-status">{{ currentImageCacheStatus() }}</div>
+          <button type="button" (click)="refreshCurrentImageCache()">Refresh status</button>
+        </section>
+      }
       @if (activeImageSidebarTab() === 'capture') {
       <app-capture-panel />
       }
       @if (activeImageSidebarTab() === 'zoom') {
-      <section><button class="section-heading" (click)="toggleSidebarSection('zoom')"><span class="section-chevron">{{sidebarSectionExpanded('zoom') ? 'v' : '>'}}</span>Zoom</button>
+      <section><strong class="section-title">Zoom</strong>
         @if (sidebarSectionExpanded('zoom')) { <div class="control-row"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div><button (click)="fitToWindow()">Fit to window</button> }
       </section>
       }
       @if (activeImageSidebarTab() === 'corrections') {
-      <section><button class="section-heading" (click)="toggleSidebarSection('corrections')"><span class="section-chevron">{{sidebarSectionExpanded('corrections') ? 'v' : '>'}}</span>Corrections</button>
+      <section><strong class="section-title">Corrections</strong>
         @if(sidebarSectionExpanded('corrections')) {
           <label class="channel-control"><span><b>Brightness</b><span>{{((mainImageBrightness()-1)*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/></label>
           <label class="channel-control"><span><b>Contrast</b><span>{{(imageContrast()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/></label>
@@ -146,7 +150,7 @@
       </section>
       }
       @if (activeImageSidebarTab() === 'highlight') {
-      <section><button class="section-heading" (click)="toggleSidebarSection('highlight')"><span class="section-chevron">{{sidebarSectionExpanded('highlight') ? 'v' : '>'}}</span>Highlight</button>
+      <section><strong class="section-title">Highlight</strong>
         @if (sidebarSectionExpanded('highlight')) {
           <label class="hdr-highlight-toggle"><input type="checkbox" [checked]="highlightHdrPixels()" (change)="setHdrPixelHighlight($any($event.target).checked)"/> Highlight HDR pixels</label>
           @if (highlightHdrPixels()) {
@@ -246,7 +250,7 @@
       </section>
       }
       @if (activeImageSidebarTab() === 'view') {
-      <section><button class="section-heading" (click)="toggleSidebarSection('mode')"><span class="section-chevron">{{sidebarSectionExpanded('mode') ? 'v' : '>'}}</span>View mode (V)</button>
+      <section><strong class="section-title">View mode (V)</strong>
         @if(sidebarSectionExpanded('mode')) { <div class="mode-row">
 <button class="mode-button" [class.active]="comparisonMode()==='hdr'" [disabled]="!isHdrImage" (click)="setComparisonMode('hdr')" aria-label="HDR view" title="HDR view"><img class="mode-logo-image" src="hdr-logo.png" alt="HDR logo"></button>
 <button class="mode-button" [class.active]="comparisonMode()==='sdr'" (click)="setComparisonMode('sdr')" aria-label="SDR view" title="SDR view"><img class="mode-logo-image sdr-logo-image" src="sdr-logo.png" alt="SDR logo"></button>
@@ -330,10 +334,10 @@
         </section>
       }
       @if (activeImageSidebarTab() === 'image') {
-      <section class="sidebar-image-information"><button class="section-heading" (click)="toggleSidebarSection('info')"><span class="section-chevron">{{sidebarSectionExpanded('info') ? 'v' : '>'}}</span>Image information (I)</button>@if(sidebarSectionExpanded('info')){<app-exif-info [exif]="exif" [dimensions]="dimensions" [fileSize]="selected.size" [bitDepth]="imageBitDepth()" [path]="selected.path" [decoderName]="decoderForPath(selected.path)" [modifiedAt]="selected.modifiedAt" [loadDuration]="loadDuration()" [decodeDuration]="imageDecodeDuration()" [totalDuration]="imageTotalDuration()" [conversionDuration]="conversionDuration()" [fullSizeFromCache]="fullSizeFromCache()" [requiresConversion]="requiresConversion(selected.path)" />}</section>
+      <section class="sidebar-image-information"><strong class="section-title">Image information (I)</strong>@if(sidebarSectionExpanded('info')){<app-exif-info [exif]="exif" [dimensions]="dimensions" [fileSize]="selected.size" [bitDepth]="imageBitDepth()" [path]="selected.path" [decoderName]="decoderForPath(selected.path)" [modifiedAt]="selected.modifiedAt" [loadDuration]="loadDuration()" [decodeDuration]="imageDecodeDuration()" [totalDuration]="imageTotalDuration()" [conversionDuration]="conversionDuration()" [fullSizeFromCache]="fullSizeFromCache()" [requiresConversion]="requiresConversion(selected.path)" />}</section>
       }
       @if (activeImageSidebarTab() === 'general') {
-      <section><button class="section-heading" (click)="toggleSidebarSection('general')"><span class="section-chevron">{{sidebarSectionExpanded('general') ? 'v' : '>'}}</span>General settings (G)</button>@if(sidebarSectionExpanded('general')){<div class="image-theme-setting"><button class="image-theme-toggle" type="button" (click)="themeService.toggle()" [attr.aria-label]="themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'" [title]="themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'"><span class="image-theme-toggle-icon" aria-hidden="true">{{themeService.current()==='dark'?'☀':'●'}}</span><span>{{themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'}}</span></button></div><app-settings-panel mode="general" />}</section>
+      <section><strong class="section-title">General settings (G)</strong>@if(sidebarSectionExpanded('general')){<div class="image-theme-setting"><button class="image-theme-toggle" type="button" (click)="themeService.toggle()" [attr.aria-label]="themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'" [title]="themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'"><span class="image-theme-toggle-icon" aria-hidden="true">{{themeService.current()==='dark'?'☀':'●'}}</span><span>{{themeService.current()==='dark'?'Switch to light mode':'Switch to dark mode'}}</span></button></div><app-settings-panel mode="general" />}</section>
       }
     </aside>
   }
