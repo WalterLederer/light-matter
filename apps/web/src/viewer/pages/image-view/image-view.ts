@@ -270,7 +270,11 @@ export class ImageView {
   protected readonly colorIntensity = signal(1);
   protected readonly blackPoint = signal(0);
   protected readonly whitePoint = signal(1);
-  protected readonly controlsSidebarVisible = signal(true);
+  protected readonly controlsSidebarVisible = signal(this.readControlsSidebarVisible());
+  private readControlsSidebarVisible(): boolean {
+    try { return this.document.defaultView?.localStorage.getItem('light-matter.imageSidebarVisible') !== 'false'; }
+    catch { return true; }
+  }
   private readonly readStoredSidebarWidth = (): number => {
     try {
       const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.imageSidebarWidth'));
@@ -375,7 +379,11 @@ export class ImageView {
     if (this.loupeEnabled()) void this.toggleLoupe(false);
     if (this.histogramVisible()) this.closeHistogram();
   };
-  protected readonly toggleControlsSidebar = (): void => this.controlsSidebarVisible.update(value => !value);
+  protected readonly toggleControlsSidebar = (): void => {
+    const next = !this.controlsSidebarVisible();
+    this.controlsSidebarVisible.set(next);
+    try { this.document.defaultView?.localStorage.setItem('light-matter.imageSidebarVisible', String(next)); } catch { /* Keep session state. */ }
+  };
   protected readonly setDebugImageSwitching = (enabled: boolean): void => { try { this.document.defaultView?.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* storage may be unavailable */ } this.debugImageSwitching.set(enabled); };
   protected readonly hdrImageAdjustmentActive = computed(() =>
     this.mainImageBrightness() !== 1 || this.imageContrast() !== 1 ||
