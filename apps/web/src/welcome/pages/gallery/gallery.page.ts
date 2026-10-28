@@ -81,6 +81,19 @@ export class GalleryPage {
   protected readonly defaultThumbnailSize = defaultThumbnailSize;
 
   protected readonly controlsSidebarVisible = signal(false);
+  protected readonly gallerySidebarTabs = [{ id: 'general', label: 'General' }, { id: 'capture', label: 'Capture' }, { id: 'cache', label: 'Cache' }];
+  private readonly readActiveGallerySidebarTab = (): string => {
+    try {
+      const saved = globalThis.localStorage.getItem('light-matter.activeGallerySidebarTab');
+      return this.gallerySidebarTabs.some(tab => tab.id === saved) ? saved! : 'general';
+    } catch { return 'general'; }
+  };
+  protected readonly activeGallerySidebarTab = signal(this.readActiveGallerySidebarTab());
+  protected readonly setActiveGallerySidebarTab = (tab: string): void => {
+    if (!this.gallerySidebarTabs.some(item => item.id === tab)) return;
+    this.activeGallerySidebarTab.set(tab);
+    try { globalThis.localStorage.setItem('light-matter.activeGallerySidebarTab', tab); } catch { /* Keep the session selection. */ }
+  };
   private readonly readStoredControlsSidebarWidth = (): number => {
     try {
       const stored = Number(globalThis.localStorage.getItem('light-matter.gallerySidebarWidth'));
