@@ -48,8 +48,8 @@ export class CapturePanelComponent {
       !!value && !/^Windows application\s*-?\s*$/i.test(value) && value !== 'Unknown executable';
     if (usable(executable)) return executable;
     if (usable(processName)) return processName;
-    const title = (window.title ?? '').trim();
-    return title || 'Application window';
+    // Do not duplicate the window title in the executable-name position.
+    return 'Unknown executable';
   };
   protected readonly changeTarget = (value: string): void => {
     this.disposeHdrPreview();
@@ -87,7 +87,16 @@ export class CapturePanelComponent {
     try {
       const sources = await this.captureService.listSources();
       this.monitors.set(sources.monitors);
-      this.windows.set(sources.windows);
+      // ScanSnap Home's pfusshimg* helper processes create non-user-facing
+      // windows; they are not useful capture targets even if the native
+      // enumerator reports them as windows.
+      const visibleCandidates = sources.windows.filter(window => {
+        const identity = [window.processName, window.executablePath, window.title]
+          .filter((value): value is string => typeof value === 'string')
+          .join(' ');
+        return !/pfusshimg/i.test(identity);
+      });
+      this.windows.set(visibleCandidates);
       if (sources.sourceErrors?.length) this.error.set(sources.sourceErrors.join('\n'));
       const saved = this.readSavedSource();
       let restored = false;
