@@ -73,8 +73,8 @@
   z-index: 10000;
   top: 0;
   left: 0;
-  width: max-content;
-  min-width: min(900px, calc(100vw - 32px));
+  width: 900px;
+  min-width: 900px;
   max-width: calc(100vw - 32px);
   max-height: 360px;
   overflow: auto;
@@ -338,7 +338,8 @@
 
 .capture-source-row.is-monitor {
   color: #4d9bcf;
-  background: rgb(60 145 205 / 9%);
+  background: rgb(60 145 205 / 12%);
+  border-left: 3px solid #4d9bcf;
 }
 
 .capture-source-row.is-monitor .capture-source-status {
