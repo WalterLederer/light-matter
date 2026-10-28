@@ -75,7 +75,7 @@ export class CapturePanelComponent {
       };
     });
     const windows: CaptureSourceRow[] = this.windows().map(window => {
-      const resolvedMonitorIndex = window.monitorIndex >= 0
+      const resolvedMonitorIndex = window.monitorIndex !== undefined && window.monitorIndex >= 0
         ? window.monitorIndex
         : this.monitors().find(monitor => this.normalizeDisplayName(monitor.deviceName) === this.normalizeDisplayName(window.monitorDeviceName))?.index ?? -1;
       const value = `window:${window.handle}`;
