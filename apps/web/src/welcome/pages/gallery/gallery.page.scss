@@ -52,3 +52,10 @@ ui-side-panel {
 :host .gallery-controls-sidebar .gallery-sidebar-tabs button { min-width: 0; padding: 5px 3px; font-size: 12px; }
 :host .gallery-controls-sidebar .gallery-sidebar-tabs button.active { background: #31577d; border-color: #65a9ff; }
 :host-context(html[data-theme='light']) .gallery-controls-sidebar .gallery-sidebar-tabs { background: #f7f7f7; }
+
+/* Keep the selected gallery tab readable in light mode. */
+:host-context(html[data-theme='light']) .gallery-controls-sidebar .gallery-sidebar-tabs button.active {
+  color: #fff !important;
+  background: #174f80 !important;
+  border-color: #103b61 !important;
+}
