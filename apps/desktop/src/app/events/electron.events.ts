@@ -287,7 +287,12 @@ public static class LightMatterDisplayConfig {
     if (GetDisplayConfigBufferSizes(2, out pathCount, out modeCount) != 0) return new LightMatterDisplayMode[0];
     var paths = new PATH_INFO[pathCount];
     uint pc = pathCount, mc = modeCount, topology;
-    int result = QueryDisplayConfig(2, ref pc, paths, ref mc, IntPtr.Zero, out topology);
+    // QueryDisplayConfig requires storage for the returned DISPLAYCONFIG_MODE_INFO entries.
+    // The native structure is 48 bytes on supported Windows x64 systems; we only inspect paths.
+    IntPtr modeBuffer = Marshal.AllocHGlobal(checked((int)Math.Max(1u, modeCount) * 48));
+    int result;
+    try { result = QueryDisplayConfig(2, ref pc, paths, ref mc, modeBuffer, out topology); }
+    finally { Marshal.FreeHGlobal(modeBuffer); }
     if (result != 0) return new LightMatterDisplayMode[0];
     var rows = new List<LightMatterDisplayMode>();
     for (int i = 0; i < pc; i++) {
@@ -329,7 +334,8 @@ public static class LightMatterDisplayConfig {
   try {
     const raw = execFileSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
       { encoding: 'utf8', windowsHide: true, timeout: 10000 }).trim();
-    const rows = JSON.parse(raw || '[]') as Array<{ deviceName: string; isHdr: boolean | null }>;
+    const parsed = JSON.parse(raw || '[]') as { deviceName: string; isHdr: boolean | null } | Array<{ deviceName: string; isHdr: boolean | null }>;
+    const rows = Array.isArray(parsed) ? parsed : [parsed];
     const modes: Record<string, boolean | null> = {};
     for (const row of rows) modes[row.deviceName.toLowerCase().replace(/[^a-z0-9]/g, '')] = row.isHdr;
     return modes;
