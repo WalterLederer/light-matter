@@ -261,7 +261,7 @@
         <section class="histogram-inline" aria-label="SDR and HDR image histogram">
           <header class="histogram-inline-header">
             <strong>Histogram</strong>
-            <button type="button" (click)="toggleHistogram()">{{histogramVisible() ? 'Refresh histogram' : 'Calculate histogram'}}</button>
+            <button type="button" (click)="toggleHistogram()">{{histogramVisible() ? 'Hide histogram' : 'Calculate histogram'}}</button>
           </header>
           @if (!histogramVisible()) {
             <p>Calculate the histogram for the currently displayed image.</p>
