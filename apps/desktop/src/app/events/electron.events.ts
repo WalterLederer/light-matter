@@ -276,10 +276,12 @@ public static class LightMatterDisplayConfig {
   [StructLayout(LayoutKind.Sequential)] public struct PATH_INFO { public PATH_SOURCE sourceInfo; public PATH_TARGET targetInfo; public uint flags; }
   [StructLayout(LayoutKind.Sequential)] public struct SOURCE_NAME { public HEADER header; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string viewGdiDeviceName; }
   [StructLayout(LayoutKind.Sequential)] public struct ADVANCED_COLOR_INFO { public HEADER header; public uint value; public uint colorEncoding; public uint bitsPerColorChannel; }
+  [StructLayout(LayoutKind.Sequential)] public struct ADVANCED_COLOR_INFO_2 { public HEADER header; public uint value; public uint colorEncoding; public uint bitsPerColorChannel; public uint activeColorMode; }
   [DllImport("user32.dll")] public static extern int GetDisplayConfigBufferSizes(uint flags, out uint pathCount, out uint modeCount);
   [DllImport("user32.dll")] public static extern int QueryDisplayConfig(uint flags, ref uint pathCount, [Out] PATH_INFO[] paths, ref uint modeCount, IntPtr modes, out uint topologyId);
   [DllImport("user32.dll")] public static extern int DisplayConfigGetDeviceInfo(ref SOURCE_NAME requestPacket);
   [DllImport("user32.dll")] public static extern int DisplayConfigGetDeviceInfo(ref ADVANCED_COLOR_INFO requestPacket);
+  [DllImport("user32.dll")] public static extern int DisplayConfigGetDeviceInfo(ref ADVANCED_COLOR_INFO_2 requestPacket);
   public static LightMatterDisplayMode[] GetModes() {
     uint pathCount, modeCount;
     if (GetDisplayConfigBufferSizes(2, out pathCount, out modeCount) != 0) return new LightMatterDisplayMode[0];
@@ -295,13 +297,27 @@ public static class LightMatterDisplayConfig {
       source.header.adapterId = new LUID { LowPart = paths[i].sourceInfo.adapterIdLow, HighPart = paths[i].sourceInfo.adapterIdHigh };
       source.header.id = paths[i].sourceInfo.id;
       if (DisplayConfigGetDeviceInfo(ref source) != 0 || String.IsNullOrEmpty(source.viewGdiDeviceName)) continue;
-      var color = new ADVANCED_COLOR_INFO();
-      color.header.type = 9;
-      color.header.size = (uint)Marshal.SizeOf(typeof(ADVANCED_COLOR_INFO));
-      color.header.adapterId = new LUID { LowPart = paths[i].targetInfo.adapterIdLow, HighPart = paths[i].targetInfo.adapterIdHigh };
-      color.header.id = paths[i].targetInfo.id;
+      var targetAdapter = new LUID { LowPart = paths[i].targetInfo.adapterIdLow, HighPart = paths[i].targetInfo.adapterIdHigh };
       bool? hdr = null;
-      if (DisplayConfigGetDeviceInfo(ref color) == 0) hdr = (color.value & 2u) != 0;
+      // Windows 11 24H2+ distinguishes HDR from wide-color-gamut (WCG).
+      // DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO_2 = 15;
+      var color2 = new ADVANCED_COLOR_INFO_2();
+      color2.header.type = 15;
+      color2.header.size = (uint)Marshal.SizeOf(typeof(ADVANCED_COLOR_INFO_2));
+      color2.header.adapterId = targetAdapter;
+      color2.header.id = paths[i].targetInfo.id;
+      if (DisplayConfigGetDeviceInfo(ref color2) == 0) {
+        hdr = color2.activeColorMode == 2u; // DISPLAYCONFIG_ADVANCED_COLOR_MODE_HDR; SDR=0, WCG=1
+      } else {
+        // Legacy API for earlier Windows versions: bit 1 is advancedColorEnabled.
+        // On those versions Windows does not expose a distinct HDR/WCG active mode.
+        var color = new ADVANCED_COLOR_INFO();
+        color.header.type = 9;
+        color.header.size = (uint)Marshal.SizeOf(typeof(ADVANCED_COLOR_INFO));
+        color.header.adapterId = targetAdapter;
+        color.header.id = paths[i].targetInfo.id;
+        if (DisplayConfigGetDeviceInfo(ref color) == 0) hdr = (color.value & 2u) != 0;
+      }
       rows.Add(new LightMatterDisplayMode { deviceName = source.viewGdiDeviceName, isHdr = hdr });
     }
     return rows.ToArray();
