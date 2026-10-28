@@ -1,20 +1,51 @@
 <section class="capture-panel">
   <div class="capture-content">
-      <label class="capture-field">
+      <div class="capture-field">
         <span>Source</span>
-        <select [value]="selectedTarget()" (change)="changeTarget($any($event.target).value)" [disabled]="loadingSources() || capturing() || previewing()">
-          @for (monitor of monitors(); track monitor.index) {
-            <option [value]="'monitor:' + monitor.index">
-              Monitor {{ monitor.index }} · {{ monitor.name || ('Monitor ' + monitor.index) }} · {{ monitor.width }} × {{ monitor.height }}{{ monitor.refreshRate ? ' · ' + monitor.refreshRate + ' Hz' : '' }}
-            </option>
+        <div class="capture-source-picker">
+          <button
+            type="button"
+            class="capture-source-trigger"
+            (click)="toggleSourceMenu()"
+            [disabled]="loadingSources() || capturing() || previewing()"
+            [attr.aria-expanded]="sourceMenuOpen()"
+            aria-haspopup="listbox">
+            <span>{{ selectedSourceLabel() }}</span>
+            <span class="capture-source-chevron" aria-hidden="true">▾</span>
+          </button>
+          @if (sourceMenuOpen()) {
+            <div class="capture-source-menu" role="listbox" aria-label="Capture sources">
+              <div class="capture-source-table capture-source-header" aria-hidden="true">
+                <span>Favorite</span>
+                <span>Exe</span>
+                <span>Window title</span>
+                <span>Size</span>
+                <span>Status</span>
+              </div>
+              @for (row of sourceRows(); track row.value) {
+                <div class="capture-source-row" [class.is-selected]="selectedTarget() === row.value" [class.is-favorite]="row.favorite" role="option" [attr.aria-selected]="selectedTarget() === row.value">
+                  <button
+                    type="button"
+                    class="capture-source-favorite"
+                    [class.is-favorite]="row.favorite"
+                    [attr.aria-label]="(row.favorite ? 'Remove favorite: ' : 'Add favorite: ') + row.exe + ' — ' + row.title"
+                    [attr.title]="row.favorite ? 'Remove favorite' : 'Add favorite'"
+                    (click)="toggleFavorite(row, $event)">{{ row.favorite ? '*' : '☆' }}</button>
+                  <button type="button" class="capture-source-select capture-source-table" (click)="selectSourceRow(row.value)">
+                    <span class="capture-source-exe">{{ row.favorite ? '* ' : '' }}{{ row.exe }}</span>
+                    <span class="capture-source-title" [title]="row.title">{{ row.title }}</span>
+                    <span class="capture-source-size">{{ row.size }}</span>
+                    <span class="capture-source-status">{{ row.status }}</span>
+                  </button>
+                </div>
+              }
+              @if (sourceRows().length === 0) {
+                <div class="capture-source-empty">No capture sources found.</div>
+              }
+            </div>
           }
-          @for (window of windows(); track window.handle) {
-            <option [value]="'window:' + window.handle">
-              {{ windowExecutableName(window) }} · {{ window.title }} · {{ window.width }} × {{ window.height }}{{ window.isMinimized ? ' · [Minimized]' : '' }}
-            </option>
-          }
-        </select>
-      </label>
+        </div>
+      </div>
 
       <button type="button" class="capture-secondary-button" (click)="loadSources()" [disabled]="loadingSources() || capturing() || previewing()">
         {{ loadingSources() ? 'Loading sources…' : 'Refresh windows and monitors' }}
