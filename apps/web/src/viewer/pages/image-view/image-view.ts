@@ -1736,6 +1736,13 @@ export class ImageView {
       this.hdrLoupeActive.set(false);
       return;
     }
+    // During startup the native sample can arrive before Angular has attached
+    // the loupe canvas. Wait for the next paint before looking it up; otherwise
+    // the first render is skipped and the canvas stays as a flat gray surface
+    // until the user toggles the loupe off and on again.
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+    if (!this.loupeEnabled() || this.loupeSample() !== sample || this.loupeRendererMode() !== 'webgpu') return;
+
     // WebGPU remains available at all zoom levels, including 1× and 0.98×.
     const canvas = this.document.querySelector<HTMLCanvasElement>('.hdr-loupe-canvas');
     if (!canvas) {
@@ -1755,7 +1762,9 @@ export class ImageView {
         centerY: sample.centerY,
         data: sample.data
       }, brightness, zoom);
-      this.hdrLoupeActive.set(this.loupeRendererMode() === 'webgpu');
+      if (this.loupeEnabled() && this.loupeSample() === sample) {
+        this.hdrLoupeActive.set(this.loupeRendererMode() === 'webgpu');
+      }
     } catch (error) {
       this.fallbackLoupeToCss(error, 'HDR WebGPU loupe render failed; switching to CSS (SDR) mode.');
     }
