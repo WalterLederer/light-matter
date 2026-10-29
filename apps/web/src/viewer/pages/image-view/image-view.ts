@@ -2252,18 +2252,18 @@ export class ImageView {
           return;
         }
 
-        if ((event.key === 'c' || event.key === 'C') && this.loupeEnabled()) {
-          event.preventDefault();
-          void this.copyLoupeValuesToClipboard();
-          return;
-        }
-
         if (event.key === 'v' || event.key === 'V') {
           this.cycleComparisonMode();
           return;
         }
 
         if (target instanceof HTMLSelectElement) {
+          return;
+        }
+
+        if ((event.key === 'c' || event.key === 'C') && this.loupeEnabled()) {
+          event.preventDefault();
+          void this.copyLoupeValuesToClipboard();
           return;
         }
 
