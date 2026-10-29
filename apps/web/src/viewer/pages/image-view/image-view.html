@@ -249,16 +249,6 @@
               <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">—</span><span class="loupe-scrgb-values">—</span><span class="loupe-scrgb-values">—</span><span class="loupe-scrgb-label">scRGB</span></div>
             }
           </section>
-          <label class="histogram-capture-preview-toggle loupe-capture-preview-toggle">
-            <input type="checkbox" [checked]="loupeShowsCapturePreview()" (change)="loupeShowsCapturePreview.set($any($event.target).checked)" />
-            Show also capture preview
-          </label>
-          @if (loupeShowsCapturePreview()) {
-            @if (capturePreviewStore.frame(); as capturePreview) {
-              <figure class="loupe-capture-preview">
-                <canvas #loupeCapturePreviewCanvas aria-label="HDR Capture Preview at magnifier cursor coordinates"></canvas>
-                <figcaption>HDR Capture Preview · {{ capturePreview.width }} × {{ capturePreview.height }} · cursor pixel X: {{ loupeCaptureRgb()?.x ?? '—' }} · Y: {{ loupeCaptureRgb()?.y ?? '—' }}</figcaption>
-              </figure>
               <section class="loupe-hdr-info loupe-capture-pixel-info" aria-label="Capture preview FP16 pixel values">
                 <div class="loupe-info-subheading"><span>Capture preview · FP16/scRGB (raw values)</span></div>
                 @if (loupeCaptureRgb(); as captureRgb) {
@@ -271,6 +261,14 @@
                   <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">{{ captureRgb.r * 80 | number:'1.0-1' }}</span><span class="loupe-scrgb-values">{{ captureRgb.g * 80 | number:'1.0-1' }}</span><span class="loupe-scrgb-values">{{ captureRgb.b * 80 | number:'1.0-1' }}</span><span class="loupe-scrgb-label">cd/m²</span></div>
                 } @else { <div class="loupe-capture-error">No capture pixel at the current cursor position. Check that the preview source matches the current display/window.</div> }
               </section>
+          <label class="histogram-capture-preview-toggle loupe-capture-preview-toggle">
+            <input type="checkbox" [checked]="loupeShowsCapturePreview()" (change)="loupeShowsCapturePreview.set($any($event.target).checked)" />
+            Show also capture preview
+          </label>
+              <figure class="loupe-capture-preview">
+                <canvas #loupeCapturePreviewCanvas aria-label="HDR Capture Preview at magnifier cursor coordinates"></canvas>
+                <figcaption>HDR Capture Preview · {{ capturePreview.width }} × {{ capturePreview.height }} · cursor pixel X: {{ loupeCaptureRgb()?.x ?? '—' }} · Y: {{ loupeCaptureRgb()?.y ?? '—' }}</figcaption>
+              </figure>
             } @else { <p class="loupe-capture-error">No capture preview available. Open the Capture tab and select “Preview source” first.</p> }
           }
         </section>
