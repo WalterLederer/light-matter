@@ -268,7 +268,7 @@ export class ImageView {
       await this.capturePreviewSwatchRenderer.render(canvas, {
         width: 1, height: 1, centerX: 0, centerY: 0,
         data: frame.pixels.slice(offset, offset + 4)
-      }, HDR_WEBGPU_BRIGHTNESS_CORRECTION, 1000);
+      }, HDR_WEBGPU_BRIGHTNESS_CORRECTION, 1);
     } catch (error) {
       console.warn('Capture preview HDR pixel swatch WebGPU render failed:', error);
     }
@@ -309,7 +309,7 @@ export class ImageView {
     try {
       await this.capturePreviewLoupeRenderer.render(canvas, {
         width, height, centerX: centerX - left, centerY: centerY - top, data
-      }, 1, zoom);
+      }, HDR_WEBGPU_BRIGHTNESS_CORRECTION, zoom);
     } catch (error) {
       console.warn('Capture preview WebGPU magnifier render failed:', error);
     }
@@ -1874,13 +1874,18 @@ export class ImageView {
       if (!canvas) return;
       // Match the loupe's 0.4 HDR brightness correction; otherwise this
       // small patch is substantially brighter than the corrected magnifier.
+      const x = Math.max(0, Math.min(sample.regionWidth - 1, Math.round(sample.centerX)));
+      const y = Math.max(0, Math.min(sample.regionHeight - 1, Math.round(sample.centerY)));
+      const offset = (y * sample.regionWidth + x) * 4;
+      // Pass exactly the sampled FP16 pixel. Rendering the surrounding sample
+      // region made the swatch blend several neighboring colors.
       await this.hdrSwatchRenderer.render(canvas, {
-        width: sample.regionWidth,
-        height: sample.regionHeight,
-        centerX: sample.centerX,
-        centerY: sample.centerY,
-        data: sample.data
-      }, HDR_WEBGPU_BRIGHTNESS_CORRECTION, 1000);
+        width: 1,
+        height: 1,
+        centerX: 0,
+        centerY: 0,
+        data: sample.data.slice(offset, offset + 4)
+      }, HDR_WEBGPU_BRIGHTNESS_CORRECTION, 1);
       // A newer sample may have arrived while WebGPU initialized/rendered.
       // Never leave an obsolete frame as the apparent current pixel color.
       if (request !== this.hdrSwatchRenderRequest || this.loupeSample() !== sample) return;
