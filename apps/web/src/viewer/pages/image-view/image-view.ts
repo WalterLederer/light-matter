@@ -69,11 +69,14 @@ export class ImageView {
   protected readonly loupeShowsCapturePreview = signal(false);
   protected readonly loupeCaptureZoomCanvas = viewChild<ElementRef<HTMLCanvasElement>>('loupeCaptureZoomCanvas');
   private readonly capturePreviewLoupeRenderer = new HdrLoupeRenderer();
+  private readonly capturePreviewSwatchRenderer = new HdrLoupeRenderer();
+  private capturePreviewSwatchRenderRequest = 0;
   private capturePreviewLoupeRenderRequest = 0;
   private readonly capturePreviewLoupeEffect = effect(() => {
     const enabled = this.loupeShowsCapturePreview();
     const frame = this.capturePreviewStore.frame();
     const mouse = this.lastMousePosition();
+    const sourcePoint = this.loupeSourcePoint();
     // Read the viewChild signal as a dependency: the conditional canvas may not
     // exist during the first effect run. When Angular creates it, this effect
     // must run again instead of leaving the initial WebGPU canvas gray.
@@ -83,6 +86,7 @@ export class ImageView {
     this.loupePixelSize();
     this.loupeSizeScale();
     if (!enabled || !frame || !mouse || !canvas || !this.loupeEnabled()) return;
+    void this.renderCapturePreviewSwatch(frame, sourcePoint);
     const request = ++this.capturePreviewLoupeRenderRequest;
     requestAnimationFrame(() => {
       if (request === this.capturePreviewLoupeRenderRequest) void this.renderCapturePreviewLoupe(frame, mouse, request);
@@ -249,6 +253,27 @@ export class ImageView {
    * This keeps the numeric readout and bars tied to the live capture data,
    * rather than potentially stale convenience fields on the returned sample.
    */
+  private readonly renderCapturePreviewSwatch = async (frame: CapturePreview, sourcePoint: { x: number; y: number }): Promise<void> => {
+    const request = ++this.capturePreviewSwatchRenderRequest;
+    try {
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      if (request !== this.capturePreviewSwatchRenderRequest || !this.loupeShowsCapturePreview() || !this.loupeEnabled()) return;
+      const canvas = this.document.querySelector<HTMLCanvasElement>('.loupe-capture-rgb-swatch-canvas');
+      if (!canvas || frame.width <= 0 || frame.height <= 0 || frame.pixels.length < frame.width * frame.height * 4) return;
+      const imageSize = this.imageDimensions();
+      if (imageSize.width <= 0 || imageSize.height <= 0) return;
+      const x = Math.max(0, Math.min(frame.width - 1, Math.floor(sourcePoint.x * frame.width / imageSize.width)));
+      const y = Math.max(0, Math.min(frame.height - 1, Math.floor(sourcePoint.y * frame.height / imageSize.height)));
+      const offset = (y * frame.width + x) * 4;
+      await this.capturePreviewSwatchRenderer.render(canvas, {
+        width: 1, height: 1, centerX: 0, centerY: 0,
+        data: frame.pixels.slice(offset, offset + 4)
+      }, HDR_WEBGPU_BRIGHTNESS_CORRECTION, 1000);
+    } catch (error) {
+      console.warn('Capture preview HDR pixel swatch WebGPU render failed:', error);
+    }
+  };
+
   private readonly renderCapturePreviewLoupe = async (frame: CapturePreview, mouse: { clientX: number; clientY: number; screenX: number; screenY: number }, request: number): Promise<void> => {
     const canvas = this.loupeCaptureZoomCanvas()?.nativeElement;
     if (!canvas || request !== this.capturePreviewLoupeRenderRequest || !this.loupeShowsCapturePreview() || !this.loupeEnabled()) return;
@@ -881,6 +906,8 @@ export class ImageView {
       this.hdrLoupeRenderer.dispose();
       this.hdrSwatchRenderRequest++;
       this.hdrSwatchRenderer.dispose();
+      this.capturePreviewSwatchRenderRequest++;
+      this.capturePreviewSwatchRenderer.dispose();
       this.hdrImageAdjustmentRenderer.dispose();
       this.hdrImageAdjustmentRequest++;
       this.desktop?.Loupe.release().catch(() => undefined);
@@ -1482,6 +1509,13 @@ export class ImageView {
       const bounds = candidate.getBoundingClientRect();
       return clientX >= bounds.left && clientX < bounds.right &&
         clientY >= bounds.top && clientY < bounds.bottom &&
+        candidate.naturalWidth > 0 && candidate.naturalHeight > 0;
+    }) ?? images.find(candidate => {
+      // Keep the loupe pinned to the nearest top/bottom edge while the pointer
+      // remains horizontally over the image. Leaving the image vertically must
+      // not reset the capture-preview sample to pixel 0/0.
+      const bounds = candidate.getBoundingClientRect();
+      return clientX >= bounds.left && clientX < bounds.right &&
         candidate.naturalWidth > 0 && candidate.naturalHeight > 0;
     });
     if (!image) {
