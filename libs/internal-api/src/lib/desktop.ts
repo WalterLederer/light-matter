@@ -72,6 +72,7 @@ export interface DesktopLoupe {
     pixels: Array<{ x: number; y: number; color: string }>;
   } | null>;
   readonly release: () => Promise<void>;
+  readonly onWindowGeometryChanged: (callback: () => void) => () => void;
 }
 
 export interface CaptureMonitor {
