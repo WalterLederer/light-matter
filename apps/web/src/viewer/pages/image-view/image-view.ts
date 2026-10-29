@@ -1820,13 +1820,20 @@ export class ImageView {
   };
 
   protected readonly onImageRendered = () => {
-    if (this.loupeEnabled() && !this.isDecoding()) {
-      void this.captureLoupeAfterRender().finally(() => {
-        if (this.hdrImageAdjustmentActive() && !this.isDecoding()) void this.renderHdrImageAdjustments(true);
+    if (this.isDecoding()) return;
+
+    // Apply the final HDR adjustments before taking the window capture. Capturing
+    // first can preserve a partially rendered or uncorrected frame in the loupe.
+    if (this.hdrImageAdjustmentActive()) {
+      void this.renderHdrImageAdjustments(true).finally(() => {
+        if (this.loupeEnabled() && !this.isDecoding()) {
+          void this.captureLoupeAfterRender();
+        }
       });
-    } else if (this.hdrImageAdjustmentActive() && !this.isDecoding()) {
-      void this.renderHdrImageAdjustments(true);
+      return;
     }
+
+    if (this.loupeEnabled()) void this.captureLoupeAfterRender();
   };
 
   private readonly captureLoupeAfterRender = async () => {
@@ -1838,8 +1845,12 @@ export class ImageView {
     this.hdrLoupeActive.set(false);
     this.hdrLoupeRenderer.dispose();
     this.loupeCapturePending.set(true);
-    // Let Angular update the image and hide the loupe overlay before capturing the window.
-    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    // Allow Angular to update the DOM and let the browser/GPU present the final
+    // corrected frame before capturing the window. Two animation frames alone
+    // are not a guarantee that a newly submitted GPU frame has been presented.
+    await new Promise<void>(resolve => requestAnimationFrame(() =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    ));
     if (!this.loupeEnabled() || request !== this.loupeCaptureRequest) {
       this.loupeCapturePending.set(false);
       return;
