@@ -837,7 +837,8 @@ export class ImageView {
       const geometry = this.loupeCaptureGeometry();
       const pending = this.loupeCapturePending();
       const selected = this.selected;
-      if (enabled && selected !== null && !decoding && !geometry && !pending) {
+      const rendererMode = this.loupeRendererMode();
+      if (enabled && selected !== null && rendererMode === 'webgpu' && !decoding && !geometry && !pending) {
         void this.captureLoupeAfterRender();
       }
     });
