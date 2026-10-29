@@ -957,6 +957,18 @@ export class ImageView {
         map(image => image.path),
         distinctUntilChanged(),
         tap(() => {
+          // Invalidate the loupe's previous-image capture as soon as navigation
+          // changes the selected path. The new capture is taken by onImageRendered
+          // after the replacement image has actually finished rendering.
+          this.loupeCaptureRequest++;
+          this.loupeSampleRequest++;
+          this.loupeSample.set(null);
+          this.loupeCaptureGeometry.set(null);
+          this.loupeCapturePending.set(false);
+          this.hdrLoupeActive.set(false);
+          this.hdrLoupeRenderer.dispose();
+          this.hdrSwatchRenderRequest++;
+          this.hdrSwatchRenderer.dispose();
           this.hdrImageAdjustmentRequest++;
           this.hdrImageAdjustmentRegion = null;
           this.hdrImageAdjustmentReady.set(false);
