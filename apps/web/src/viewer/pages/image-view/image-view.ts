@@ -253,11 +253,16 @@ export class ImageView {
     const canvas = this.loupeCaptureZoomCanvas()?.nativeElement;
     if (!canvas || request !== this.capturePreviewLoupeRenderRequest || !this.loupeShowsCapturePreview() || !this.loupeEnabled()) return;
     if (frame.width <= 0 || frame.height <= 0 || frame.pixels.length < frame.width * frame.height * 4) return;
-    const screen = this.document.defaultView?.screen;
-    if (!screen || screen.width <= 0 || screen.height <= 0) return;
-    const centerX = Math.floor(mouse.screenX * frame.width / screen.width);
-    const centerY = Math.floor(mouse.screenY * frame.height / screen.height);
-    if (centerX < 0 || centerY < 0 || centerX >= frame.width || centerY >= frame.height) return;
+    // The preview is compared against the image shown in the viewer, not against
+    // the physical desktop coordinates. Map the image-relative loupe source point
+    // into the preview frame; equal-sized images therefore use identical x/y pixels.
+    const sourcePoint = this.loupeSourcePoint();
+    const imageSize = this.imageDimensions();
+    if (imageSize.width <= 0 || imageSize.height <= 0) return;
+    const centerX = Math.max(0, Math.min(frame.width - 1,
+      Math.floor(sourcePoint.x * frame.width / imageSize.width)));
+    const centerY = Math.max(0, Math.min(frame.height - 1,
+      Math.floor(sourcePoint.y * frame.height / imageSize.height)));
 
     const outputWidth = Math.max(1, canvas.parentElement?.clientWidth ?? canvas.clientWidth ?? 280);
     const outputHeight = Math.max(1, canvas.parentElement?.clientHeight ?? canvas.clientHeight ?? 180);
@@ -287,16 +292,13 @@ export class ImageView {
 
   protected readonly loupeCaptureRgb = computed(() => {
     const frame = this.loupeShowsCapturePreview() ? this.capturePreviewStore.frame() : null;
-    const geometry = this.loupeCaptureGeometry(); const mouse = this.lastMousePosition();
-    if (!frame || !geometry || !mouse || frame.pixels.length < frame.width * frame.height * 4) return null;
-    // CapturePreview is the selected monitor/window frame, whereas loupeCaptureGeometry
-    // describes the separate native loupe sample. Do not use that loupe geometry to
-    // index the preview: it can point at a completely different pixel.
-    const screen = this.document.defaultView?.screen;
-    if (!screen || screen.width <= 0 || screen.height <= 0) return null;
-    const x = Math.floor(mouse.screenX * frame.width / screen.width);
-    const y = Math.floor(mouse.screenY * frame.height / screen.height);
-    if (x < 0 || y < 0 || x >= frame.width || y >= frame.height) return null;
+    const sourcePoint = this.loupeSourcePoint();
+    const imageSize = this.imageDimensions();
+    if (!frame || !imageSize.width || !imageSize.height || frame.pixels.length < frame.width * frame.height * 4) return null;
+    // Use the same image-relative mapping as the magnified capture preview.
+    // When image and capture frame have equal dimensions, x/y are identical.
+    const x = Math.max(0, Math.min(frame.width - 1, Math.floor(sourcePoint.x * frame.width / imageSize.width)));
+    const y = Math.max(0, Math.min(frame.height - 1, Math.floor(sourcePoint.y * frame.height / imageSize.height)));
     const offset = (y * frame.width + x) * 4; const bits = [frame.pixels[offset], frame.pixels[offset + 1], frame.pixels[offset + 2]];
     const toFloat = (v: number): number => { const sign = (v & 0x8000) ? -1 : 1; const exponent = (v >>> 10) & 0x1f; const fraction = v & 0x03ff; if (exponent === 0) return sign * Math.pow(2, -14) * fraction / 1024; if (exponent === 0x1f) return fraction === 0 ? sign * Infinity : NaN; return sign * Math.pow(2, exponent - 15) * (1 + fraction / 1024); };
     return { x, y, r: toFloat(bits[0]), g: toFloat(bits[1]), b: toFloat(bits[2]), rHex: bits[0].toString(16).padStart(4, '0').toUpperCase(), gHex: bits[1].toString(16).padStart(4, '0').toUpperCase(), bHex: bits[2].toString(16).padStart(4, '0').toUpperCase() };
