@@ -828,6 +828,20 @@ export class ImageView {
       }
     });
 
+    // If the loupe is enabled while the image is still decoding, the initial
+    // toggle cannot capture yet. Retry automatically once decoding has ended;
+    // without this, the canvas and HDR pixel readouts stay blank until off/on.
+    effect(() => {
+      const enabled = this.loupeEnabled();
+      const decoding = this.isDecoding();
+      const geometry = this.loupeCaptureGeometry();
+      const pending = this.loupeCapturePending();
+      const selected = this.selected;
+      if (enabled && selected !== null && !decoding && !geometry && !pending) {
+        void this.captureLoupeAfterRender();
+      }
+    });
+
     // A full-monitor capture must be refreshed when the Chromium content area
     // changes size; otherwise its coordinate mapping describes stale geometry.
     if (typeof ResizeObserver !== 'undefined') {
@@ -1458,7 +1472,7 @@ export class ImageView {
       this.loupePosition.set({ x: Math.max(8, Math.min(viewWidth - loupeWidth - 8, left)), y: Math.max(8, Math.min(viewHeight - loupeHeight - 8, top)) });
     }
 
-    if (!this.isDecoding()) await this.captureLoupeAfterRender();
+    // The constructor effect starts capture now or retries when decoding finishes.
   };
 
   private loupeSdrPixelCanvas: HTMLCanvasElement | null = null;
