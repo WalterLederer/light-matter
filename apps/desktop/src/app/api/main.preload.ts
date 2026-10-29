@@ -54,7 +54,12 @@ const api: Desktop = {
     capture: () => ipcRenderer.invoke('Loupe.capture'),
     sample: (x: number, y: number, radius?: number) => ipcRenderer.invoke('Loupe.sample', x, y, radius),
     region: (x: number, y: number, width: number, height: number) => ipcRenderer.invoke('Loupe.region', x, y, width, height),
-    release: () => ipcRenderer.invoke('Loupe.release')
+    release: () => ipcRenderer.invoke('Loupe.release'),
+    onWindowGeometryChanged: (callback: () => void) => {
+      const listener = (): void => callback();
+      ipcRenderer.on('Loupe.windowGeometryChanged', listener);
+      return () => ipcRenderer.removeListener('Loupe.windowGeometryChanged', listener);
+    }
   },
 
   Capture: {
