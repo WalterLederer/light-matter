@@ -153,6 +153,19 @@ export class HdrLoupeRenderer {
 
         @fragment fn fs(input: VertexOutput) -> @location(0) vec4<f32> {
           let dims = vec2<i32>(textureDimensions(imageTexture));
+          // A swatch is rendered from a single FP16 pixel. Use that pixel for
+          // every output fragment; applying the magnifier's viewport-to-source
+          // mapping to a 1x1 texture otherwise leaves only a tiny center dot
+          // visible and paints the rest of the swatch black.
+          if (dims.x == 1 && dims.y == 1) {
+            let linearColor = textureLoad(imageTexture, vec2<i32>(0, 0), 0).rgb * params.brightness;
+            let encodedColor = vec3<f32>(
+              linearToExtendedSrgb(linearColor.r),
+              linearToExtendedSrgb(linearColor.g),
+              linearToExtendedSrgb(linearColor.b)
+            );
+            return vec4<f32>(encodedColor, 1.0);
+          }
           // Select the source span needed for the actual viewport dimensions
           // at the requested magnification, independent of how
           // much extra safety margin was copied around the cursor. The capture
