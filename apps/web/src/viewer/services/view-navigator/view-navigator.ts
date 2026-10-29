@@ -70,6 +70,11 @@ export class ViewNavigator {
       )
       .subscribe(selectedIndex => this.selectedIndex$.next(selectedIndex));
 
+  readonly selectPosition = (position: number) =>
+    this.images$
+      .pipe(take(1), map(images => Math.max(0, Math.min(images.length - 1, Math.trunc(position) - 1))))
+      .subscribe(index => this.selectedIndex$.next(index));
+
   readonly selectImage = (path: string) =>
     this.images$
       .pipe(
