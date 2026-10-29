@@ -1398,6 +1398,30 @@ export class ImageView {
     }
   };
 
+  protected readonly toggleSidebarVisibility = (): void => {
+    const visible = !this.controlsSidebarVisible();
+    this.controlsSidebarVisible.set(visible);
+    try { this.document.defaultView?.localStorage.setItem('light-matter.imageSidebarVisible', String(visible)); } catch { /* Keep the current session state. */ }
+  };
+
+  protected readonly changeImagePosition = (value: number): void => {
+    this.viewNavigator.selectPosition(value);
+  };
+
+  protected readonly zoomOut = (): void => {
+    if (this.loupeEnabled()) return;
+    this.zoomSlider.setValue(Math.max(10, this.zoomSlider.value - 10));
+  };
+
+  protected readonly resetZoom = (): void => {
+    this.fitToWindow();
+  };
+
+  protected readonly zoomIn = (): void => {
+    if (this.loupeEnabled()) return;
+    this.zoomSlider.setValue(Math.min(800, this.zoomSlider.value + 10));
+  };
+
   protected readonly fitToWindow = () => {
     if (!this.loupeEnabled()) {
       this.imagePositioningService.setZoom('fit');
