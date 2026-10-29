@@ -15,6 +15,7 @@ export default class App {
   static BrowserWindow;
 
   static startupConfig: StartupConfig;
+  private static loupeGeometryTimer: ReturnType<typeof setTimeout> | null = null;
 
   public static isDevelopmentMode() {
     const isEnvironmentSet: boolean = 'ELECTRON_IS_DEV' in process.env;
@@ -89,6 +90,19 @@ export default class App {
     });
     App.mainWindow.setMenu(null);
     App.mainWindow.center();
+
+    // Debounce move/resize events so the loupe refreshes after geometry settles.
+    const notifyLoupeGeometryChanged = (): void => {
+      if (App.loupeGeometryTimer !== null) clearTimeout(App.loupeGeometryTimer);
+      App.loupeGeometryTimer = setTimeout(() => {
+        App.loupeGeometryTimer = null;
+        if (App.mainWindow && !App.mainWindow.isDestroyed() && !App.mainWindow.webContents.isDestroyed()) {
+          App.mainWindow.webContents.send('Loupe.windowGeometryChanged');
+        }
+      }, 180);
+    };
+    App.mainWindow.on('move', notifyLoupeGeometryChanged);
+    App.mainWindow.on('resize', notifyLoupeGeometryChanged);
 
     // if main window is ready to show, close the splash window and show the main window
     App.mainWindow.once('ready-to-show', () => {
