@@ -261,6 +261,14 @@
                   </div>
                   <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">{{ captureRgb.r * 0.5 | number:'1.0-4' }}</span><span class="loupe-scrgb-values">{{ captureRgb.g * 0.5 | number:'1.0-4' }}</span><span class="loupe-scrgb-values">{{ captureRgb.b * 0.5 | number:'1.0-4' }}</span><span class="loupe-scrgb-label">scRGB</span></div>
                   <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">{{ captureRgb.r * 40 | number:'1.0-1' }}</span><span class="loupe-scrgb-values">{{ captureRgb.g * 40 | number:'1.0-1' }}</span><span class="loupe-scrgb-values">{{ captureRgb.b * 40 | number:'1.0-1' }}</span><span class="loupe-scrgb-label">cd/m²</span></div>
+                  @if (loupeRgbDifference(); as diff) {
+                    <div class="loupe-hdr-linear" title="Hauptbild minus Capture Preview nach dem bestehenden Capture-Faktor 0,5">
+                      <span class="loupe-scrgb-values">{{ diff.r.delta | number:'1.0-4' }}<small> ({{ diff.r.percent === null ? '—' : diff.r.percent | number:'1.0-1' }}%)</small></span>
+                      <span class="loupe-scrgb-values">{{ diff.g.delta | number:'1.0-4' }}<small> ({{ diff.g.percent === null ? '—' : diff.g.percent | number:'1.0-1' }}%)</small></span>
+                      <span class="loupe-scrgb-values">{{ diff.b.delta | number:'1.0-4' }}<small> ({{ diff.b.percent === null ? '—' : diff.b.percent | number:'1.0-1' }}%)</small></span>
+                      <span class="loupe-scrgb-label">Δ scRGB (%)</span>
+                    </div>
+                  }
                 } @else { <div class="loupe-capture-error">No capture pixel at the current cursor position. Check that the preview source matches the current display/window.</div> }
               </section>
           }
