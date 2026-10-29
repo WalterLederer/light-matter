@@ -786,97 +786,122 @@ ipcMain.handle(
         outputPath = path.join(folder, `${baseName}_${suffix++}.${extension}`);
       }
       if (format === 'uhdr') {
+        logPhase('convert cached FP16 scRGB frame into normalized PQ diagnostic variants');
 
-        logPhase(`convert FP16 scRGB frame to Float32 RGBA with brightness correction ${CAPTURE_BRIGHTNESS_CORRECTION}`);
+        // Diagnostic only: all variants are derived from the same untouched FP16 frame.
+        // Normalize the positive source range to its measured peak so both transfer
+        // curves share the same peak. PQ code values are intentionally written as
+        // scRGB values to reveal the effect of applying the curve before uhdrsave().
+        const pixelCount = frame.width * frame.height;
+        const sourceRgb = new Float32Array(pixelCount * 3);
+        let peakScRgb = 0;
+        let negativeCount = 0;
+        let nonFiniteCount = 0;
 
-        const rgb = new Float32Array(frame.width * frame.height * 3);
-        const channelNames = ['R', 'G', 'B'] as const;
-        const sourceMin = [Infinity, Infinity, Infinity];
-        const sourceMax = [-Infinity, -Infinity, -Infinity];
-        const outputMin = [Infinity, Infinity, Infinity];
-        const outputMax = [-Infinity, -Infinity, -Infinity];
-        const negativeCounts = [0, 0, 0];
-        const nonFiniteCounts = [0, 0, 0];
-        const zeroCounts = [0, 0, 0];
-
-        let alphaMin = Infinity;
-        let alphaMax = -Infinity;
-        let alphaNonFinite = 0;
-        let alphaNotOne = 0;
-
-        for (let pixel = 0; pixel < frame.width * frame.height; pixel++) {
+        for (let pixel = 0; pixel < pixelCount; pixel++) {
           const source = pixel * 4;
           const destination = pixel * 3;
-
           for (let channel = 0; channel < 3; channel++) {
             const value = halfToFloat(sourceChannels[source + channel]);
-            const corrected = value * CAPTURE_BRIGHTNESS_CORRECTION;
-
-            rgb[destination + channel] = corrected;
-
-            if (Number.isFinite(value)) {
-              sourceMin[channel] = Math.min(sourceMin[channel], value);
-              sourceMax[channel] = Math.max(sourceMax[channel], value);
-
-              if (value < 0) negativeCounts[channel]++;
-              if (value === 0) zeroCounts[channel]++;
+            if (!Number.isFinite(value)) {
+              sourceRgb[destination + channel] = 0;
+              nonFiniteCount++;
             } else {
-              nonFiniteCounts[channel]++;
+              sourceRgb[destination + channel] = value;
+              if (value < 0) negativeCount++;
+              peakScRgb = Math.max(peakScRgb, value);
             }
-
-            if (Number.isFinite(corrected)) {
-              outputMin[channel] = Math.min(outputMin[channel], corrected);
-              outputMax[channel] = Math.max(outputMax[channel], corrected);
-            }
-          }
-
-          const alpha = halfToFloat(sourceChannels[source + 3]);
-
-          if (Number.isFinite(alpha)) {
-            alphaMin = Math.min(alphaMin, alpha);
-            alphaMax = Math.max(alphaMax, alpha);
-            if (alpha !== 1) alphaNotOne++;
-          } else {
-            alphaNonFinite++;
           }
         }
 
-        console.info('[HDR Capture] scRGB input diagnostics', {
-          width: frame.width,
-          height: frame.height,
-          pixelCount: frame.width * frame.height,
-          brightnessCorrection: CAPTURE_BRIGHTNESS_CORRECTION,
-          sourceRGB: channelNames.map((channel, i) => ({
-            channel,
-            min: sourceMin[i],
-            max: sourceMax[i],
-            negativeCount: negativeCounts[i],
-            zeroCount: zeroCounts[i],
-            nonFiniteCount: nonFiniteCounts[i]
-          })),
-          correctedRGB: channelNames.map((channel, i) => ({
-            channel,
-            min: outputMin[i],
-            max: outputMax[i]
-          })),
-          alpha: {
-            min: alphaMin,
-            max: alphaMax,
-            notOneCount: alphaNotOne,
-            nonFiniteCount: alphaNonFinite
-          }
-        });
+        if (!(peakScRgb > 0)) {
+          throw new Error('The captured frame has no positive finite RGB values to encode.');
+        }
 
-        logPhase('initialize libvips Ultra HDR JPEG encoder');
+        const pqOetf = (linearNormalized: number): number => {
+          const m1 = 2610 / 16384;
+          const m2 = 2523 / 32;
+          const c1 = 3424 / 4096;
+          const c2 = 2413 / 128;
+          const c3 = 2392 / 128;
+          const l = Math.min(1, Math.max(0, linearNormalized));
+          const lm1 = Math.pow(l, m1);
+          return Math.pow((c1 + c2 * lm1) / (1 + c3 * lm1), m2);
+        };
+        const pqEotf = (codeValue: number): number => {
+          const m1 = 2610 / 16384;
+          const m2 = 2523 / 32;
+          const c1 = 3424 / 4096;
+          const c2 = 2413 / 128;
+          const c3 = 2392 / 128;
+          const p = Math.min(1, Math.max(0, codeValue));
+          const p1 = Math.pow(p, 1 / m2);
+          const numerator = Math.max(p1 - c1, 0);
+          const denominator = c2 - c3 * p1;
+          if (denominator <= 0 || numerator <= 0) return 0;
+          return Math.pow(numerator / denominator, 1 / m1);
+        };
+
+        const variants: Array<{ suffix: string; transform: (normalized: number) => number }> = [
+          { suffix: 'linear', transform: normalized => normalized },
+          { suffix: 'pq-oetf', transform: normalized => pqOetf(normalized) },
+          { suffix: 'pq-eotf', transform: normalized => pqEotf(normalized) }
+        ];
+
         vipsInitPromise ??= Vips();
         const vips = await vipsInitPromise;
         vips.Cache.max(0);
         vips.Cache.maxMem(0);
-        using image = vips.Image.newFromMemory(rgb, frame.width, frame.height, 3, vips.BandFormat.float);
-        using scrgb = image.copy({ interpretation: vips.Interpretation.scrgb });
-        logPhase('encode Ultra HDR JPEG with embedded gain map');
-        scrgb.uhdrsave(outputPath, { Q: 90 });
-        logPhase('Ultra HDR JPEG written');
+
+        const writtenPaths: string[] = [];
+        for (const variant of variants) {
+          logPhase(`encode Ultra HDR diagnostic variant: ${variant.suffix}`);
+          const rgb = new Float32Array(sourceRgb.length);
+          let outputMin = Infinity;
+          let outputMax = -Infinity;
+
+          for (let i = 0; i < sourceRgb.length; i++) {
+            const normalized = Math.min(1, Math.max(0, sourceRgb[i] / peakScRgb));
+            // Preserve the measured frame peak after applying the curve, so the
+            // visual difference comes from the transfer curve, not a new peak.
+            const value = variant.transform(normalized) * peakScRgb;
+            rgb[i] = value;
+            outputMin = Math.min(outputMin, value);
+            outputMax = Math.max(outputMax, value);
+          }
+
+          const variantPath = outputPath.replace(/\.jpg$/i, `_${variant.suffix}.jpg`);
+          using image = vips.Image.newFromMemory(rgb, frame.width, frame.height, 3, vips.BandFormat.float);
+          using scrgb = image.copy({ interpretation: vips.Interpretation.scrgb });
+          scrgb.uhdrsave(variantPath, { Q: 90 });
+          writtenPaths.push(variantPath);
+          console.info('[HDR Capture] PQ diagnostic variant written', {
+            variant: variant.suffix,
+            path: variantPath,
+            width: frame.width,
+            height: frame.height,
+            normalizationPeakScRgb: peakScRgb,
+            normalizationPeakNitsAt80NitsPerScRgb: peakScRgb * 80,
+            outputMin,
+            outputMax
+          });
+        }
+
+        console.info('[HDR Capture] PQ diagnostic input summary', {
+          width: frame.width,
+          height: frame.height,
+          pixelCount,
+          normalizationPeakScRgb: peakScRgb,
+          normalizationPeakNitsAt80NitsPerScRgb: peakScRgb * 80,
+          pqReferencePeakNits: 10000,
+          pqReferencePeakScRgb: 125,
+          negativeChannelSamplesClamped: negativeCount,
+          nonFiniteChannelSamplesReplacedWithZero: nonFiniteCount,
+          variants: writtenPaths
+        });
+        // Return the linear baseline path; all three files are saved alongside it.
+        outputPath = writtenPaths[0];
+        logPhase('all three Ultra HDR diagnostic variants written');
 
       } else {
         let encoded: Buffer | Uint8Array;
