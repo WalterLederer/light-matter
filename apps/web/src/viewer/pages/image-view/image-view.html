@@ -252,7 +252,7 @@
           </section>
           @if (loupeShowsCapturePreview()) {
               <section class="loupe-hdr-info loupe-capture-pixel-info" aria-label="Capture preview FP16 pixel values">
-                <div class="loupe-info-subheading"><span>Capture preview · FP16/scRGB (raw values)</span></div>
+                <div class="loupe-info-subheading"><span class="loupe-rgb-swatch loupe-capture-rgb-swatch-container" aria-hidden="true"><canvas class="loupe-capture-rgb-swatch-canvas"></canvas></span><span>Capture preview · FP16/scRGB (raw values)</span></div>
                 @if (loupeCaptureRgb(); as captureRgb) {
                   <div class="loupe-channel-meters hdr-rgb-channels">
                     <div class="loupe-channel-meter"><span class="loupe-channel-value">{{ captureRgb.rHex }}</span><span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill red" [style.width.%]="hdrRgbBarWidth(captureRgb.r)"></span></span></div>
