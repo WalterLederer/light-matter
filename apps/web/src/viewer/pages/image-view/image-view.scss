@@ -1461,3 +1461,7 @@
 :host-context(html[data-theme='light']) .image-controls-sidebar .image-sidebar-tabs button[role="tab"]:not(.active):hover {
   background:#d3d3d3 !important;
 }
+
+
+.image-controls-sidebar .loupe-capture-rgb-swatch-container { overflow: hidden; }
+.image-controls-sidebar .loupe-capture-rgb-swatch-canvas { display: block; width: 100%; height: 100%; dynamic-range-limit: no-limit; }
