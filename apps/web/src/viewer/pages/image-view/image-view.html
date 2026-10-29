@@ -404,7 +404,7 @@
           @if (imageBitDepth()) { <span>{{ imageBitDepth() }}</span> }
         </div>
         <div class="status-control-group">
-          <span>{{ (zoomSlider.value ?? 100) | number:'1.0-0' }}%</span>
+          <span>{{ zoomSlider.value | number:'1.0-0' }}%</span>
         </div>
         <div class="status-control-group status-view-modes" aria-label="View mode">
           <button type="button" [class.active]="comparisonMode() === 'hdr'" [disabled]="!isHdrImage" (click)="setComparisonMode('hdr')" title="HDR view">HDR</button>
