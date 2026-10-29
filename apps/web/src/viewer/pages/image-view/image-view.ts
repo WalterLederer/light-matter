@@ -67,6 +67,22 @@ export class ImageView {
   protected readonly histogramCaptureCanvas = viewChild<ElementRef<HTMLCanvasElement>>('histogramCaptureCanvas');
   protected readonly loupeCapturePreviewCanvas = viewChild<ElementRef<HTMLCanvasElement>>('loupeCapturePreviewCanvas');
   protected readonly loupeShowsCapturePreview = signal(false);
+  protected readonly loupeCaptureZoomCanvas = viewChild<ElementRef<HTMLCanvasElement>>('loupeCaptureZoomCanvas');
+  private readonly capturePreviewLoupeRenderer = new HdrLoupeRenderer();
+  private capturePreviewLoupeRenderRequest = 0;
+  private readonly capturePreviewLoupeEffect = effect(() => {
+    const enabled = this.loupeShowsCapturePreview();
+    const frame = this.capturePreviewStore.frame();
+    const mouse = this.lastMousePosition();
+    // Re-render when the cursor, source frame, or magnification changes, including slider changes while the cursor is stationary.
+    this.loupePixelSize();
+    this.loupeSizeScale();
+    if (!enabled || !frame || !mouse || !this.loupeEnabled()) return;
+    const request = ++this.capturePreviewLoupeRenderRequest;
+    requestAnimationFrame(() => {
+      if (request === this.capturePreviewLoupeRenderRequest) void this.renderCapturePreviewLoupe(frame, mouse, request);
+    });
+  });
 
   private readonly processManager = inject(ProcessManager);
 
@@ -228,6 +244,42 @@ export class ImageView {
    * This keeps the numeric readout and bars tied to the live capture data,
    * rather than potentially stale convenience fields on the returned sample.
    */
+  private readonly renderCapturePreviewLoupe = async (frame: CapturePreview, mouse: { clientX: number; clientY: number; screenX: number; screenY: number }, request: number): Promise<void> => {
+    const canvas = this.loupeCaptureZoomCanvas()?.nativeElement;
+    if (!canvas || request !== this.capturePreviewLoupeRenderRequest || !this.loupeShowsCapturePreview() || !this.loupeEnabled()) return;
+    if (frame.width <= 0 || frame.height <= 0 || frame.pixels.length < frame.width * frame.height * 4) return;
+    const screen = this.document.defaultView?.screen;
+    if (!screen || screen.width <= 0 || screen.height <= 0) return;
+    const centerX = Math.floor(mouse.screenX * frame.width / screen.width);
+    const centerY = Math.floor(mouse.screenY * frame.height / screen.height);
+    if (centerX < 0 || centerY < 0 || centerX >= frame.width || centerY >= frame.height) return;
+
+    const outputWidth = Math.max(1, canvas.parentElement?.clientWidth ?? canvas.clientWidth ?? 280);
+    const outputHeight = Math.max(1, canvas.parentElement?.clientHeight ?? canvas.clientHeight ?? 180);
+    const zoom = this.loupePixelSize() * (this.loupeCaptureGeometry()?.scaleFactor ?? 1) / this.loupeSizeScale();
+    const halfWidth = Math.ceil(outputWidth / Math.max(zoom, 0.01) / 2) + 2;
+    const halfHeight = Math.ceil(outputHeight / Math.max(zoom, 0.01) / 2) + 2;
+    const left = Math.max(0, centerX - halfWidth);
+    const top = Math.max(0, centerY - halfHeight);
+    const right = Math.min(frame.width, centerX + halfWidth + 1);
+    const bottom = Math.min(frame.height, centerY + halfHeight + 1);
+    const width = right - left;
+    const height = bottom - top;
+    if (width <= 0 || height <= 0) return;
+    const data = new Uint16Array(width * height * 4);
+    for (let row = 0; row < height; row++) {
+      const sourceStart = ((top + row) * frame.width + left) * 4;
+      data.set(frame.pixels.subarray(sourceStart, sourceStart + width * 4), row * width * 4);
+    }
+    try {
+      await this.capturePreviewLoupeRenderer.render(canvas, {
+        width, height, centerX: centerX - left, centerY: centerY - top, data
+      }, 1, zoom);
+    } catch (error) {
+      console.warn('Capture preview WebGPU magnifier render failed:', error);
+    }
+  };
+
   protected readonly loupeCaptureRgb = computed(() => {
     const frame = this.loupeShowsCapturePreview() ? this.capturePreviewStore.frame() : null;
     const geometry = this.loupeCaptureGeometry(); const mouse = this.lastMousePosition();
