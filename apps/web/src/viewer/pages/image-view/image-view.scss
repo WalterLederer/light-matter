@@ -1164,6 +1164,51 @@
 }
 .image-controls-sidebar .loupe-capture-preview-toggle { margin-top: 8px; }
 
+.image-controls-sidebar .loupe-capture-zoom-preview {
+  margin: 8px 0 0;
+  .loupe-capture-zoom-viewport {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid rgb(128 128 128 / 45%);
+    border-radius: 4px;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    dynamic-range-limit: no-limit;
+    image-rendering: pixelated;
+  }
+  .loupe-crosshair {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: .9;
+    &::before, &::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      filter: drop-shadow(0 0 1px #000);
+    }
+    &::before {
+      width: 28px;
+      height: 1px;
+      background: linear-gradient(to right, #fff 0 38%, transparent 38% 62%, #fff 62% 100%);
+    }
+    &::after {
+      width: 1px;
+      height: 28px;
+      background: linear-gradient(to bottom, #fff 0 38%, transparent 38% 62%, #fff 62% 100%);
+    }
+  }
+  figcaption { font-size: 11px; opacity: .8; margin-top: 4px; }
+}
+
 .image-controls-sidebar .histogram-capture-preview {
   margin: 10px 0 0;
 }
