@@ -394,27 +394,34 @@
   }
 
   @if (!fullScreen) {
-    <footer class="image-status-bar" aria-label="Image status">
+    @let imagePosition = imagePosition$ | async;
+    <footer class="image-status-bar" aria-label="Image status"
+            [style.margin-right.px]="controlsSidebarVisible() ? sidebarWidth() : 0">
       <div class="status-control-groups">
-        <div class="status-control-group status-info" title="{{ selected.path }}">
-          <span class="status-metadata">{{ selected.path }}</span>
+        <div class="status-control-group status-left">
+          <button type="button" class="status-icon-button" (click)="goBack()" title="Abbrechen / zurück zur Galerie" aria-label="Abbrechen">✕</button>
+          <span class="status-image-size">{{ dimensions.width }} × {{ dimensions.height }}</span>
         </div>
-        <div class="status-control-group">
-          <span>{{ dimensions.width }} × {{ dimensions.height }}</span>
-          @if (imageBitDepth()) { <span>{{ imageBitDepth() }}</span> }
+        <div class="status-control-group status-zoom" aria-label="Zoom">
+          <button type="button" class="status-icon-button" (click)="zoomOut()" title="Zoom verkleinern" aria-label="Zoom verkleinern">−</button>
+          <button type="button" class="status-icon-button" (click)="resetZoom()" title="Zoom zurücksetzen / an Fenster anpassen" aria-label="Zoom zurücksetzen">⟲</button>
+          <button type="button" class="status-icon-button" (click)="zoomIn()" title="Zoom vergrößern" aria-label="Zoom vergrößern">+</button>
         </div>
-        <div class="status-control-group">
-          <span>{{ zoomSlider.value | number:'1.0-0' }}%</span>
+        <div class="status-control-group status-navigation">
+          <button type="button" class="status-icon-button" [disabled]="!(hasPrevious$ | async)" (click)="prevPhoto()" title="Vorheriges Bild" aria-label="Vorheriges Bild">‹</button>
+          <button type="button" class="status-icon-button" [disabled]="!(hasNext$ | async)" (click)="nextPhoto()" title="Nächstes Bild" aria-label="Nächstes Bild">›</button>
+          <div class="status-position-slider" [title]="(imagePosition?.position ?? 0) + ' / ' + (imagePosition?.total ?? 0)">
+            <input type="range" min="1" [max]="imagePosition?.total ?? 1" [value]="imagePosition?.position ?? 1"
+                   [disabled]="(imagePosition?.total ?? 0) < 2"
+                   [attr.aria-label]="'Bildposition ' + (imagePosition?.position ?? 0) + ' von ' + (imagePosition?.total ?? 0)"
+                   (input)="changeImagePosition(+$any($event.target).value)" />
+            <span class="status-position-tooltip">{{ imagePosition?.position ?? 0 }} / {{ imagePosition?.total ?? 0 }}</span>
+          </div>
         </div>
-        <div class="status-control-group status-view-modes" aria-label="View mode">
-          <button type="button" [class.active]="comparisonMode() === 'hdr'" [disabled]="!isHdrImage" (click)="setComparisonMode('hdr')" title="HDR view">HDR</button>
-          <button type="button" [class.active]="comparisonMode() === 'sdr'" (click)="setComparisonMode('sdr')" title="SDR view">SDR</button>
-          <button type="button" [class.active]="comparisonMode() === 'side-by-side'" [disabled]="!isHdrImage" (click)="setComparisonMode('side-by-side')" title="Side by side">SBS</button>
-          <button type="button" [class.active]="comparisonMode() === 'stacked'" [disabled]="!isHdrImage" (click)="setComparisonMode('stacked')" title="Stacked">Stack</button>
-          <button type="button" [class.active]="comparisonMode() === 'dual-side-by-side'" [disabled]="!isHdrImage" (click)="setComparisonMode('dual-side-by-side')" title="Full-size side by side">Dual SBS</button>
-          <button type="button" [class.active]="comparisonMode() === 'dual-stacked'" [disabled]="!isHdrImage" (click)="setComparisonMode('dual-stacked')" title="Full-size stacked">Dual Stack</button>
+        <div class="status-control-group status-right">
+          <button type="button" class="status-icon-button" (click)="resetCorrections()" title="Korrekturen zurücksetzen" aria-label="Korrekturen zurücksetzen">↺</button>
+          <button type="button" class="status-icon-button" (click)="toggleSidebarVisibility()" [title]="controlsSidebarVisible() ? 'Rechte Seitenleiste ausblenden' : 'Rechte Seitenleiste einblenden'" [attr.aria-label]="controlsSidebarVisible() ? 'Rechte Seitenleiste ausblenden' : 'Rechte Seitenleiste einblenden'">▤</button>
         </div>
       </div>
     </footer>
-  }
-}
+  }}
