@@ -1014,6 +1014,10 @@ export class ImageView {
         if (this.hdrImageAdjustmentActive()) void this.renderHdrImageAdjustments(true);
       });
 
+    this.desktop?.Loupe.onWindowGeometryChanged(() => {
+      if (this.loupeEnabled()) void this.captureLoupeAfterRender();
+    });
+
     const view = this.document.defaultView;
     if (view) {
       fromEvent(view, 'resize').pipe(takeUntilDestroyed()).subscribe(() => {
