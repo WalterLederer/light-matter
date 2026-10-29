@@ -836,9 +836,9 @@ export class ImageView {
       const decoding = this.isDecoding();
       const geometry = this.loupeCaptureGeometry();
       const pending = this.loupeCapturePending();
-      const selected = this.selected;
+      const dimensions = this.imageDimensions();
       const rendererMode = this.loupeRendererMode();
-      if (enabled && selected !== null && rendererMode === 'webgpu' && !decoding && !geometry && !pending) {
+      if (enabled && dimensions.width > 0 && dimensions.height > 0 && rendererMode === 'webgpu' && !decoding && !geometry && !pending) {
         void this.captureLoupeAfterRender();
       }
     });
