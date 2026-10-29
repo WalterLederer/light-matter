@@ -2189,6 +2189,45 @@ export class ImageView {
       });
   };
 
+  private readonly copyLoupeValuesToClipboard = async (): Promise<void> => {
+    const main = this.loupeHdrRgb();
+    const capture = this.loupeCaptureRgb();
+    const difference = this.loupeRgbDifference();
+    const point = this.loupeSourcePoint();
+    const dimensions = this.imageDimensions();
+    const x = Math.max(0, Math.min(Math.max(0, dimensions.width - 1), Math.floor(point.x)));
+    const y = Math.max(0, Math.min(Math.max(0, dimensions.height - 1), Math.floor(point.y)));
+    const fmt = (value: number | null | undefined): string =>
+      value === null || value === undefined || !Number.isFinite(value) ? '' : value.toFixed(6);
+    const fields = [
+      `x=${x}`,
+      `y=${y}`,
+      `main_scRGB_R=${fmt(main?.r)}`,
+      `main_scRGB_G=${fmt(main?.g)}`,
+      `main_scRGB_B=${fmt(main?.b)}`,
+      `main_hex_R=${main?.rHex ?? ''}`,
+      `main_hex_G=${main?.gHex ?? ''}`,
+      `main_hex_B=${main?.bHex ?? ''}`,
+      `capture_scRGB_R_x0.5=${fmt(capture ? capture.r * 0.5 : null)}`,
+      `capture_scRGB_G_x0.5=${fmt(capture ? capture.g * 0.5 : null)}`,
+      `capture_scRGB_B_x0.5=${fmt(capture ? capture.b * 0.5 : null)}`,
+      `capture_hex_R=${capture?.rHex ?? ''}`,
+      `capture_hex_G=${capture?.gHex ?? ''}`,
+      `capture_hex_B=${capture?.bHex ?? ''}`,
+      `delta_R=${fmt(difference?.r.delta)}`,
+      `delta_G=${fmt(difference?.g.delta)}`,
+      `delta_B=${fmt(difference?.b.delta)}`,
+      `delta_percent_R=${fmt(difference?.r.percent)}`,
+      `delta_percent_G=${fmt(difference?.g.percent)}`,
+      `delta_percent_B=${fmt(difference?.b.percent)}`
+    ];
+    try {
+      await this.document.defaultView?.navigator.clipboard.writeText(fields.join('\\t'));
+    } catch (error) {
+      console.error('Could not copy loupe pixel values to clipboard:', error);
+    }
+  };
+
   private readonly trackKeyboard = () =>
     this.keyboard.keyup()
       .pipe(takeUntilDestroyed())
@@ -2210,6 +2249,12 @@ export class ImageView {
         if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
           event.preventDefault();
           this.adjustActiveBrightness(event.key === 'ArrowUp' ? 1 : -1);
+          return;
+        }
+
+        if ((event.key === 'c' || event.key === 'C') && this.loupeEnabled()) {
+          event.preventDefault();
+          void this.copyLoupeValuesToClipboard();
           return;
         }
 
