@@ -789,9 +789,9 @@ ipcMain.handle(
         logPhase('convert cached FP16 scRGB frame into normalized PQ diagnostic variants');
 
         // Diagnostic only: all variants are derived from the same untouched FP16 frame.
-        // Normalize the positive source range to its measured peak so both transfer
-        // curves share the same peak. PQ code values are intentionally written as
-        // scRGB values to reveal the effect of applying the curve before uhdrsave().
+        // Fixed PQ reference: 10000 cd/m² = 125 scRGB at 80 cd/m² per scRGB unit.
+        // PQ variants are intentionally reinterpreted as scRGB before uhdrsave().
+        const PQ_REFERENCE_SCRGB = 125;
         const pixelCount = frame.width * frame.height;
         const sourceRgb = new Float32Array(pixelCount * 3);
         let peakScRgb = 0;
@@ -842,10 +842,10 @@ ipcMain.handle(
           return Math.pow(numerator / denominator, 1 / m1);
         };
 
-        const variants: Array<{ suffix: string; transform: (normalized: number) => number }> = [
-          { suffix: 'linear', transform: normalized => normalized },
-          { suffix: 'pq-oetf', transform: normalized => pqOetf(normalized) },
-          { suffix: 'pq-eotf', transform: normalized => pqEotf(normalized) }
+        const variants: Array<{ suffix: string; transform: (sourceScRgb: number) => number }> = [
+          { suffix: 'linear', transform: sourceScRgb => sourceScRgb },
+          { suffix: 'pq-oetf', transform: sourceScRgb => pqOetf(sourceScRgb / PQ_REFERENCE_SCRGB) * PQ_REFERENCE_SCRGB },
+          { suffix: 'pq-eotf', transform: sourceScRgb => pqEotf(sourceScRgb / PQ_REFERENCE_SCRGB) * PQ_REFERENCE_SCRGB }
         ];
 
         vipsInitPromise ??= Vips();
@@ -861,10 +861,8 @@ ipcMain.handle(
           let outputMax = -Infinity;
 
           for (let i = 0; i < sourceRgb.length; i++) {
-            const normalized = Math.min(1, Math.max(0, sourceRgb[i] / peakScRgb));
-            // Preserve the measured frame peak after applying the curve, so the
-            // visual difference comes from the transfer curve, not a new peak.
-            const value = variant.transform(normalized) * peakScRgb;
+            // PQ inputs are normalized to the fixed 10000 cd/m² reference domain.
+            const value = variant.transform(sourceRgb[i]);
             rgb[i] = value;
             outputMin = Math.min(outputMin, value);
             outputMax = Math.max(outputMax, value);
@@ -880,8 +878,10 @@ ipcMain.handle(
             path: variantPath,
             width: frame.width,
             height: frame.height,
-            normalizationPeakScRgb: peakScRgb,
-            normalizationPeakNitsAt80NitsPerScRgb: peakScRgb * 80,
+            sourcePeakScRgb: peakScRgb,
+            sourcePeakNitsAt80NitsPerScRgb: peakScRgb * 80,
+            pqReferencePeakScRgb: PQ_REFERENCE_SCRGB,
+            pqReferencePeakNits: 10000,
             outputMin,
             outputMax
           });
@@ -891,10 +891,10 @@ ipcMain.handle(
           width: frame.width,
           height: frame.height,
           pixelCount,
-          normalizationPeakScRgb: peakScRgb,
-          normalizationPeakNitsAt80NitsPerScRgb: peakScRgb * 80,
+          sourcePeakScRgb: peakScRgb,
+          sourcePeakNitsAt80NitsPerScRgb: peakScRgb * 80,
           pqReferencePeakNits: 10000,
-          pqReferencePeakScRgb: 125,
+          pqReferencePeakScRgb: PQ_REFERENCE_SCRGB,
           negativeChannelSamplesClamped: negativeCount,
           nonFiniteChannelSamplesReplacedWithZero: nonFiniteCount,
           variants: writtenPaths
