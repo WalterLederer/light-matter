@@ -74,10 +74,15 @@ export class ImageView {
     const enabled = this.loupeShowsCapturePreview();
     const frame = this.capturePreviewStore.frame();
     const mouse = this.lastMousePosition();
-    // Re-render when the cursor, source frame, or magnification changes, including slider changes while the cursor is stationary.
+    // Read the viewChild signal as a dependency: the conditional canvas may not
+    // exist during the first effect run. When Angular creates it, this effect
+    // must run again instead of leaving the initial WebGPU canvas gray.
+    const canvas = this.loupeCaptureZoomCanvas();
+    // Re-render when the cursor, source frame, canvas, or magnification changes,
+    // including slider changes while the cursor is stationary.
     this.loupePixelSize();
     this.loupeSizeScale();
-    if (!enabled || !frame || !mouse || !this.loupeEnabled()) return;
+    if (!enabled || !frame || !mouse || !canvas || !this.loupeEnabled()) return;
     const request = ++this.capturePreviewLoupeRenderRequest;
     requestAnimationFrame(() => {
       if (request === this.capturePreviewLoupeRenderRequest) void this.renderCapturePreviewLoupe(frame, mouse, request);
