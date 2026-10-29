@@ -2317,6 +2317,19 @@ export class ImageView {
           return;
         }
 
+        // Keep keyboard zoom shortcuts wired to the same actions as both sets of
+        // on-screen zoom buttons. '+' may arrive as '=' on some keyboard layouts.
+        if (event.key === '+' || event.key === '=' || event.key === 'Add') {
+          event.preventDefault();
+          this.zoomIn();
+          return;
+        }
+        if (event.key === '-' || event.key === '_' || event.key === 'Subtract') {
+          event.preventDefault();
+          this.zoomOut();
+          return;
+        }
+
         if (event.key === 'v' || event.key === 'V') {
           this.cycleComparisonMode();
           return;
