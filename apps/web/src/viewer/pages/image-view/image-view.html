@@ -258,16 +258,13 @@
       }
       @if (activeImageSidebarTab() === 'histogram') {
         <section class="histogram-inline" aria-label="SDR and HDR image histogram">
-          <div class="histogram-inline-header">
-            <label class="histogram-capture-preview-toggle">
-              <input type="checkbox"
-                     [checked]="histogramUsesCapturePreview()"
-                     (change)="setHistogramCapturePreview($any($event.target).checked)" />
-              Capture Preview verwenden
-            </label>
-          </div>
-           
-            @if (histogramLoading()) {
+          @if (histogramUsesCapturePreview() && capturePreviewStore.frame(); as capturePreview) {
+            <figure class="histogram-capture-preview">
+              <canvas #histogramCaptureCanvas aria-label="Capture preview image used for histogram"></canvas>
+              <figcaption>Capture Preview · {{ capturePreview.width }} × {{ capturePreview.height }}</figcaption>
+            </figure>
+          }
+          @if (histogramLoading()) {
               <p>Calculating histogram…</p>
             } @else if (histogramError()) {
               <p>{{ histogramErrorMessage() }}</p>
@@ -327,6 +324,12 @@
                 {{ histogramHoverStatus() ?? 'Move over the histogram to inspect values' }}
               </div>
             }
+          <label class="histogram-capture-preview-toggle">
+            <input type="checkbox"
+                   [checked]="histogramUsesCapturePreview()"
+                   (change)="setHistogramCapturePreview($any($event.target).checked)" />
+            Use capture preview
+          </label>
         </section>
       }
       @if (activeImageSidebarTab() === 'image') {

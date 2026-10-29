@@ -1152,8 +1152,27 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 10px;
+  margin-top: 12px;
+  padding-top: 9px;
+  border-top: 1px solid rgb(128 128 128 / 28%);
   font-size: .8rem;
+}
+.image-controls-sidebar .histogram-capture-preview {
+  margin: 0 0 12px;
+}
+.image-controls-sidebar .histogram-capture-preview canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  object-fit: contain;
+  background: #000;
+  border-radius: 4px;
+}
+.image-controls-sidebar .histogram-capture-preview figcaption {
+  margin-top: 4px;
+  font-size: .7rem;
+  opacity: .75;
 }
 .image-controls-sidebar .histogram-capture-preview-toggle input[type="checkbox"] {
   width: auto;

@@ -1,6 +1,6 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { AsyncPipe, DecimalPipe, DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
@@ -63,7 +63,8 @@ export class ImageView {
   private readonly exif = inject(ExifService);
 
   private readonly histogram = inject(HistogramService);
-  private readonly capturePreviewStore = inject(CapturePreviewStore);
+  protected readonly capturePreviewStore = inject(CapturePreviewStore);
+  protected readonly histogramCaptureCanvas = viewChild<ElementRef<HTMLCanvasElement>>('histogramCaptureCanvas');
 
   private readonly processManager = inject(ProcessManager);
 
@@ -698,6 +699,12 @@ export class ImageView {
   /* Constructor */
   constructor() {
     effect(() => {
+      const frame = this.histogramUsesCapturePreview() ? this.capturePreviewStore.frame() : null;
+      const canvas = this.histogramCaptureCanvas()?.nativeElement;
+      if (frame && canvas) this.renderCapturePreviewThumbnail(canvas, frame);
+    });
+
+    effect(() => {
       if (!this.histogramUsesCapturePreview()) return;
       const frame = this.capturePreviewStore.frame();
       if (frame) {
@@ -940,6 +947,46 @@ export class ImageView {
         .pipe(take(1), filter(image => image !== null))
         .subscribe(image => this.loadHistogram(image.path));
     }
+  };
+
+  private readonly renderCapturePreviewThumbnail = (canvas: HTMLCanvasElement, frame: CapturePreview): void => {
+    // Render a lightweight SDR visualization of the same FP16 frame. The
+    // histogram below still uses the untouched FP16 values, not these pixels.
+    const scale = Math.min(1, 960 / frame.width);
+    const width = Math.max(1, Math.round(frame.width * scale));
+    const height = Math.max(1, Math.round(frame.height * scale));
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.aspectRatio = `${frame.width} / ${frame.height}`;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    const image = context.createImageData(width, height);
+    const halfToFloat = (half: number): number => {
+      const sign = (half & 0x8000) ? -1 : 1;
+      const exponent = (half >> 10) & 0x1f;
+      const mantissa = half & 0x03ff;
+      if (exponent === 0) return sign * Math.pow(2, -14) * (mantissa / 1024);
+      if (exponent === 0x1f) return 0;
+      return sign * Math.pow(2, exponent - 15) * (1 + mantissa / 1024);
+    };
+    const encodeSrgb = (value: number): number => {
+      const linear = Math.max(0, value * 0.4);
+      const encoded = linear <= 0.0031308 ? linear * 12.92 : 1.055 * Math.pow(linear, 1 / 2.4) - 0.055;
+      return Math.round(Math.min(1, Math.max(0, encoded)) * 255);
+    };
+    for (let y = 0; y < height; y++) {
+      const sourceY = Math.min(frame.height - 1, Math.floor(y / scale));
+      for (let x = 0; x < width; x++) {
+        const sourceX = Math.min(frame.width - 1, Math.floor(x / scale));
+        const sourceOffset = (sourceY * frame.width + sourceX) * 4;
+        const targetOffset = (y * width + x) * 4;
+        image.data[targetOffset] = encodeSrgb(halfToFloat(frame.pixels[sourceOffset]));
+        image.data[targetOffset + 1] = encodeSrgb(halfToFloat(frame.pixels[sourceOffset + 1]));
+        image.data[targetOffset + 2] = encodeSrgb(halfToFloat(frame.pixels[sourceOffset + 2]));
+        image.data[targetOffset + 3] = 255;
+      }
+    }
+    context.putImageData(image, 0, 0);
   };
 
   private readonly loadCapturePreviewHistogram = async (frame: CapturePreview): Promise<void> => {
