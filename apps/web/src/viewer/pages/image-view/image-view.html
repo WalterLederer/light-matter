@@ -1,4 +1,5 @@
 @let selected = selectedImage$ | async;
+@let capturePreview = capturePreviewStore.frame();
 @let fullScreen = isFullScreen();
 @let dimensions = imageDimensions();
 @let exif = exifState();
@@ -265,6 +266,8 @@
             <input type="checkbox" [checked]="loupeShowsCapturePreview()" (change)="loupeShowsCapturePreview.set($any($event.target).checked)" />
             Show also capture preview
           </label>
+          @if (loupeShowsCapturePreview()) {
+            @if (capturePreview) {
               <figure class="loupe-capture-preview">
                 <canvas #loupeCapturePreviewCanvas aria-label="HDR Capture Preview at magnifier cursor coordinates"></canvas>
                 <figcaption>HDR Capture Preview · {{ capturePreview.width }} × {{ capturePreview.height }} · cursor pixel X: {{ loupeCaptureRgb()?.x ?? '—' }} · Y: {{ loupeCaptureRgb()?.y ?? '—' }}</figcaption>
