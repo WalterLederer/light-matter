@@ -1372,18 +1372,18 @@
 .image-controls-sidebar .loupe-capture-rgb-swatch-canvas { display: block; width: 100%; height: 100%; dynamic-range-limit: no-limit; }
 
 
-/* Restored image-view status row. Keep it compact so the image remains primary. */
+/* Compact status bar: keep it clear of the right-hand control panel. */
 :host .image-status-bar {
   display: flex;
   flex: 0 0 auto;
   min-width: 0;
-  min-height: 34px;
+  min-height: 38px;
   align-items: center;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-top: 1px solid var(--color-content-default-low);
   background: var(--color-surface-default-low);
   color: var(--color-content-default);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
 }
 :host .image-status-bar .status-control-groups {
   display: flex;
@@ -1399,42 +1399,82 @@
   align-items: center;
   gap: 6px;
   padding: 0 10px;
+  white-space: nowrap;
+}
+:host .image-status-bar .status-left {
+  padding-left: 2px;
+  gap: 10px;
+}
+:host .image-status-bar .status-image-size {
+  font-variant-numeric: tabular-nums;
+}
+:host .image-status-bar .status-zoom {
   border-left: 1px solid var(--color-content-default-low);
-  white-space: nowrap;
+  border-right: 1px solid var(--color-content-default-low);
 }
-:host .image-status-bar .status-control-group:first-child {
+:host .image-status-bar .status-navigation {
   flex: 1 1 auto;
-  overflow: hidden;
-  border-left: 0;
-  padding-left: 4px;
+  min-width: 120px;
+  justify-content: center;
 }
-:host .image-status-bar .status-metadata {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+:host .image-status-bar .status-position-slider {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 80px;
+  max-width: 560px;
+  align-items: center;
 }
-:host .image-status-bar .status-view-modes {
-  gap: 3px;
+:host .image-status-bar .status-position-slider input {
+  width: 100%;
+  min-width: 60px;
+  cursor: pointer;
+  accent-color: var(--color-content-default);
 }
-:host .image-status-bar .status-view-modes button {
-  padding: 3px 6px;
+:host .image-status-bar .status-position-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 7px);
+  z-index: 60;
+  transform: translateX(-50%);
+  padding: 3px 7px;
   border: 1px solid var(--color-content-default-low);
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--color-surface-default);
+  color: var(--color-content-default);
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 80ms ease;
+}
+:host .image-status-bar .status-position-slider:hover .status-position-tooltip,
+:host .image-status-bar .status-position-slider:focus-within .status-position-tooltip {
+  opacity: 1;
+}
+:host .image-status-bar .status-right {
+  margin-left: auto;
+  border-left: 1px solid var(--color-content-default-low);
+}
+:host .image-status-bar .status-icon-button {
+  display: inline-flex;
+  min-width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
   color: inherit;
   font: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
   cursor: pointer;
 }
-:host .image-status-bar .status-view-modes button.active {
-  border-color: var(--color-content-primary-low);
-  background: var(--color-surface-primary-high);
-  font-weight: 700;
+:host .image-status-bar .status-icon-button:hover:not(:disabled) {
+  background: var(--color-content-default-low);
 }
-:host .image-status-bar .status-view-modes button:disabled {
-  opacity: 0.4;
+:host .image-status-bar .status-icon-button:disabled {
+  opacity: 0.35;
   cursor: default;
-}
-@media (max-width: 900px) {
-  :host .image-status-bar .status-view-modes button { padding: 2px 4px; }
-  :host .image-status-bar .status-control-group { padding: 0 5px; }
 }
