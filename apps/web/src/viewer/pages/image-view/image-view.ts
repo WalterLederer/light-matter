@@ -1409,17 +1409,21 @@ export class ImageView {
   };
 
   private readonly changeViewerZoom = (direction: -1 | 1): void => {
-    if (this.loupeEnabled()) return;
+    // The same controls operate the loupe magnification while the loupe is active.
+    if (this.loupeEnabled()) {
+      const factor = direction > 0 ? 1.25 : 0.8;
+      const nextZoom = Math.max(0.1, Math.min(64, Number((this.loupeSlider.value * factor).toFixed(2))));
+      this.loupeSlider.setValue(nextZoom);
+      const mouse = this.lastMousePosition();
+      if (mouse) this.sampleLoupeAtPosition({ screenX: mouse.screenX, screenY: mouse.screenY }, true);
+      return;
+    }
 
-    // When the image is fitted to the viewport, start from its actual displayed
-    // scale rather than the slider's stale value. This makes the first +/− click
-    // visibly zoom in/out instead of jumping from an unrelated previous value.
+    // When fitted, use the actual displayed scale rather than a stale slider value.
     this.imageLocation$.pipe(take(1)).subscribe(location => {
       const currentZoom = location.zoom === 'fit' ? location.fitZoom : this.zoomSlider.value;
-      const nextZoom = Math.max(10, Math.min(800, currentZoom + direction * 10));
+      const nextZoom = Math.max(this.zoomConfig.min, Math.min(this.zoomConfig.max, currentZoom + direction * 10));
       this.zoomSlider.setValue(nextZoom);
-      // Set directly as well: if the slider already contains nextZoom, its
-      // valueChanges stream may not produce a useful change for the fitted view.
       this.imagePositioningService.setZoom(nextZoom / 100);
       if (this.hdrImageAdjustmentActive()) void this.renderHdrImageAdjustments(true);
     });
@@ -1428,7 +1432,8 @@ export class ImageView {
   protected readonly zoomOut = (): void => this.changeViewerZoom(-1);
 
   protected readonly resetZoom = (): void => {
-    this.fitToWindow();
+    if (this.loupeEnabled()) this.resetLoupeZoom();
+    else this.fitToWindow();
   };
 
   protected readonly zoomIn = (): void => this.changeViewerZoom(1);
