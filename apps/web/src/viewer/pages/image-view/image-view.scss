@@ -1465,3 +1465,71 @@
 
 .image-controls-sidebar .loupe-capture-rgb-swatch-container { overflow: hidden; flex: 0 0 20px; width: 20px; height: 18px; padding: 0; }
 .image-controls-sidebar .loupe-capture-rgb-swatch-canvas { display: block; width: 100%; height: 100%; dynamic-range-limit: no-limit; }
+
+
+/* Restored image-view status row. Keep it compact so the image remains primary. */
+:host .image-status-bar {
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 34px;
+  align-items: center;
+  padding: 2px 8px;
+  border-top: 1px solid var(--color-content-default-low);
+  background: var(--color-surface-default-low);
+  color: var(--color-content-default);
+  font-size: 0.75rem;
+}
+:host .image-status-bar .status-control-groups {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0;
+}
+:host .image-status-bar .status-control-group {
+  display: inline-flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-left: 1px solid var(--color-content-default-low);
+  white-space: nowrap;
+}
+:host .image-status-bar .status-control-group:first-child {
+  flex: 1 1 auto;
+  overflow: hidden;
+  border-left: 0;
+  padding-left: 4px;
+}
+:host .image-status-bar .status-metadata {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:host .image-status-bar .status-view-modes {
+  gap: 3px;
+}
+:host .image-status-bar .status-view-modes button {
+  padding: 3px 6px;
+  border: 1px solid var(--color-content-default-low);
+  border-radius: 3px;
+  background: var(--color-surface-default);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+:host .image-status-bar .status-view-modes button.active {
+  border-color: var(--color-content-primary-low);
+  background: var(--color-surface-primary-high);
+  font-weight: 700;
+}
+:host .image-status-bar .status-view-modes button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+@media (max-width: 900px) {
+  :host .image-status-bar .status-view-modes button { padding: 2px 4px; }
+  :host .image-status-bar .status-control-group { padding: 0 5px; }
+}
