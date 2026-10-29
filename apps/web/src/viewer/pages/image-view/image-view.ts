@@ -1,6 +1,6 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { AsyncPipe, DecimalPipe, DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
@@ -8,7 +8,7 @@ import {
   OverlayService,
   SliderComponent
 } from '@light-matter/ui';
-import { Desktop, ExifTags, ImageHistogram } from 'internal-api';
+import { CapturePreview, Desktop, ExifTags, ImageHistogram } from 'internal-api';
 import { catchError, distinctUntilChanged, filter, from, fromEvent, map, of, startWith, switchMap, take, tap } from 'rxjs';
 import { ExifService } from '../../../ipc/exif';
 import { HistogramService } from '../../../ipc/histogram';
@@ -19,6 +19,7 @@ import { Configuration } from '../../../system/services/configuration/configurat
 import { ThemeService } from '../../../system/services/theme/theme.service';
 import { Keyboard } from '../../../system/services/keyboard/keyboard';
 import { CapturePanelComponent } from '../../../capture/components/capture-panel/capture-panel.component';
+import { CapturePreviewStore } from '../../../capture/capture-preview-store';
 import { ExifInfoComponent } from '../../components/exif-info/exif-info.component';
 import { ImageRendererComponent } from '../../components/image-renderer/image-renderer.component';
 import { HdrImageBrightnessRenderer, HdrLoupeRenderer, HdrLoupeRegion } from './hdr-loupe-renderer';
@@ -62,6 +63,7 @@ export class ImageView {
   private readonly exif = inject(ExifService);
 
   private readonly histogram = inject(HistogramService);
+  private readonly capturePreviewStore = inject(CapturePreviewStore);
 
   private readonly processManager = inject(ProcessManager);
 
@@ -555,6 +557,8 @@ export class ImageView {
 
   protected readonly histogramData = signal<ImageHistogram | null>(null);
 
+  protected readonly histogramUsesCapturePreview = signal(false);
+
   protected readonly histogramHoverStatus = signal<string | null>(null);
 
   protected readonly histogramError = signal(false);
@@ -693,6 +697,20 @@ export class ImageView {
 
   /* Constructor */
   constructor() {
+    effect(() => {
+      if (!this.histogramUsesCapturePreview()) return;
+      const frame = this.capturePreviewStore.frame();
+      if (frame) {
+        void this.loadCapturePreviewHistogram(frame);
+      } else {
+        this.histogramRequestId++;
+        this.histogramData.set(null);
+        this.histogramLoading.set(false);
+        this.histogramErrorMessage.set('No capture preview available. Open the Capture tab and select “Preview source” first.');
+        this.histogramError.set(true);
+      }
+    });
+
     // A full-monitor capture must be refreshed when the Chromium content area
     // changes size; otherwise its coordinate mapping describes stale geometry.
     if (typeof ResizeObserver !== 'undefined') {
@@ -907,6 +925,114 @@ export class ImageView {
     this.selectedImage$
       .pipe(take(1), filter(image => image !== null))
       .subscribe(image => this.loadHistogram(image.path));
+  };
+
+  protected readonly setHistogramCapturePreview = (enabled: boolean): void => {
+    this.histogramUsesCapturePreview.set(enabled);
+    this.histogramRequestId++;
+    this.histogramLoading.set(false);
+    this.histogramData.set(null);
+    this.histogramError.set(false);
+    this.histogramHoverStatus.set(null);
+
+    if (!enabled) {
+      this.selectedImage$
+        .pipe(take(1), filter(image => image !== null))
+        .subscribe(image => this.loadHistogram(image.path));
+    }
+  };
+
+  private readonly loadCapturePreviewHistogram = async (frame: CapturePreview): Promise<void> => {
+    const requestId = ++this.histogramRequestId;
+    this.histogramLoading.set(true);
+    this.histogramError.set(false);
+    this.histogramData.set(null);
+    const pixelCount = Math.min(frame.width * frame.height, Math.floor(frame.pixels.length / 4));
+    const minimumLogNits = 0.1;
+    const chunkSize = 250_000;
+    const linear = {
+      white: new Array<number>(128).fill(0),
+      red: new Array<number>(128).fill(0),
+      green: new Array<number>(128).fill(0),
+      blue: new Array<number>(128).fill(0)
+    };
+    const logarithmic = {
+      white: new Array<number>(128).fill(0),
+      red: new Array<number>(128).fill(0),
+      green: new Array<number>(128).fill(0),
+      blue: new Array<number>(128).fill(0)
+    };
+
+    // Decode IEEE-754 binary16 values without changing the captured FP16 data.
+    const halfToFloat = (half: number): number => {
+      const sign = (half & 0x8000) ? -1 : 1;
+      const exponent = (half >> 10) & 0x1f;
+      const mantissa = half & 0x03ff;
+      if (exponent === 0) return sign * Math.pow(2, -14) * (mantissa / 1024);
+      if (exponent === 0x1f) return mantissa === 0 ? sign * Infinity : NaN;
+      return sign * Math.pow(2, exponent - 15) * (1 + mantissa / 1024);
+    };
+    const toNits = (value: number): number => Number.isFinite(value) ? Math.max(0, value * 80) : 0;
+    const luminance = (r: number, g: number, b: number): number =>
+      Math.max(0, 0.2126 * r + 0.7152 * g + 0.0722 * b);
+
+    try {
+      let actualMaximumNits = 0;
+      for (let start = 0; start < pixelCount; start += chunkSize) {
+        const end = Math.min(pixelCount, start + chunkSize);
+        for (let pixel = start; pixel < end; pixel++) {
+          const offset = pixel * 4;
+          const red = toNits(halfToFloat(frame.pixels[offset]));
+          const green = toNits(halfToFloat(frame.pixels[offset + 1]));
+          const blue = toNits(halfToFloat(frame.pixels[offset + 2]));
+          actualMaximumNits = Math.max(actualMaximumNits, red, green, blue, luminance(red, green, blue));
+        }
+        if (requestId !== this.histogramRequestId) return;
+        await new Promise<void>(resolve => setTimeout(resolve, 0));
+      }
+
+      const maximumNits = Math.max(minimumLogNits * 1.01, actualMaximumNits * 1.02);
+      const linearBin = (nits: number): number =>
+        Math.min(127, Math.max(0, Math.floor(nits / maximumNits * 128)));
+      const logarithmicBin = (nits: number): number =>
+        Math.min(127, Math.max(0, Math.floor(
+          Math.log(Math.max(minimumLogNits, nits) / minimumLogNits) /
+          Math.log(maximumNits / minimumLogNits) * 128
+        )));
+
+      for (let start = 0; start < pixelCount; start += chunkSize) {
+        const end = Math.min(pixelCount, start + chunkSize);
+        for (let pixel = start; pixel < end; pixel++) {
+          const offset = pixel * 4;
+          const red = toNits(halfToFloat(frame.pixels[offset]));
+          const green = toNits(halfToFloat(frame.pixels[offset + 1]));
+          const blue = toNits(halfToFloat(frame.pixels[offset + 2]));
+          const white = luminance(red, green, blue);
+          linear.white[linearBin(white)]++;
+          linear.red[linearBin(red)]++;
+          linear.green[linearBin(green)]++;
+          linear.blue[linearBin(blue)]++;
+          logarithmic.white[logarithmicBin(white)]++;
+          logarithmic.red[logarithmicBin(red)]++;
+          logarithmic.green[logarithmicBin(green)]++;
+          logarithmic.blue[logarithmicBin(blue)]++;
+        }
+        if (requestId !== this.histogramRequestId) return;
+        await new Promise<void>(resolve => setTimeout(resolve, 0));
+      }
+
+      if (requestId !== this.histogramRequestId || !this.histogramUsesCapturePreview()) return;
+      this.histogramData.set({ linear, logarithmic, maximumNits, minimumLogNits });
+      this.histogramError.set(false);
+      this.histogramErrorMessage.set('Histogram could not be calculated.');
+    } catch (error) {
+      if (requestId === this.histogramRequestId) {
+        this.histogramErrorMessage.set(error instanceof Error ? error.message : String(error));
+        this.histogramError.set(true);
+      }
+    } finally {
+      if (requestId === this.histogramRequestId) this.histogramLoading.set(false);
+    }
   };
 
   protected readonly closeHistogram = () => {
@@ -1666,6 +1792,7 @@ export class ImageView {
   };
 
   private readonly loadHistogram = (path: string) => {
+    if (this.histogramUsesCapturePreview()) return;
     const requestId = ++this.histogramRequestId;
     this.histogramData.set(null);
     this.histogramError.set(false);

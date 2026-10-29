@@ -258,6 +258,14 @@
       }
       @if (activeImageSidebarTab() === 'histogram') {
         <section class="histogram-inline" aria-label="SDR and HDR image histogram">
+          <div class="histogram-inline-header">
+            <label class="histogram-capture-preview-toggle">
+              <input type="checkbox"
+                     [checked]="histogramUsesCapturePreview()"
+                     (change)="setHistogramCapturePreview($any($event.target).checked)" />
+              Capture Preview verwenden
+            </label>
+          </div>
            
             @if (histogramLoading()) {
               <p>Calculating histogram…</p>

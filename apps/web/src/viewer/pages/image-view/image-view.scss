@@ -1148,6 +1148,18 @@
 /* Keep the sidebar tabs visible while the selected tab content scrolls. */
 .image-controls-sidebar .image-controls-header { position: sticky; top: -12px; z-index: 6; margin: -12px -12px 0; padding: 12px 12px 10px; background: #202124; }
 .image-controls-sidebar .histogram-inline { min-width: 0; }
+.image-controls-sidebar .histogram-capture-preview-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  font-size: .8rem;
+}
+.image-controls-sidebar .histogram-capture-preview-toggle input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  accent-color: #65a9ff;
+}
 .image-controls-sidebar .histogram-inline-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .image-controls-sidebar .histogram-plots-stacked { display: flex; flex-direction: column; gap: 16px; }
 .image-controls-sidebar .histogram-chart { min-width: 0; width: 100%; }

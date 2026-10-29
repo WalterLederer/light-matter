@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CaptureFormat, CaptureMonitor, CapturePreview, CaptureTarget, CaptureWindow } from 'internal-api';
 import { filter, firstValueFrom, take } from 'rxjs';
 import { CaptureService } from '../../../ipc/capture';
+import { CapturePreviewStore } from '../../capture-preview-store';
 import { GalleryLocations } from '../../../gallery/services/gallery-locations/gallery-locations';
 import { GalleryState } from '../../../gallery/services/gallery-state/gallery-state';
 import { ViewNavigator } from '../../../viewer/services/view-navigator/view-navigator';
@@ -29,6 +30,7 @@ type CaptureSourceRow = {
 })
 export class CapturePanelComponent {
   private readonly captureService = inject(CaptureService);
+  private readonly capturePreviewStore = inject(CapturePreviewStore);
   private readonly galleryState = inject(GalleryState);
   private readonly galleryLocations = inject(GalleryLocations);
   private readonly viewNavigator = inject(ViewNavigator);
@@ -344,6 +346,7 @@ export class CapturePanelComponent {
       const preview = await this.captureService.preview(target);
       if (requestId !== this.previewRequestId) return;
       this.previewFrame.set(preview);
+      this.capturePreviewStore.setFrame(preview);
       this.previewSize.set(`${preview.width} × ${preview.height}`);
       this.status.set(`Preview ready · ${preview.width} × ${preview.height}`);
       this.saveSelectedSource();
