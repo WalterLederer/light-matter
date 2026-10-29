@@ -259,8 +259,8 @@
                     <div class="loupe-channel-meter"><span class="loupe-channel-value">{{ captureRgb.gHex }}</span><span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill green" [style.width.%]="hdrRgbBarWidth(captureRgb.g)"></span></span></div>
                     <div class="loupe-channel-meter"><span class="loupe-channel-value">{{ captureRgb.bHex }}</span><span class="loupe-rgb-track hdr-rgb-track"><span class="loupe-rgb-fill blue" [style.width.%]="hdrRgbBarWidth(captureRgb.b)"></span></span></div>
                   </div>
-                  <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">{{ captureRgb.r | number:'1.0-4' }}</span><span class="loupe-scrgb-values">{{ captureRgb.g | number:'1.0-4' }}</span><span class="loupe-scrgb-values">{{ captureRgb.b | number:'1.0-4' }}</span><span class="loupe-scrgb-label">scRGB</span></div>
-                  <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">{{ captureRgb.r * 80 | number:'1.0-1' }}</span><span class="loupe-scrgb-values">{{ captureRgb.g * 80 | number:'1.0-1' }}</span><span class="loupe-scrgb-values">{{ captureRgb.b * 80 | number:'1.0-1' }}</span><span class="loupe-scrgb-label">cd/m²</span></div>
+                  <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">{{ captureRgb.r * 0.5 | number:'1.0-4' }}</span><span class="loupe-scrgb-values">{{ captureRgb.g * 0.5 | number:'1.0-4' }}</span><span class="loupe-scrgb-values">{{ captureRgb.b * 0.5 | number:'1.0-4' }}</span><span class="loupe-scrgb-label">scRGB</span></div>
+                  <div class="loupe-hdr-linear"><span class="loupe-scrgb-values">{{ captureRgb.r * 40 | number:'1.0-1' }}</span><span class="loupe-scrgb-values">{{ captureRgb.g * 40 | number:'1.0-1' }}</span><span class="loupe-scrgb-values">{{ captureRgb.b * 40 | number:'1.0-1' }}</span><span class="loupe-scrgb-label">cd/m²</span></div>
                 } @else { <div class="loupe-capture-error">No capture pixel at the current cursor position. Check that the preview source matches the current display/window.</div> }
               </section>
           }
