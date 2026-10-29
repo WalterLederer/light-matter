@@ -1563,46 +1563,21 @@ export class ImageView {
     const bounds = image.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) return;
 
-    // Map the pointer through the image element's actual CSS object-fit geometry.
-    // The old code always assumed a centered "contain" image; that introduces a
-    // systematic offset whenever the renderer stretches the image to its box.
-    const style = this.document.defaultView?.getComputedStyle(image);
-    const objectFit = style?.objectFit ?? 'fill';
+    // Keep the loupe coordinate mapping identical to the renderer's RGB sampler.
+    // Both use centered object-fit: contain geometry, including letterboxing.
+    // Using a separate object-position calculation here caused the loupe crosshair
+    // and the renderer's own pixel coordinates to disagree.
     const naturalWidth = image.naturalWidth;
     const naturalHeight = image.naturalHeight;
-    let renderedWidth = bounds.width;
-    let renderedHeight = bounds.height;
-
-    if (objectFit === 'contain' || objectFit === 'cover' || objectFit === 'scale-down') {
-      const containScale = Math.min(bounds.width / naturalWidth, bounds.height / naturalHeight);
-      const coverScale = Math.max(bounds.width / naturalWidth, bounds.height / naturalHeight);
-      const scale = objectFit === 'cover' ? coverScale
-        : objectFit === 'scale-down' ? Math.min(1, containScale) : containScale;
-      renderedWidth = naturalWidth * scale;
-      renderedHeight = naturalHeight * scale;
-    } else if (objectFit === 'none') {
-      renderedWidth = naturalWidth;
-      renderedHeight = naturalHeight;
-    }
-
-    // CSS object-position defaults to 50% 50%. Account for percentage positioning
-    // as well as simple pixel offsets so letterboxing/cropping maps to source pixels.
-    const position = (style?.objectPosition ?? '50% 50%').trim().split(/\\s+/);
-    const offset = (value: string | undefined, freeSpace: number): number => {
-      if (!value) return freeSpace / 2;
-      if (value.endsWith('%')) return freeSpace * (Number.parseFloat(value) / 100);
-      if (value.endsWith('px')) return Number.parseFloat(value);
-      if (value === 'left' || value === 'top') return 0;
-      if (value === 'right' || value === 'bottom') return freeSpace;
-      if (value === 'center') return freeSpace / 2;
-      return freeSpace / 2;
-    };
-    const imageLeft = bounds.left + offset(position[0], bounds.width - renderedWidth);
-    const imageTop = bounds.top + offset(position[1] ?? position[0], bounds.height - renderedHeight);
+    const scale = Math.min(bounds.width / naturalWidth, bounds.height / naturalHeight);
+    const renderedWidth = naturalWidth * scale;
+    const renderedHeight = naturalHeight * scale;
+    const imageLeft = bounds.left + (bounds.width - renderedWidth) / 2;
+    const imageTop = bounds.top + (bounds.height - renderedHeight) / 2;
     const sourceX = Math.max(0, Math.min(naturalWidth - 1,
-      Math.floor((clientX - imageLeft) * naturalWidth / renderedWidth)));
+      Math.floor((clientX - imageLeft) / scale)));
     const sourceY = Math.max(0, Math.min(naturalHeight - 1,
-      Math.floor((clientY - imageTop) * naturalHeight / renderedHeight)));
+      Math.floor((clientY - imageTop) / scale)));
     this.loupeSourcePoint.set({ x: sourceX, y: sourceY });
     this.updateLoupeSdrPixelColor(image, sourceX, sourceY);
   };
