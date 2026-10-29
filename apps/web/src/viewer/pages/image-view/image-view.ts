@@ -85,11 +85,11 @@ export class ImageView {
     // including slider changes while the cursor is stationary.
     this.loupePixelSize();
     this.loupeSizeScale();
-    if (!enabled || !frame || !mouse || !canvas || !this.loupeEnabled()) return;
+    if (!enabled || !frame || !canvas || !this.loupeEnabled()) return;
     void this.renderCapturePreviewSwatch(frame, sourcePoint);
     const request = ++this.capturePreviewLoupeRenderRequest;
     requestAnimationFrame(() => {
-      if (request === this.capturePreviewLoupeRenderRequest) void this.renderCapturePreviewLoupe(frame, mouse, request);
+      if (request === this.capturePreviewLoupeRenderRequest) void this.renderCapturePreviewLoupe(frame, request);
     });
   });
 
@@ -274,7 +274,7 @@ export class ImageView {
     }
   };
 
-  private readonly renderCapturePreviewLoupe = async (frame: CapturePreview, mouse: { clientX: number; clientY: number; screenX: number; screenY: number }, request: number): Promise<void> => {
+  private readonly renderCapturePreviewLoupe = async (frame: CapturePreview, request: number): Promise<void> => {
     const canvas = this.loupeCaptureZoomCanvas()?.nativeElement;
     if (!canvas || request !== this.capturePreviewLoupeRenderRequest || !this.loupeShowsCapturePreview() || !this.loupeEnabled()) return;
     if (frame.width <= 0 || frame.height <= 0 || frame.pixels.length < frame.width * frame.height * 4) return;
