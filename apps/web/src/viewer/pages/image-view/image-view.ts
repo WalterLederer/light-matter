@@ -989,6 +989,87 @@ export class ImageView {
     this.histogramCaptureContext = null;
   };
 
+  private readonly renderCapturePreviewHdr = async (canvas: HTMLCanvasElement, frame: CapturePreview): Promise<void> => {
+    const requestId = ++this.histogramCaptureRenderRequest;
+    try {
+      const gpu = (navigator as Navigator & { gpu?: any }).gpu;
+      if (!gpu) throw new Error('WebGPU is unavailable; HDR capture preview cannot be displayed.');
+      try { this.histogramCaptureContext?.unconfigure(); } catch { /* already unconfigured */ }
+      this.histogramCaptureTexture?.destroy();
+      this.histogramCaptureDevice?.destroy();
+      this.histogramCaptureTexture = null;
+      this.histogramCaptureDevice = null;
+      this.histogramCaptureContext = null;
+
+      canvas.width = frame.width;
+      canvas.height = frame.height;
+      canvas.style.aspectRatio = `${frame.width} / ${frame.height}`;
+      const adapter = await gpu.requestAdapter();
+      if (requestId !== this.histogramCaptureRenderRequest) return;
+      if (!adapter) throw new Error('No WebGPU adapter is available for the HDR capture preview.');
+      const device: any = await adapter.requestDevice();
+      if (requestId !== this.histogramCaptureRenderRequest) { device.destroy(); return; }
+      const context = canvas.getContext('webgpu') as any;
+      if (!context) {
+        device.destroy();
+        throw new Error('Could not create a WebGPU canvas for the HDR capture preview.');
+      }
+      context.configure({ device, format: 'rgba16float', colorSpace: 'srgb', alphaMode: 'opaque', toneMapping: { mode: 'extended' } });
+      const texture = device.createTexture({
+        size: { width: frame.width, height: frame.height },
+        format: 'rgba16float',
+        usage: 4 | 2
+      });
+      device.queue.writeTexture({ texture }, frame.pixels, { bytesPerRow: frame.width * 8, rowsPerImage: frame.height }, { width: frame.width, height: frame.height, depthOrArrayLayers: 1 });
+      const shader = device.createShaderModule({ code: `
+        @group(0) @binding(0) var sourceTexture: texture_2d<f32>;
+        struct VertexOutput { @builtin(position) position: vec4<f32>, @location(0) uv: vec2<f32> }
+        @vertex fn vs(@builtin(vertex_index) index: u32) -> VertexOutput {
+          var positions = array<vec2<f32>, 3>(vec2<f32>(-1.0, -1.0), vec2<f32>(3.0, -1.0), vec2<f32>(-1.0, 3.0));
+          var output: VertexOutput;
+          let p = positions[index];
+          output.position = vec4<f32>(p, 0.0, 1.0);
+          output.uv = vec2<f32>((p.x + 1.0) * 0.5, (1.0 - p.y) * 0.5);
+          return output;
+        }
+        fn linearToExtendedSrgb(value: f32) -> f32 {
+          if (value <= 0.0031308) { return value * 12.92; }
+          return 1.055 * pow(value, 1.0 / 2.4) - 0.055;
+        }
+        @fragment fn fs(input: VertexOutput) -> @location(0) vec4<f32> {
+          let dims = vec2<i32>(textureDimensions(sourceTexture));
+          let coords = vec2<i32>(clamp(input.uv * vec2<f32>(dims), vec2<f32>(0.0), vec2<f32>(dims - vec2<i32>(1, 1))));
+          let linearColor = textureLoad(sourceTexture, coords, 0).rgb * 0.4;
+          return vec4<f32>(linearToExtendedSrgb(linearColor.r), linearToExtendedSrgb(linearColor.g), linearToExtendedSrgb(linearColor.b), 1.0);
+        }
+      ` });
+      const pipeline = device.createRenderPipeline({ layout: 'auto', vertex: { module: shader, entryPoint: 'vs' }, fragment: { module: shader, entryPoint: 'fs', targets: [{ format: 'rgba16float' }] }, primitive: { topology: 'triangle-list' } });
+      const bindGroup = device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries: [{ binding: 0, resource: texture.createView() }] });
+      const encoder = device.createCommandEncoder();
+      const pass = encoder.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: 'clear', storeOp: 'store' }] });
+      pass.setPipeline(pipeline);
+      pass.setBindGroup(0, bindGroup);
+      pass.draw(3);
+      pass.end();
+      device.queue.submit([encoder.finish()]);
+      if (requestId !== this.histogramCaptureRenderRequest) {
+        context.unconfigure();
+        texture.destroy();
+        device.destroy();
+        return;
+      }
+      this.histogramCaptureDevice = device;
+      this.histogramCaptureTexture = texture;
+      this.histogramCaptureContext = context;
+    } catch (error) {
+      if (requestId === this.histogramCaptureRenderRequest) {
+        this.histogramErrorMessage.set(error instanceof Error ? error.message : String(error));
+        this.histogramError.set(true);
+        console.error('[HDR Capture Histogram] WebGPU preview failed:', error);
+      }
+    }
+  };
+
   /** Render the same FP16/scRGB frame with the same extended-range WebGPU path as Capture Preview. */
   private readonly disposeLoupeCapturePreview = (): void => {
     this.loupeCapturePreviewRenderRequest++;
