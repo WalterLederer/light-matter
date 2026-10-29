@@ -65,6 +65,8 @@ export class ImageView {
   private readonly histogram = inject(HistogramService);
   protected readonly capturePreviewStore = inject(CapturePreviewStore);
   protected readonly histogramCaptureCanvas = viewChild<ElementRef<HTMLCanvasElement>>('histogramCaptureCanvas');
+  protected readonly loupeCapturePreviewCanvas = viewChild<ElementRef<HTMLCanvasElement>>('loupeCapturePreviewCanvas');
+  protected readonly loupeShowsCapturePreview = signal(false);
 
   private readonly processManager = inject(ProcessManager);
 
@@ -226,6 +228,18 @@ export class ImageView {
    * This keeps the numeric readout and bars tied to the live capture data,
    * rather than potentially stale convenience fields on the returned sample.
    */
+  protected readonly loupeCaptureRgb = computed(() => {
+    const frame = this.loupeShowsCapturePreview() ? this.capturePreviewStore.frame() : null;
+    const geometry = this.loupeCaptureGeometry(); const mouse = this.lastMousePosition();
+    if (!frame || !geometry || !mouse || frame.pixels.length < frame.width * frame.height * 4) return null;
+    const x = Math.floor((mouse.screenX - geometry.x) * geometry.scaleFactor * frame.width / geometry.width);
+    const y = Math.floor((mouse.screenY - geometry.y) * geometry.scaleFactor * frame.height / geometry.height);
+    if (x < 0 || y < 0 || x >= frame.width || y >= frame.height) return null;
+    const offset = (y * frame.width + x) * 4; const bits = [frame.pixels[offset], frame.pixels[offset + 1], frame.pixels[offset + 2]];
+    const toFloat = (v: number): number => { const sign = (v & 0x8000) ? -1 : 1; const exponent = (v >>> 10) & 0x1f; const fraction = v & 0x03ff; if (exponent === 0) return sign * Math.pow(2, -14) * fraction / 1024; if (exponent === 0x1f) return fraction === 0 ? sign * Infinity : NaN; return sign * Math.pow(2, exponent - 15) * (1 + fraction / 1024); };
+    return { x, y, r: toFloat(bits[0]), g: toFloat(bits[1]), b: toFloat(bits[2]), rHex: bits[0].toString(16).padStart(4, '0').toUpperCase(), gHex: bits[1].toString(16).padStart(4, '0').toUpperCase(), bHex: bits[2].toString(16).padStart(4, '0').toUpperCase() };
+  });
+
   protected readonly loupeHdrRgb = computed(() => {
     const sample = this.loupeSample();
     if (!sample || sample.data.length < 4) return null;
@@ -699,6 +713,12 @@ export class ImageView {
   /* Constructor */
   constructor() {
     effect(() => {
+      const frame = this.loupeShowsCapturePreview() ? this.capturePreviewStore.frame() : null;
+      const canvas = this.loupeCapturePreviewCanvas()?.nativeElement;
+      if (frame && canvas) void this.renderLoupeCapturePreviewHdr(canvas, frame); else this.disposeLoupeCapturePreview();
+    });
+
+    effect(() => {
       const frame = this.histogramUsesCapturePreview() ? this.capturePreviewStore.frame() : null;
       const canvas = this.histogramCaptureCanvas()?.nativeElement;
       if (frame && canvas) void this.renderCapturePreviewHdr(canvas, frame);
@@ -954,6 +974,10 @@ export class ImageView {
   private histogramCaptureTexture: { destroy(): void } | null = null;
   private histogramCaptureContext: { unconfigure(): void; configure(options: any): void; getCurrentTexture(): any } | null = null;
   private histogramCaptureRenderRequest = 0;
+  private loupeCapturePreviewDevice: { destroy(): void } | null = null;
+  private loupeCapturePreviewTexture: { destroy(): void } | null = null;
+  private loupeCapturePreviewContext: { unconfigure(): void; configure(options: any): void; getCurrentTexture(): any } | null = null;
+  private loupeCapturePreviewRenderRequest = 0;
 
   private readonly disposeHistogramCapturePreview = (): void => {
     this.histogramCaptureRenderRequest++;
@@ -966,26 +990,33 @@ export class ImageView {
   };
 
   /** Render the same FP16/scRGB frame with the same extended-range WebGPU path as Capture Preview. */
-  private readonly renderCapturePreviewHdr = async (canvas: HTMLCanvasElement, frame: CapturePreview): Promise<void> => {
-    const requestId = ++this.histogramCaptureRenderRequest;
+  private readonly disposeLoupeCapturePreview = (): void => {
+    this.loupeCapturePreviewRenderRequest++;
+    try { this.loupeCapturePreviewContext?.unconfigure(); } catch { /* already unconfigured */ }
+    this.loupeCapturePreviewTexture?.destroy(); this.loupeCapturePreviewDevice?.destroy();
+    this.loupeCapturePreviewTexture = null; this.loupeCapturePreviewDevice = null; this.loupeCapturePreviewContext = null;
+  };
+
+  private readonly renderLoupeCapturePreviewHdr = async (canvas: HTMLCanvasElement, frame: CapturePreview): Promise<void> => {
+    const requestId = ++this.loupeCapturePreviewRenderRequest;
     try {
       const gpu = (navigator as Navigator & { gpu?: any }).gpu;
       if (!gpu) throw new Error('WebGPU is unavailable; HDR capture preview cannot be displayed.');
-      try { this.histogramCaptureContext?.unconfigure(); } catch { /* already unconfigured */ }
-      this.histogramCaptureTexture?.destroy();
-      this.histogramCaptureDevice?.destroy();
-      this.histogramCaptureTexture = null;
-      this.histogramCaptureDevice = null;
-      this.histogramCaptureContext = null;
+      try { this.loupeCapturePreviewContext?.unconfigure(); } catch { /* already unconfigured */ }
+      this.loupeCapturePreviewTexture?.destroy();
+      this.loupeCapturePreviewDevice?.destroy();
+      this.loupeCapturePreviewTexture = null;
+      this.loupeCapturePreviewDevice = null;
+      this.loupeCapturePreviewContext = null;
 
       canvas.width = frame.width;
       canvas.height = frame.height;
       canvas.style.aspectRatio = `${frame.width} / ${frame.height}`;
       const adapter = await gpu.requestAdapter();
-      if (requestId !== this.histogramCaptureRenderRequest) return;
+      if (requestId !== this.loupeCapturePreviewRenderRequest) return;
       if (!adapter) throw new Error('No WebGPU adapter is available for the HDR capture preview.');
       const device: any = await adapter.requestDevice();
-      if (requestId !== this.histogramCaptureRenderRequest) { device.destroy(); return; }
+      if (requestId !== this.loupeCapturePreviewRenderRequest) { device.destroy(); return; }
       const context = canvas.getContext('webgpu') as any;
       if (!context) {
         device.destroy();
@@ -1029,23 +1060,22 @@ export class ImageView {
       pass.draw(3);
       pass.end();
       device.queue.submit([encoder.finish()]);
-      if (requestId !== this.histogramCaptureRenderRequest) {
+      if (requestId !== this.loupeCapturePreviewRenderRequest) {
         context.unconfigure();
         texture.destroy();
         device.destroy();
         return;
       }
-      this.histogramCaptureDevice = device;
-      this.histogramCaptureTexture = texture;
-      this.histogramCaptureContext = context;
+      this.loupeCapturePreviewDevice = device;
+      this.loupeCapturePreviewTexture = texture;
+      this.loupeCapturePreviewContext = context;
     } catch (error) {
-      if (requestId === this.histogramCaptureRenderRequest) {
-        this.histogramErrorMessage.set(error instanceof Error ? error.message : String(error));
-        this.histogramError.set(true);
-        console.error('[HDR Capture Histogram] WebGPU preview failed:', error);
+      if (requestId === this.loupeCapturePreviewRenderRequest) {
+        console.error('[HDR Magnifier Capture Preview] WebGPU preview failed:', error);
       }
     }
   };
+
 
   private readonly loadCapturePreviewHistogram = async (frame: CapturePreview): Promise<void> => {
     const requestId = ++this.histogramRequestId;
