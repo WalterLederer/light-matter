@@ -392,4 +392,29 @@
       }
     </aside>
   }
+
+  @if (!fullScreen) {
+    <footer class="image-status-bar" aria-label="Image status">
+      <div class="status-control-groups">
+        <div class="status-control-group status-info" title="{{ selected.path }}">
+          <span class="status-metadata">{{ selected.path }}</span>
+        </div>
+        <div class="status-control-group">
+          <span>{{ dimensions.width }} × {{ dimensions.height }}</span>
+          @if (imageBitDepth()) { <span>{{ imageBitDepth() }}</span> }
+        </div>
+        <div class="status-control-group">
+          <span>{{ (zoomSlider.value ?? 100) | number:'1.0-0' }}%</span>
+        </div>
+        <div class="status-control-group status-view-modes" aria-label="View mode">
+          <button type="button" [class.active]="comparisonMode() === 'hdr'" [disabled]="!isHdrImage" (click)="setComparisonMode('hdr')" title="HDR view">HDR</button>
+          <button type="button" [class.active]="comparisonMode() === 'sdr'" (click)="setComparisonMode('sdr')" title="SDR view">SDR</button>
+          <button type="button" [class.active]="comparisonMode() === 'side-by-side'" [disabled]="!isHdrImage" (click)="setComparisonMode('side-by-side')" title="Side by side">SBS</button>
+          <button type="button" [class.active]="comparisonMode() === 'stacked'" [disabled]="!isHdrImage" (click)="setComparisonMode('stacked')" title="Stacked">Stack</button>
+          <button type="button" [class.active]="comparisonMode() === 'dual-side-by-side'" [disabled]="!isHdrImage" (click)="setComparisonMode('dual-side-by-side')" title="Full-size side by side">Dual SBS</button>
+          <button type="button" [class.active]="comparisonMode() === 'dual-stacked'" [disabled]="!isHdrImage" (click)="setComparisonMode('dual-stacked')" title="Full-size stacked">Dual Stack</button>
+        </div>
+      </div>
+    </footer>
+  }
 }
