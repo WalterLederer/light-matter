@@ -232,8 +232,13 @@ export class ImageView {
     const frame = this.loupeShowsCapturePreview() ? this.capturePreviewStore.frame() : null;
     const geometry = this.loupeCaptureGeometry(); const mouse = this.lastMousePosition();
     if (!frame || !geometry || !mouse || frame.pixels.length < frame.width * frame.height * 4) return null;
-    const x = Math.floor((mouse.screenX - geometry.x) * geometry.scaleFactor * frame.width / geometry.width);
-    const y = Math.floor((mouse.screenY - geometry.y) * geometry.scaleFactor * frame.height / geometry.height);
+    // CapturePreview is the selected monitor/window frame, whereas loupeCaptureGeometry
+    // describes the separate native loupe sample. Do not use that loupe geometry to
+    // index the preview: it can point at a completely different pixel.
+    const screen = this.document.defaultView?.screen;
+    if (!screen || screen.width <= 0 || screen.height <= 0) return null;
+    const x = Math.floor(mouse.screenX * frame.width / screen.width);
+    const y = Math.floor(mouse.screenY * frame.height / screen.height);
     if (x < 0 || y < 0 || x >= frame.width || y >= frame.height) return null;
     const offset = (y * frame.width + x) * 4; const bits = [frame.pixels[offset], frame.pixels[offset + 1], frame.pixels[offset + 2]];
     const toFloat = (v: number): number => { const sign = (v & 0x8000) ? -1 : 1; const exponent = (v >>> 10) & 0x1f; const fraction = v & 0x03ff; if (exponent === 0) return sign * Math.pow(2, -14) * fraction / 1024; if (exponent === 0x1f) return fraction === 0 ? sign * Infinity : NaN; return sign * Math.pow(2, exponent - 15) * (1 + fraction / 1024); };
