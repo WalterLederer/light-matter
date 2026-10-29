@@ -701,7 +701,8 @@ export class ImageView {
     effect(() => {
       const frame = this.histogramUsesCapturePreview() ? this.capturePreviewStore.frame() : null;
       const canvas = this.histogramCaptureCanvas()?.nativeElement;
-      if (frame && canvas) this.renderCapturePreviewThumbnail(canvas, frame);
+      if (frame && canvas) void this.renderCapturePreviewHdr(canvas, frame);
+      else this.disposeHistogramCapturePreview();
     });
 
     effect(() => {
@@ -949,44 +950,101 @@ export class ImageView {
     }
   };
 
-  private readonly renderCapturePreviewThumbnail = (canvas: HTMLCanvasElement, frame: CapturePreview): void => {
-    // Render a lightweight SDR visualization of the same FP16 frame. The
-    // histogram below still uses the untouched FP16 values, not these pixels.
-    const scale = Math.min(1, 960 / frame.width);
-    const width = Math.max(1, Math.round(frame.width * scale));
-    const height = Math.max(1, Math.round(frame.height * scale));
-    canvas.width = width;
-    canvas.height = height;
-    canvas.style.aspectRatio = `${frame.width} / ${frame.height}`;
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    const image = context.createImageData(width, height);
-    const halfToFloat = (half: number): number => {
-      const sign = (half & 0x8000) ? -1 : 1;
-      const exponent = (half >> 10) & 0x1f;
-      const mantissa = half & 0x03ff;
-      if (exponent === 0) return sign * Math.pow(2, -14) * (mantissa / 1024);
-      if (exponent === 0x1f) return 0;
-      return sign * Math.pow(2, exponent - 15) * (1 + mantissa / 1024);
-    };
-    const encodeSrgb = (value: number): number => {
-      const linear = Math.max(0, value * 0.4);
-      const encoded = linear <= 0.0031308 ? linear * 12.92 : 1.055 * Math.pow(linear, 1 / 2.4) - 0.055;
-      return Math.round(Math.min(1, Math.max(0, encoded)) * 255);
-    };
-    for (let y = 0; y < height; y++) {
-      const sourceY = Math.min(frame.height - 1, Math.floor(y / scale));
-      for (let x = 0; x < width; x++) {
-        const sourceX = Math.min(frame.width - 1, Math.floor(x / scale));
-        const sourceOffset = (sourceY * frame.width + sourceX) * 4;
-        const targetOffset = (y * width + x) * 4;
-        image.data[targetOffset] = encodeSrgb(halfToFloat(frame.pixels[sourceOffset]));
-        image.data[targetOffset + 1] = encodeSrgb(halfToFloat(frame.pixels[sourceOffset + 1]));
-        image.data[targetOffset + 2] = encodeSrgb(halfToFloat(frame.pixels[sourceOffset + 2]));
-        image.data[targetOffset + 3] = 255;
+  private histogramCaptureDevice: { destroy(): void } | null = null;
+  private histogramCaptureTexture: { destroy(): void } | null = null;
+  private histogramCaptureContext: { unconfigure(): void; configure(options: any): void; getCurrentTexture(): any } | null = null;
+  private histogramCaptureRenderRequest = 0;
+
+  private readonly disposeHistogramCapturePreview = (): void => {
+    this.histogramCaptureRenderRequest++;
+    try { this.histogramCaptureContext?.unconfigure(); } catch { /* already unconfigured */ }
+    this.histogramCaptureTexture?.destroy();
+    this.histogramCaptureDevice?.destroy();
+    this.histogramCaptureTexture = null;
+    this.histogramCaptureDevice = null;
+    this.histogramCaptureContext = null;
+  };
+
+  /** Render the same FP16/scRGB frame with the same extended-range WebGPU path as Capture Preview. */
+  private readonly renderCapturePreviewHdr = async (canvas: HTMLCanvasElement, frame: CapturePreview): Promise<void> => {
+    const requestId = ++this.histogramCaptureRenderRequest;
+    try {
+      const gpu = (navigator as Navigator & { gpu?: any }).gpu;
+      if (!gpu) throw new Error('WebGPU is unavailable; HDR capture preview cannot be displayed.');
+      try { this.histogramCaptureContext?.unconfigure(); } catch { /* already unconfigured */ }
+      this.histogramCaptureTexture?.destroy();
+      this.histogramCaptureDevice?.destroy();
+      this.histogramCaptureTexture = null;
+      this.histogramCaptureDevice = null;
+      this.histogramCaptureContext = null;
+
+      canvas.width = frame.width;
+      canvas.height = frame.height;
+      canvas.style.aspectRatio = `${frame.width} / ${frame.height}`;
+      const adapter = await gpu.requestAdapter();
+      if (requestId !== this.histogramCaptureRenderRequest) return;
+      if (!adapter) throw new Error('No WebGPU adapter is available for the HDR capture preview.');
+      const device: any = await adapter.requestDevice();
+      if (requestId !== this.histogramCaptureRenderRequest) { device.destroy(); return; }
+      const context = canvas.getContext('webgpu') as any;
+      if (!context) {
+        device.destroy();
+        throw new Error('Could not create a WebGPU canvas for the HDR capture preview.');
+      }
+      context.configure({ device, format: 'rgba16float', colorSpace: 'srgb', alphaMode: 'opaque', toneMapping: { mode: 'extended' } });
+      const texture = device.createTexture({
+        size: { width: frame.width, height: frame.height },
+        format: 'rgba16float',
+        usage: 4 | 2
+      });
+      device.queue.writeTexture({ texture }, frame.pixels, { bytesPerRow: frame.width * 8, rowsPerImage: frame.height }, { width: frame.width, height: frame.height, depthOrArrayLayers: 1 });
+      const shader = device.createShaderModule({ code: `
+        @group(0) @binding(0) var sourceTexture: texture_2d<f32>;
+        struct VertexOutput { @builtin(position) position: vec4<f32>, @location(0) uv: vec2<f32> }
+        @vertex fn vs(@builtin(vertex_index) index: u32) -> VertexOutput {
+          var positions = array<vec2<f32>, 3>(vec2<f32>(-1.0, -1.0), vec2<f32>(3.0, -1.0), vec2<f32>(-1.0, 3.0));
+          var output: VertexOutput;
+          let p = positions[index];
+          output.position = vec4<f32>(p, 0.0, 1.0);
+          output.uv = vec2<f32>((p.x + 1.0) * 0.5, (1.0 - p.y) * 0.5);
+          return output;
+        }
+        fn linearToExtendedSrgb(value: f32) -> f32 {
+          if (value <= 0.0031308) { return value * 12.92; }
+          return 1.055 * pow(value, 1.0 / 2.4) - 0.055;
+        }
+        @fragment fn fs(input: VertexOutput) -> @location(0) vec4<f32> {
+          let dims = vec2<i32>(textureDimensions(sourceTexture));
+          let coords = vec2<i32>(clamp(input.uv * vec2<f32>(dims), vec2<f32>(0.0), vec2<f32>(dims - vec2<i32>(1, 1))));
+          let linearColor = textureLoad(sourceTexture, coords, 0).rgb * 0.4;
+          return vec4<f32>(linearToExtendedSrgb(linearColor.r), linearToExtendedSrgb(linearColor.g), linearToExtendedSrgb(linearColor.b), 1.0);
+        }
+      ` });
+      const pipeline = device.createRenderPipeline({ layout: 'auto', vertex: { module: shader, entryPoint: 'vs' }, fragment: { module: shader, entryPoint: 'fs', targets: [{ format: 'rgba16float' }] }, primitive: { topology: 'triangle-list' } });
+      const bindGroup = device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries: [{ binding: 0, resource: texture.createView() }] });
+      const encoder = device.createCommandEncoder();
+      const pass = encoder.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: 'clear', storeOp: 'store' }] });
+      pass.setPipeline(pipeline);
+      pass.setBindGroup(0, bindGroup);
+      pass.draw(3);
+      pass.end();
+      device.queue.submit([encoder.finish()]);
+      if (requestId !== this.histogramCaptureRenderRequest) {
+        context.unconfigure();
+        texture.destroy();
+        device.destroy();
+        return;
+      }
+      this.histogramCaptureDevice = device;
+      this.histogramCaptureTexture = texture;
+      this.histogramCaptureContext = context;
+    } catch (error) {
+      if (requestId === this.histogramCaptureRenderRequest) {
+        this.histogramErrorMessage.set(error instanceof Error ? error.message : String(error));
+        this.histogramError.set(true);
+        console.error('[HDR Capture Histogram] WebGPU preview failed:', error);
       }
     }
-    context.putImageData(image, 0, 0);
   };
 
   private readonly loadCapturePreviewHistogram = async (frame: CapturePreview): Promise<void> => {
