@@ -1408,19 +1408,30 @@ export class ImageView {
     this.viewNavigator.selectPosition(value);
   };
 
-  protected readonly zoomOut = (): void => {
+  private readonly changeViewerZoom = (direction: -1 | 1): void => {
     if (this.loupeEnabled()) return;
-    this.zoomSlider.setValue(Math.max(10, this.zoomSlider.value - 10));
+
+    // When the image is fitted to the viewport, start from its actual displayed
+    // scale rather than the slider's stale value. This makes the first +/− click
+    // visibly zoom in/out instead of jumping from an unrelated previous value.
+    this.imageLocation$.pipe(take(1)).subscribe(location => {
+      const currentZoom = location.zoom === 'fit' ? location.fitZoom : this.zoomSlider.value;
+      const nextZoom = Math.max(10, Math.min(800, currentZoom + direction * 10));
+      this.zoomSlider.setValue(nextZoom);
+      // Set directly as well: if the slider already contains nextZoom, its
+      // valueChanges stream may not produce a useful change for the fitted view.
+      this.imagePositioningService.setZoom(nextZoom / 100);
+      if (this.hdrImageAdjustmentActive()) void this.renderHdrImageAdjustments(true);
+    });
   };
+
+  protected readonly zoomOut = (): void => this.changeViewerZoom(-1);
 
   protected readonly resetZoom = (): void => {
     this.fitToWindow();
   };
 
-  protected readonly zoomIn = (): void => {
-    if (this.loupeEnabled()) return;
-    this.zoomSlider.setValue(Math.min(800, this.zoomSlider.value + 10));
-  };
+  protected readonly zoomIn = (): void => this.changeViewerZoom(1);
 
   protected readonly fitToWindow = () => {
     if (!this.loupeEnabled()) {
