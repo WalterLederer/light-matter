@@ -99,8 +99,8 @@
         <button class="section-heading" (click)="toggleSidebarSection('zoom')"><span class="section-chevron">{{sidebarSectionExpanded('zoom') ? 'v' : '>'}}</span>Zoom</button>
         @if (sidebarSectionExpanded('zoom')) {
           <div class="viewer-zoom-controls" aria-label="Bildzoom">
-            <button type="button" class="status-icon-button" (click)="zoomOut()" title="Zoom verkleinern" aria-label="Zoom verkleinern">−</button>
             <button type="button" class="status-icon-button" (click)="resetZoom()" title="Zoom zurücksetzen / an Fenster anpassen" aria-label="Zoom zurücksetzen">⟲</button>
+            <button type="button" class="status-icon-button" (click)="zoomOut()" title="Zoom verkleinern" aria-label="Zoom verkleinern">−</button>
             <button type="button" class="status-icon-button" (click)="zoomIn()" title="Zoom vergrößern" aria-label="Zoom vergrößern">+</button>
             <div class="viewer-zoom-slider"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div>
           </div>
@@ -410,8 +410,8 @@
           <span class="status-image-size">{{ dimensions.width }} × {{ dimensions.height }}</span>
         </div>
         <div class="status-control-group status-zoom" aria-label="Zoom">
-          <button type="button" class="status-icon-button" (click)="zoomOut()" title="Zoom verkleinern" aria-label="Zoom verkleinern">−</button>
           <button type="button" class="status-icon-button" (click)="resetZoom()" title="Zoom zurücksetzen / an Fenster anpassen" aria-label="Zoom zurücksetzen">⟲</button>
+          <button type="button" class="status-icon-button" (click)="zoomOut()" title="Zoom verkleinern" aria-label="Zoom verkleinern">−</button>
           <button type="button" class="status-icon-button" (click)="zoomIn()" title="Zoom vergrößern" aria-label="Zoom vergrößern">+</button>
           <div class="status-zoom-slider"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div>
         </div>
