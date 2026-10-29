@@ -329,6 +329,27 @@ export class ImageView {
     return { x, y, r: toFloat(bits[0]), g: toFloat(bits[1]), b: toFloat(bits[2]), rHex: bits[0].toString(16).padStart(4, '0').toUpperCase(), gHex: bits[1].toString(16).padStart(4, '0').toUpperCase(), bHex: bits[2].toString(16).padStart(4, '0').toUpperCase() };
   });
 
+  /** Compare the main screen sample with the capture preview after the existing 0.5 display-value adjustment. */
+  protected readonly loupeRgbDifference = computed(() => {
+    const main = this.loupeHdrRgb();
+    const capture = this.loupeCaptureRgb();
+    if (!main || !capture) return null;
+    const compare = (mainValue: number, captureValue: number) => {
+      const adjustedCapture = captureValue * 0.5;
+      const delta = mainValue - adjustedCapture;
+      const denominator = Math.max(Math.abs(mainValue), Math.abs(adjustedCapture));
+      return {
+        delta,
+        percent: denominator < 0.0001 ? null : Math.abs(delta) / denominator * 100
+      };
+    };
+    return {
+      r: compare(main.r, capture.r),
+      g: compare(main.g, capture.g),
+      b: compare(main.b, capture.b)
+    };
+  });
+
   protected readonly loupeHdrRgb = computed(() => {
     const sample = this.loupeSample();
     if (!sample || sample.data.length < 4) return null;
