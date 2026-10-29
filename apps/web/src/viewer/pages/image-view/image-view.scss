@@ -1296,12 +1296,7 @@
   overflow-wrap:normal !important;
   text-align:center;
 }
-.image-controls-sidebar .image-sidebar-tabs button[role="tab"].active {
-  background:#174f80 !important;
-  color:#fff !important;
-  border-color:#103b61 !important;
-  border-bottom-color:#174f80 !important;
-}
+.image-controls-sidebar .image-sidebar-tabs button[role="tab"].active,
 :host-context(html[data-theme='dark']) .image-controls-sidebar .image-sidebar-tabs button[role="tab"].active {
   background:#174f80 !important;
   color:#fff !important;
