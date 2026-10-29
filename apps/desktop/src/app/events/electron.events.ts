@@ -786,26 +786,57 @@ ipcMain.handle(
         outputPath = path.join(folder, `${baseName}_${suffix++}.${extension}`);
       }
       if (format === 'uhdr') {
-        logPhase('convert cached FP16 scRGB frame into normalized PQ diagnostic variants');
+        logPhase(`convert FP16 scRGB frame to Float32 RGB with brightness correction ${CAPTURE_BRIGHTNESS_CORRECTION}`);
 
-        // Diagnostic only: all variants are derived from the same untouched FP16 frame.
-        // Fixed PQ reference: 10000 cd/m² = 125 scRGB at 80 cd/m² per scRGB unit.
-        // PQ variants are intentionally reinterpreted as scRGB before uhdrsave().
-        const PQ_REFERENCE_SCRGB = 125;
-        const pixelCount = frame.width * frame.height;
-        const sourceRgb = new Float32Array(pixelCount * 3);
-        let peakScRgb = 0;
-        let negativeCount = 0;
-        let nonFiniteCount = 0;
+        const rgb = new Float32Array(frame.width * frame.height * 3);
+        let sourcePeakScRgb = 0;
+        let outputMin = Infinity;
+        let outputMax = -Infinity;
+        let negativeChannelSamples = 0;
+        let nonFiniteChannelSamples = 0;
 
-        for (let pixel = 0; pixel < pixelCount; pixel++) {
+        for (let pixel = 0; pixel < frame.width * frame.height; pixel++) {
           const source = pixel * 4;
           const destination = pixel * 3;
+
           for (let channel = 0; channel < 3; channel++) {
             const value = halfToFloat(sourceChannels[source + channel]);
             if (!Number.isFinite(value)) {
-              sourceRgb[destination + channel] = 0;
-              nonFiniteCount++;
+              rgb[destination + channel] = 0;
+              nonFiniteChannelSamples++;
+              continue;
+            }
+
+            if (value < 0) negativeChannelSamples++;
+            sourcePeakScRgb = Math.max(sourcePeakScRgb, value);
+            const corrected = value * CAPTURE_BRIGHTNESS_CORRECTION;
+            rgb[destination + channel] = corrected;
+            outputMin = Math.min(outputMin, corrected);
+            outputMax = Math.max(outputMax, corrected);
+          }
+        }
+
+        console.info('[HDR Capture] scRGB input summary', {
+          width: frame.width,
+          height: frame.height,
+          sourcePeakScRgb,
+          sourcePeakNitsAt80NitsPerScRgb: sourcePeakScRgb * 80,
+          brightnessCorrection: CAPTURE_BRIGHTNESS_CORRECTION,
+          negativeChannelSamples,
+          nonFiniteChannelSamples,
+          outputMin,
+          outputMax
+        });
+
+        vipsInitPromise ??= Vips();
+        const vips = await vipsInitPromise;
+        vips.Cache.max(0);
+        vips.Cache.maxMem(0);
+        using image = vips.Image.newFromMemory(rgb, frame.width, frame.height, 3, vips.BandFormat.float);
+        using scrgb = image.copy({ interpretation: vips.Interpretation.scrgb });
+        logPhase('encode Ultra HDR JPEG with embedded gain map');
+        scrgb.uhdrsave(outputPath, { Q: 90 });
+        logPhase('Ultra HDR JPEG written');
             } else {
               sourceRgb[destination + channel] = value;
               if (value < 0) negativeCount++;
