@@ -97,7 +97,14 @@
       @if (activeImageSidebarTab() === 'zoom') {
       <section>
         <button class="section-heading" (click)="toggleSidebarSection('zoom')"><span class="section-chevron">{{sidebarSectionExpanded('zoom') ? 'v' : '>'}}</span>Zoom</button>
-        @if (sidebarSectionExpanded('zoom')) { <div class="control-row"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div><button (click)="fitToWindow()">Fit to window</button> }
+        @if (sidebarSectionExpanded('zoom')) {
+          <div class="viewer-zoom-controls" aria-label="Bildzoom">
+            <button type="button" class="status-icon-button" (click)="zoomOut()" title="Zoom verkleinern" aria-label="Zoom verkleinern">−</button>
+            <button type="button" class="status-icon-button" (click)="resetZoom()" title="Zoom zurücksetzen / an Fenster anpassen" aria-label="Zoom zurücksetzen">⟲</button>
+            <button type="button" class="status-icon-button" (click)="zoomIn()" title="Zoom vergrößern" aria-label="Zoom vergrößern">+</button>
+            <div class="viewer-zoom-slider"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div>
+          </div>
+        }
       </section>
       }
       @if (activeImageSidebarTab() === 'corrections') {
@@ -406,6 +413,7 @@
           <button type="button" class="status-icon-button" (click)="zoomOut()" title="Zoom verkleinern" aria-label="Zoom verkleinern">−</button>
           <button type="button" class="status-icon-button" (click)="resetZoom()" title="Zoom zurücksetzen / an Fenster anpassen" aria-label="Zoom zurücksetzen">⟲</button>
           <button type="button" class="status-icon-button" (click)="zoomIn()" title="Zoom vergrößern" aria-label="Zoom vergrößern">+</button>
+          <div class="status-zoom-slider"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div>
         </div>
         <div class="status-control-group status-navigation">
           <button type="button" class="status-icon-button" [disabled]="!(hasPrevious$ | async)" (click)="prevPhoto()" title="Vorheriges Bild" aria-label="Vorheriges Bild">‹</button>
