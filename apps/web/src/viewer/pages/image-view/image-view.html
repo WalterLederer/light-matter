@@ -275,6 +275,13 @@
                 <canvas #loupeCapturePreviewCanvas aria-label="HDR Capture Preview at magnifier cursor coordinates"></canvas>
                 <figcaption>HDR Capture Preview · {{ capturePreview.width }} × {{ capturePreview.height }} · cursor pixel X: {{ loupeCaptureRgb()?.x ?? '—' }} · Y: {{ loupeCaptureRgb()?.y ?? '—' }}</figcaption>
               </figure>
+              <figure class="loupe-capture-zoom-preview">
+                <div class="loupe-capture-zoom-viewport">
+                  <canvas #loupeCaptureZoomCanvas aria-label="WebGPU magnification of the HDR capture preview at the cursor pixel"></canvas>
+                  <div class="loupe-crosshair" aria-hidden="true"></div>
+                </div>
+                <figcaption>Capture preview · WebGPU magnifier · zoom {{ (loupePixelSize() * (loupeCaptureGeometry()?.scaleFactor ?? 1) / loupeSizeScale()).toFixed(2) }}× · center pixel X: {{ loupeCaptureRgb()?.x ?? '—' }} · Y: {{ loupeCaptureRgb()?.y ?? '—' }}</figcaption>
+              </figure>
             } @else { <p class="loupe-capture-error">No capture preview available. Open the Capture tab and select “Preview source” first.</p> }
           }
         </section>
