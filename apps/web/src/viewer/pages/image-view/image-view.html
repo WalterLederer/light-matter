@@ -104,7 +104,7 @@
             <button type="button" class="status-icon-button" (click)="zoomOut()" title="Zoom verkleinern" aria-label="Zoom verkleinern">−</button>
             <button type="button" class="status-icon-button" (click)="zoomIn()" title="Zoom vergrößern" aria-label="Zoom vergrößern">+</button>
             <div class="viewer-zoom-slider"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div>
-            <span class="zoom-factor-readout">{{ (currentImageLocation?.zoom === 'fit' ? (currentImageLocation?.fitZoom ?? 100) / 100 : (currentImageLocation?.zoom ?? 1)).toFixed(2) }}×</span>
+            <span class="zoom-factor-readout">{{ getZoomFactor(currentImageLocation).toFixed(2) }}×</span>
           </div>
         }
       </section>
@@ -422,7 +422,7 @@
           <button type="button" class="status-icon-button" (click)="zoomOut()" title="Zoom verkleinern" aria-label="Zoom verkleinern">−</button>
           <button type="button" class="status-icon-button" (click)="zoomIn()" title="Zoom vergrößern" aria-label="Zoom vergrößern">+</button>
           <div class="status-zoom-slider"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div>
-          <span class="zoom-factor-readout">{{ (currentImageLocation?.zoom === 'fit' ? (currentImageLocation?.fitZoom ?? 100) / 100 : (currentImageLocation?.zoom ?? 1)).toFixed(2) }}×</span>
+          <span class="zoom-factor-readout">{{ getZoomFactor(currentImageLocation).toFixed(2) }}×</span>
         </div>
         <div class="status-control-group status-navigation">
           <button type="button" class="status-icon-button" [disabled]="!(hasPrevious$ | async)" (click)="prevPhoto()" title="Vorheriges Bild" aria-label="Vorheriges Bild">‹</button>
