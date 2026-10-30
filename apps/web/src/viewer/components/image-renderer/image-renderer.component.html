@@ -10,8 +10,10 @@
      class="surface"
      [class.dual-side-by-side-surface]="comparisonMode() === 'dual-side-by-side'"
      [class.dual-stacked-surface]="comparisonMode() === 'dual-stacked'"
+     [class.pannable-surface]="location.zoom !== 'fit' && comparisonMode() !== 'dual-side-by-side' && comparisonMode() !== 'dual-stacked'"
      [style.zoom]="location.pixelRatio"
      (click)="onSurfaceClick($event)"
+     (mousedown)="onMouseDown($event)"
      (mousemove)="onSurfaceMouseMove($event)"
      (mouseleave)="onSurfaceMouseLeave()"
      (pointermove)="onSplitPointerMove($event)"
@@ -36,7 +38,7 @@
          [style.filter]="(brightnessRendererMode() === 'css' || gpuBrightnessFailed()) && displayBrightness() !== 1 ? 'brightness(' + displayBrightness() + ')' : null"
          [src]="imageUrl"
          crossorigin="anonymous"
-         (mousedown)="onMouseDown($event)">
+         draggable="false">
     }
     @if (comparisonMode() !== 'hdr') {
       <canvas class="comparison-image sdr-image sdr-gpu-image"
@@ -89,7 +91,7 @@
          [src]="imageUrl"
          crossorigin="anonymous"
          style="dynamic-range-limit: no-limit"
-         (mousedown)="onMouseDown($event)">
+         draggable="false">
       <canvas class="comparison-image hdr-image hdr-gpu-image"
          [style.visibility]="brightnessRendererMode() === 'webgpu' && displayBrightness() !== 1 && !gpuHdrBrightnessFailed() ? 'visible' : 'hidden'"
          [style.opacity]="gpuHdrBrightnessReady() ? 1 : 0"
