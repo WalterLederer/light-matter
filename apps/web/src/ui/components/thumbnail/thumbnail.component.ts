@@ -103,6 +103,14 @@ export class ThumbnailComponent implements OnDestroy {
     return bitsPerSample ? `${dimensions} × ${bitsPerSample}` : dimensions;
   });
 
+  readonly imageSuffix = computed(() => {
+    const name = this.image().name.split(/[\\/]/).pop() ?? this.image().name;
+    const dotIndex = name.lastIndexOf('.');
+    return dotIndex > 0 && dotIndex < name.length - 1
+      ? name.slice(dotIndex + 1).toLocaleLowerCase()
+      : '—';
+  });
+
   readonly formattedFileSize = computed(() => {
     const bytes = Math.max(0, Number(this.image().size) || 0);
     const units = ['KB', 'MB', 'GB'];
