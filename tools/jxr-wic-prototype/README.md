@@ -25,13 +25,13 @@ node ..\hdr-capture-prototype\node-screen-capture-fp16-test.mjs --raw .\capture.
 
 ```
 
-Then encode it. Replace the dimensions with the width and height printed by the capture test:
+Then encode it. Replace the dimensions with the width and height printed by the capture test. The final argument is the quality percentage (0–100); 100 requests lossless encoding:
 
 ```powershell
-.\build\Release\jxr-wic-encoder.exe .\capture.rgba16f .\capture-wic.jxr 3840 2160
+.\build\Release\jxr-wic-encoder.exe .\capture.rgba16f .\capture-wic.jxr 3840 2160 100
 
 ```
 
 The input must be tightly packed little-endian RGBA with four IEEE-754 binary16 channels per pixel (8 bytes per pixel). The helper forces alpha to 1.0 because a desktop capture is opaque. RGB values are passed through unchanged; no brightness scaling or gamma correction is applied.
 
-The diagnostic requests JPEG XR `ImageQuality=1.0`, which the WIC codec documents as mathematically lossless. This prototype does not modify the Light Matter application.
+The encoder maps the quality percentage to WIC `ImageQuality` (0.0–1.0). Light Matter builds this helper with `npm run build:jxr-wic-encoder` before packaging a Windows application and uses it for FP16 JPEG XR captures. The capture panel shares one saved quality setting between JPEG XR and Ultra HDR JPEG; EXR continues to use lossless ZIP compression and has no quality slider.
