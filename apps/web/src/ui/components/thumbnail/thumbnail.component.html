@@ -28,13 +28,13 @@
   <div class="thumbnail-info">
     <div class="thumbnail-name" [title]="image().name">{{ image().name }}</div>
     <div>{{ image().modifiedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</div>
-    <div>{{ imageDimensions() }}</div>
+    <div>{{ imageFileInfo() }}</div>
   </div>
 } @else if (viewMode() === 'details') {
   <div class="detail-columns">
     <span class="detail-name" [title]="image().name">{{ image().name }}</span>
     <span>{{ image().modifiedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
     <span>{{ imageDimensions() }}</span>
-    <span>{{ image().size | number: '1.0-0' }} bytes</span>
+    <span>{{ formattedFileSize() }}</span>
   </div>
 }
