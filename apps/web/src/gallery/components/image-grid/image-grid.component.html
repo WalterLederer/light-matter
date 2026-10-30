@@ -12,19 +12,6 @@
   </ui-title>
 
   <aside>
-    @if (viewMode() !== 'details') {
-    <div class="thumbnail-size-control" title="Thumbnail size">
-      <ui-text [inherit]="true">Small</ui-text>
-      <button class="zoom-step-button" type="button" title="Smaller thumbnails (-)" aria-label="Smaller thumbnails" (click)="adjustThumbnailSize(-1)">−</button>
-      <ui-slider [formControl]="thumbSizeSlider"
-                 [min]="0"
-                 [max]="8"
-                 aria-label="Thumbnail size" />
-      <button class="zoom-step-button" type="button" title="Larger thumbnails (+)" aria-label="Larger thumbnails" (click)="adjustThumbnailSize(1)">+</button>
-      <ui-text [inherit]="true">Large</ui-text>
-    </div>
-    }
-
     <div class="gallery-controls">
       <ui-action-button class="action"
                         [title]="'Sort ' + (sortDir === 'asc' ? 'ascending' : 'descending')"
@@ -53,6 +40,19 @@
         <ui-icon icon="chevronDown" [inherit]="true" size="small" />
       </ui-action-button>
     </div>
+
+    @if (viewMode() !== 'details') {
+    <div class="thumbnail-size-control" title="Thumbnail size">
+      <ui-text [inherit]="true">Small</ui-text>
+      <button class="zoom-step-button" type="button" title="Smaller thumbnails (-)" aria-label="Smaller thumbnails" (click)="adjustThumbnailSize(-1)">−</button>
+      <ui-slider [formControl]="thumbSizeSlider"
+                 [min]="0"
+                 [max]="8"
+                 aria-label="Thumbnail size" />
+      <button class="zoom-step-button" type="button" title="Larger thumbnails (+)" aria-label="Larger thumbnails" (click)="adjustThumbnailSize(1)">+</button>
+      <ui-text [inherit]="true">Large</ui-text>
+    </div>
+    }
 
   </aside>
 </ui-toolbar>
