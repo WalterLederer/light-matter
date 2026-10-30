@@ -36,6 +36,7 @@
     <span>{{ image().modifiedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
     <span>{{ imageDimensions() }}</span>
     <span>{{ formattedFileSize() }}</span>
+    <span>{{ imageSuffix() }}</span>
     <span class="detail-dynamic-range" [class.hdr]="dynamicRange() === 'HDR'">{{ dynamicRange() }}</span>
   </div>
 }
