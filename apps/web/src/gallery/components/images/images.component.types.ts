@@ -1,5 +1,7 @@
 import { FileInfo } from 'internal-api';
 
+export type GalleryViewMode = 'thumbnails' | 'tiles' | 'details';
+
 export interface MonthGroup {
   readonly year: number;
   readonly month: number; // 0-11
