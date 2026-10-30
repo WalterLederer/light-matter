@@ -2070,7 +2070,7 @@ export class ImageView {
   /** Return the displayed zoom factor for the current image location. */
   protected readonly getZoomFactor = (location: ImagePositioningResult | null | undefined): number => {
     const zoom = location?.zoom;
-    if (zoom === 'fit') return (location?.fitZoom ?? 1) / 100;
+    if (zoom === 'fit') return (location?.fitZoom ?? 100) / 100;
     return typeof zoom === 'number' ? zoom : 1;
   };
 
