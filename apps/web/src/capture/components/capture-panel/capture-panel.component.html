@@ -83,12 +83,13 @@
       @if (status()) {
         <p class="capture-status" role="status">{{ status() }}</p>
       }
-      <div class="capture-selection-summary">
+      <section class="capture-selection-summary" aria-label="Capture summary">
+        <h3>Summary</h3>
         <div><strong>Source:</strong> {{ selectedSourceLabel() }}</div>
         <div><strong>Format:</strong> {{ selectedFormat() === 'exr' ? 'OpenEXR (.exr)' : selectedFormat() === 'jxr' ? 'JPEG XR (.jxr)' : 'Ultra HDR JPEG (.jpg, gain map)' }}</div>
         <div><strong>Folder:</strong> {{ destinationFolder() || 'No folder selected' }}</div>
         <div><strong>Full output filename:</strong> {{ lastOutputPath() || 'Generated automatically when captured' }}</div>
-      </div>
+      </section>
 
       <div class="capture-destination">
         <span>Save folder</span>
