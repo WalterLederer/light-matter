@@ -29,7 +29,13 @@
     "oneClick": false
   },
   "win": {
-    "icon": "./apps/desktop/src/assets/icon.ico"
+    "icon": "./apps/desktop/src/assets/icon.ico",
+    "extraResources": [
+      {
+        "from": "tools/jxr-wic-prototype/build/Release/jxr-wic-encoder.exe",
+        "to": "jxr-wic-encoder.exe"
+      }
+    ]
   },
   "electronLanguages": [
     "en-GB"
