@@ -1,6 +1,6 @@
 import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { ScreenCapture } from '@screen-capture/node';
+import { ScreenCapture, enumerateMonitors } from '@screen-capture/node';
 
 function withTimeout(promise, ms, label) {
   let timer;
@@ -32,10 +32,11 @@ function pixelAt(buffer, width, height, x, y) {
 }
 
 function parseArgs(args) {
-  const result = { monitor: 1, windowHandle: null, windowName: null, sample: null, rawPath: null, jsonPath: 'node-wgc-fp16-test.json' };
+  const result = { monitor: null, displayName: '\\\\.\\DISPLAY1', windowHandle: null, windowName: null, sample: null, rawPath: null, jsonPath: 'node-wgc-fp16-test.json' };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === '--monitor') result.monitor = Number(args[++i]);
+    if (arg === '--monitor') { result.monitor = Number(args[++i]); result.displayName = null; }
+    else if (arg === '--display') { result.displayName = args[++i] ?? ''; result.monitor = null; }
     else if (arg === '--window-handle') {
       const value = args[++i] ?? '';
       result.windowHandle = Number.parseInt(value, value.toLowerCase().startsWith('0x') ? 16 : 10);
@@ -50,14 +51,15 @@ function parseArgs(args) {
     } else if (arg === '--raw') result.rawPath = args[++i] ?? 'node-wgc-fp16.rgba16f';
     else if (arg === '--json') result.jsonPath = args[++i] ?? result.jsonPath;
     else if (arg === '--help' || arg === '-h') {
-      console.log('Usage: node node-screen-capture-fp16-test.mjs [--monitor 1 | --window-handle 0x123456 | --window-name "title"] [--sample X,Y] [--raw [file]] [--json file]');
+      console.log('Usage: node node-screen-capture-fp16-test.mjs [--display \\\\.\\DISPLAY1 | --monitor 1 | --window-handle 0x123456 | --window-name "title"] [--sample X,Y] [--raw [file]] [--json file]');
       process.exit(0);
     } else throw new Error('Unknown argument: ' + arg);
   }
   const targetCount = Number(result.windowHandle !== null) + Number(result.windowName !== null);
   if (targetCount > 1) throw new Error('Choose only one target: --monitor, --window-handle, or --window-name');
   if (result.windowName !== null && !result.windowName.trim()) throw new Error('--window-name must not be empty');
-  if (targetCount === 0 && (!Number.isInteger(result.monitor) || result.monitor < 1)) throw new Error('--monitor must be a positive one-based monitor index');
+  if (targetCount === 0 && result.displayName !== null && !result.displayName.trim()) throw new Error('--display must not be empty');
+  if (targetCount === 0 && result.monitor !== null && (!Number.isInteger(result.monitor) || result.monitor < 1)) throw new Error('--monitor must be a positive one-based monitor index');
   return result;
 }
 
@@ -68,13 +70,25 @@ const captureOptions = {
   drawBorder: false,
   minimumUpdateIntervalMs: 0,
 };
+let selectedMonitor = null;
 if (options.windowHandle !== null) captureOptions.windowHandle = options.windowHandle;
 else if (options.windowName !== null) captureOptions.windowName = options.windowName;
-else captureOptions.monitorIndex = options.monitor;
+else {
+  const monitors = enumerateMonitors();
+  selectedMonitor = options.displayName !== null
+    ? monitors.find(monitor => monitor.deviceName?.toLowerCase() === options.displayName.toLowerCase())
+    : monitors.find(monitor => monitor.index === options.monitor);
+  if (!selectedMonitor) {
+    const available = monitors.map(monitor => `${monitor.deviceName} (${monitor.name}, index ${monitor.index})`).join('\n');
+    throw new Error(`Requested display ${options.displayName ?? options.monitor} was not found. Available displays:\n${available || '(none)'}`);
+  }
+  captureOptions.monitorIndex = selectedMonitor.index;
+}
 const capture = new ScreenCapture(captureOptions);
 const targetDescription = options.windowHandle !== null
   ? 'window HWND ' + '0x' + options.windowHandle.toString(16).toUpperCase()
-  : options.windowName !== null ? 'window title containing ' + JSON.stringify(options.windowName) : 'monitor ' + options.monitor;
+  : options.windowName !== null ? 'window title containing ' + JSON.stringify(options.windowName)
+  : `${selectedMonitor.name} (${selectedMonitor.deviceName}, ${selectedMonitor.width}x${selectedMonitor.height}, ${selectedMonitor.refreshRate} Hz; monitor index ${selectedMonitor.index})`;
 
 let started = false;
 try {
