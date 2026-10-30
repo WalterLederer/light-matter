@@ -11,6 +11,7 @@ import {
   signal
 } from '@angular/core';
 import { TextComponent, TitleComponent } from '@light-matter/ui';
+import { GalleryViewMode } from './images.component.types';
 import {
   allSortTypes,
   defaultThumbnailSize,
@@ -48,6 +49,7 @@ export class ImagesComponent {
   readonly images = input.required<FileInfo[] | null>();
   readonly sortBy = input<SortType>(allSortTypes[0]);
   readonly thumbSize = input<ThumbnailSize>(defaultThumbnailSize);
+  readonly viewMode = input<GalleryViewMode>('thumbnails');
 
   /* Computed */
   readonly dimensions = computed(() => thumbnailDimensions[this.thumbSize()]);
