@@ -75,20 +75,24 @@ if (options.windowHandle !== null) captureOptions.windowHandle = options.windowH
 else if (options.windowName !== null) captureOptions.windowName = options.windowName;
 else {
   const monitors = enumerateMonitors();
-  selectedMonitor = options.displayName !== null
-    ? monitors.find(monitor => monitor.deviceName?.toLowerCase() === options.displayName.toLowerCase())
-    : monitors.find(monitor => monitor.index === options.monitor);
-  if (!selectedMonitor) {
-    const available = monitors.map(monitor => `${monitor.deviceName} (${monitor.name}, index ${monitor.index})`).join('\n');
+  const selectedMonitorPosition = options.displayName !== null
+    ? monitors.findIndex(monitor => monitor.deviceName?.toLowerCase() === options.displayName.toLowerCase())
+    : monitors.findIndex(monitor => monitor.index === options.monitor);
+  if (selectedMonitorPosition < 0) {
+    const available = monitors.map((monitor, position) => `${monitor.deviceName} (${monitor.name}, Windows display index ${monitor.index}, capture monitorIndex ${position + 1})`).join('\n');
     throw new Error(`Requested display ${options.displayName ?? options.monitor} was not found. Available displays:\n${available || '(none)'}`);
   }
-  captureOptions.monitorIndex = selectedMonitor.index;
+  selectedMonitor = monitors[selectedMonitorPosition];
+  // windows-capture Monitor::from_index() selects by EnumDisplayMonitors enumeration order,
+  // not by the numeric suffix in deviceName (DISPLAY1, DISPLAY2, ...).
+  // Therefore pass the one-based array position, not MonitorInfo.index.
+  captureOptions.monitorIndex = selectedMonitorPosition + 1;
 }
 const capture = new ScreenCapture(captureOptions);
 const targetDescription = options.windowHandle !== null
   ? 'window HWND ' + '0x' + options.windowHandle.toString(16).toUpperCase()
   : options.windowName !== null ? 'window title containing ' + JSON.stringify(options.windowName)
-  : `${selectedMonitor.name} (${selectedMonitor.deviceName}, ${selectedMonitor.width}x${selectedMonitor.height}, ${selectedMonitor.refreshRate} Hz; monitor index ${selectedMonitor.index})`;
+  : `${selectedMonitor.name} (${selectedMonitor.deviceName}, ${selectedMonitor.width}x${selectedMonitor.height}, ${selectedMonitor.refreshRate} Hz; Windows display index ${selectedMonitor.index}; capture monitorIndex ${captureOptions.monitorIndex})`;
 
 let started = false;
 try {
