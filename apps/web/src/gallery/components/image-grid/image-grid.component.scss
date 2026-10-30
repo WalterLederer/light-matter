@@ -15,11 +15,14 @@ ui-toolbar {
     display: flex;
     align-items: center;
     gap: var(--dim-medium);
+    width: 100%;
   }
 }
 
 .gallery-view-modes {
   display: flex;
+  margin-left: auto;
+  flex: 0 0 auto;
   align-items: center;
   gap: 3px;
   padding: 0 var(--dim-small);
@@ -52,6 +55,7 @@ ui-toolbar {
 
 .thumbnail-size-control {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: var(--dim-small);
   padding: 0 var(--dim-medium);
