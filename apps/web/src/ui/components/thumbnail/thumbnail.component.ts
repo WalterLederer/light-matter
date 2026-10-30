@@ -84,9 +84,38 @@ export class ThumbnailComponent implements OnDestroy {
     const tags = this.imageTags();
     const width = Number(tags?.ImageWidth);
     const height = Number(tags?.ImageHeight);
-    return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0
-      ? `${width.toLocaleString()} × ${height.toLocaleString()}`
-      : '—';
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+      return '—';
+    }
+
+    const bitsPerSample = String((tags as Record<string, unknown> | null)?.['BitsPerSample'] ?? '')
+      .split(/[,,/ ]+/)
+      .map(value => Number.parseInt(value, 10))
+      .find(value => Number.isFinite(value) && value > 0);
+
+    const dimensions = `${width.toLocaleString()} × ${height.toLocaleString()}`;
+    return bitsPerSample ? `${dimensions} × ${bitsPerSample}` : dimensions;
+  });
+
+  readonly formattedFileSize = computed(() => {
+    const bytes = Math.max(0, Number(this.image().size) || 0);
+    const units = ['KB', 'MB', 'GB'];
+    let value = bytes / 1024;
+    let unitIndex = 0;
+
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex++;
+    }
+
+    return `${value.toLocaleString('de-AT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${units[unitIndex]}`;
+  });
+
+  readonly imageFileInfo = computed(() => {
+    const dimensions = this.imageDimensions();
+    return dimensions === '—'
+      ? this.formattedFileSize()
+      : `${this.formattedFileSize()} (${dimensions})`;
   });
 
   private infoRequest = 0;
