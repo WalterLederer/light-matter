@@ -59,6 +59,14 @@ export class CapturePanelComponent {
   protected readonly applyGammaCorrectionOnSave = signal(false);
   protected readonly setApplyGammaCorrectionOnSave = (enabled: boolean): void => this.applyGammaCorrectionOnSave.set(enabled);
   protected readonly gammaCorrectionValue = signal<number>(this.readSavedGammaCorrection());
+  protected readonly encoderQuality = signal<number>(this.readSavedEncoderQuality());
+  protected readonly setEncoderQuality = (value: number): void => {
+    if (!Number.isFinite(value)) return;
+    const quality = Math.min(100, Math.max(0, Math.round(value)));
+    this.encoderQuality.set(quality);
+    try { localStorage.setItem('capture.encoderQuality', String(quality)); }
+    catch { /* keep the current-session preference if storage is unavailable */ }
+  };
   protected readonly setGammaCorrectionValue = (value: number): void => {
     if (!Number.isFinite(value)) return;
     const gamma = Math.min(2.2, Math.max(0.1, value));
@@ -188,6 +196,14 @@ export class CapturePanelComponent {
       if (Number.isFinite(value) && value >= 0.1 && value <= 2.2) return value;
     } catch { /* use the default when storage is unavailable */ }
     return 1.3;
+  }
+
+  private readSavedEncoderQuality(): number {
+    try {
+      const value = Number(localStorage.getItem('capture.encoderQuality'));
+      if (Number.isInteger(value) && value >= 0 && value <= 100) return value;
+    } catch { /* use the default when storage is unavailable */ }
+    return 90;
   }
 
   private readSavedFormat(): CaptureFormat {
@@ -474,7 +490,8 @@ export class CapturePanelComponent {
         target,
         folder,
         this.selectedFormat(),
-        this.applyGammaCorrectionOnSave() ? this.gammaCorrectionValue() : 1
+        this.applyGammaCorrectionOnSave() ? this.gammaCorrectionValue() : 1,
+        this.encoderQuality()
       );
       this.galleryLocations.addLocation(folder);
       await firstValueFrom(this.galleryState.navigateTo(folder).pipe(take(1)));
