@@ -64,7 +64,7 @@
           {{ loadingSources() ? 'Refreshing…' : previewing() ? 'Creating preview…' : 'Refresh' }}
         </button>
         <button type="button" class="capture-primary-button" (click)="captureNow()" [disabled]="capturing() || previewing() || loadingSources() || !selectedTarget() || !destinationFolder()">
-          {{ capturing() ? 'Capturing…' : 'Capture HDR image' }}
+          {{ capturing() ? 'Capturing…' : 'SAVE Capture image' }}
         </button>
       </div>
       <label class="capture-field capture-gamma-option">
