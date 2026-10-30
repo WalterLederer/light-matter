@@ -64,6 +64,8 @@ export class ImageGridComponent {
 
   readonly thumbSize = input<ThumbnailSize>(defaultThumbnailSize);
 
+  private readonly document = inject(DOCUMENT);
+
   private readonly readStoredViewMode = (): GalleryViewMode => {
     try {
       const stored = this.document.defaultView?.localStorage.getItem('light-matter.galleryViewMode');
@@ -96,7 +98,6 @@ export class ImageGridComponent {
 
   private readonly exif = inject(ExifService);
 
-  private readonly document = inject(DOCUMENT);
 
 
   private readonly destroyRef = inject(DestroyRef);
