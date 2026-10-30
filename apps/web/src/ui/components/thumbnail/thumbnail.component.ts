@@ -20,6 +20,7 @@ import { distinctUntilChanged, Subscription } from 'rxjs';
 import { DevicePixelRatioService } from '../../../system/services/device-pixel-ratio/device-pixel-ratio.service';
 import { ThumbnailLoaderService } from '../../../system/services/thumbnail-loader/thumbnail-loader.service';
 import { thumbUrl } from '../../../viewer/utils/image-url';
+import { imageDynamicRange } from '../../../viewer/utils/image-dynamic-range';
 
 @Component({
   selector: 'app-thumbnail',
@@ -79,6 +80,12 @@ export class ThumbnailComponent implements OnDestroy {
   readonly hasError = signal<boolean>(false);
 
   readonly imageTags = signal<ExifTags | null>(null);
+
+  readonly dynamicRange = computed(() => {
+    const tags = this.imageTags();
+    const bits = tags?.BitsPerSample ?? tags?.BitDepth ?? tags?.ImagePixelDepth ?? null;
+    return imageDynamicRange(this.image().path, tags, bits === null ? null : `${bits}-bit`);
+  });
 
   readonly imageDimensions = computed(() => {
     const tags = this.imageTags();
