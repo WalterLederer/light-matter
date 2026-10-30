@@ -24,9 +24,11 @@ ui-toolbar {
 .gallery-controls {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--dim-medium);
-  flex: 0 1 auto;
-  min-width: 0;
+  margin-left: auto;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .gallery-view-modes {
@@ -65,12 +67,12 @@ ui-toolbar {
 
 .thumbnail-size-control {
   display: flex;
-  margin-left: auto;
-  flex: 0 1 320px;
-  min-width: 0;
+  flex: 0 0 auto;
+  min-width: max-content;
   align-items: center;
   gap: var(--dim-small);
   padding: 0;
+  white-space: nowrap;
 
   > ui-text {
     flex: 0 0 auto;
@@ -78,9 +80,9 @@ ui-toolbar {
   }
 
   ui-slider {
-    width: 144px;
-    min-width: 64px;
-    flex: 1 1 144px;
+    width: 112px;
+    min-width: 112px;
+    flex: 0 0 112px;
   }
 
   &.disabled {
