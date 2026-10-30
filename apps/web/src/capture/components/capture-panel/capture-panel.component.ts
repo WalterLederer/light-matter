@@ -56,8 +56,16 @@ export class CapturePanelComponent {
   private previewContext: { unconfigure(): void; configure(options: any): void; getCurrentTexture(): any } | null = null;
   private previewRequestId = 0;
   protected readonly selectedFormat = signal<CaptureFormat>(this.readSavedFormat());
-  protected readonly applyGamma22OnSave = signal(false);
-  protected readonly setApplyGamma22OnSave = (enabled: boolean): void => this.applyGamma22OnSave.set(enabled);
+  protected readonly applyGammaCorrectionOnSave = signal(false);
+  protected readonly setApplyGammaCorrectionOnSave = (enabled: boolean): void => this.applyGammaCorrectionOnSave.set(enabled);
+  protected readonly gammaCorrectionValue = signal<number>(this.readSavedGammaCorrection());
+  protected readonly setGammaCorrectionValue = (value: number): void => {
+    if (!Number.isFinite(value)) return;
+    const gamma = Math.min(2.2, Math.max(1, value));
+    this.gammaCorrectionValue.set(gamma);
+    try { localStorage.setItem('capture.gamma', String(gamma)); }
+    catch { /* keep the current-session preference if storage is unavailable */ }
+  };
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
   protected readonly lastOutputPath = signal('');
@@ -173,6 +181,14 @@ export class CapturePanelComponent {
     try { localStorage.setItem('capture.source.favorites', JSON.stringify(keys)); }
     catch { /* keep the current-session preference if storage is unavailable */ }
   };
+
+  private readSavedGammaCorrection(): number {
+    try {
+      const value = Number(localStorage.getItem('capture.gamma'));
+      if (Number.isFinite(value) && value >= 1 && value <= 2.2) return value;
+    } catch { /* use the default when storage is unavailable */ }
+    return 1.3;
+  }
 
   private readSavedFormat(): CaptureFormat {
     try {
@@ -454,7 +470,12 @@ export class CapturePanelComponent {
     this.error.set(null);
     this.status.set('Capturing HDR frame…');
     try {
-      const result = await this.captureService.capture(target, folder, this.selectedFormat(), this.applyGamma22OnSave());
+      const result = await this.captureService.capture(
+        target,
+        folder,
+        this.selectedFormat(),
+        this.applyGammaCorrectionOnSave() ? this.gammaCorrectionValue() : 1
+      );
       this.galleryLocations.addLocation(folder);
       await firstValueFrom(this.galleryState.navigateTo(folder).pipe(take(1)));
       await firstValueFrom(this.viewNavigator.selectImage(result.path).pipe(take(1)));
