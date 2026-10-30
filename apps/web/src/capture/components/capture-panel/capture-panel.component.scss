@@ -368,3 +368,16 @@
 .capture-source-row.is-monitor .capture-source-status {
   color: #4d9bcf;
 }
+
+
+.capture-gamma-slider input[type='range'] {
+  width: 100%;
+  margin: 2px 0 0;
+  accent-color: var(--accent-color, #4d9bcf);
+  cursor: pointer;
+}
+
+.capture-gamma-slider input[type='range']:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
