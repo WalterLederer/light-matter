@@ -27,6 +27,7 @@ import {
 import { ImagesComponent } from '../images/images.component';
 import { ExifService } from '../../../ipc/exif';
 import { imageDynamicRange } from '../../../viewer/utils/image-dynamic-range';
+import { GalleryViewMode } from '../images/images.component.types';
 
 @Component({
   selector: 'app-image-grid',
@@ -62,6 +63,21 @@ export class ImageGridComponent {
   readonly sortDirection = input<SortDirection>(allSortDirections[0]);
 
   readonly thumbSize = input<ThumbnailSize>(defaultThumbnailSize);
+
+  private readonly readStoredViewMode = (): GalleryViewMode => {
+    try {
+      const stored = this.document.defaultView?.localStorage.getItem('light-matter.galleryViewMode');
+      return stored === 'tiles' || stored === 'details' ? stored : 'thumbnails';
+    } catch { return 'thumbnails'; }
+  };
+
+  readonly viewMode = signal<GalleryViewMode>(this.readStoredViewMode());
+
+  protected readonly setViewMode = (mode: GalleryViewMode): void => {
+    this.viewMode.set(mode);
+    try { this.document.defaultView?.localStorage.setItem('light-matter.galleryViewMode', mode); }
+    catch { /* Keep the selected view for the current session. */ }
+  };
 
   /* Outputs */
   readonly selected = output<FileInfo>();
