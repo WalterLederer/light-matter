@@ -12,6 +12,13 @@
   </ui-title>
 
   <aside>
+    <div class="gallery-view-modes" role="group" aria-label="Gallery view mode">
+      <span>View</span>
+      <button type="button" class="view-mode-button" [class.active]="viewMode() === 'thumbnails'" [attr.aria-pressed]="viewMode() === 'thumbnails'" title="Thumbnails" aria-label="Thumbnails" (click)="setViewMode('thumbnails')">▦</button>
+      <button type="button" class="view-mode-button" [class.active]="viewMode() === 'tiles'" [attr.aria-pressed]="viewMode() === 'tiles'" title="Thumbnails with information" aria-label="Thumbnails with information" (click)="setViewMode('tiles')">▤</button>
+      <button type="button" class="view-mode-button" [class.active]="viewMode() === 'details'" [attr.aria-pressed]="viewMode() === 'details'" title="Details" aria-label="Details" (click)="setViewMode('details')">☷</button>
+    </div>
+    @if (viewMode() !== 'details') {
     <div class="thumbnail-size-control" title="Thumbnail size">
       <ui-text [inherit]="true">Small</ui-text>
       <button class="zoom-step-button" type="button" title="Smaller thumbnails (-)" aria-label="Smaller thumbnails" (click)="adjustThumbnailSize(-1)">−</button>
@@ -22,6 +29,7 @@
       <button class="zoom-step-button" type="button" title="Larger thumbnails (+)" aria-label="Larger thumbnails" (click)="adjustThumbnailSize(1)">+</button>
       <ui-text [inherit]="true">Large</ui-text>
     </div>
+    }
 
     <ui-action-button class="action"
                       [title]="'Sort ' + (sortDir === 'asc' ? 'ascending' : 'descending')"
@@ -48,6 +56,7 @@
   <app-images [images]="images()"
               [sortBy]="sortBy()"
               [thumbSize]="thumbSize()"
+              [viewMode]="viewMode()"
               (hovered)="onThumbnailHovered($event)"
               (selected)="selected.emit($event)" />
 </div>
