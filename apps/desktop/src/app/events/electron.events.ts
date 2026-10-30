@@ -854,8 +854,9 @@ ipcMain.handle(
             const source = pixel * 4;
             const destination = pixel * 8;
             for (let channel = 0; channel < 3; channel++) {
-              const brightnessCorrected = halfToFloat(sourceChannels[source + channel]) * CAPTURE_BRIGHTNESS_CORRECTION;
-              const value = gammaCorrection !== 1 ? applyGammaCorrection(brightnessCorrected, gammaCorrection) : brightnessCorrected;
+              // Preserve the original FP16 scRGB peak brightness for JPEG XR.
+              const sourceValue = halfToFloat(sourceChannels[source + channel]);
+              const value = gammaCorrection !== 1 ? applyGammaCorrection(sourceValue, gammaCorrection) : sourceValue;
               rgba.writeUInt16LE(floatToHalf(value), destination + channel * 2);
             }
             // This is an opaque desktop capture. Force alpha to 1.0 so the WIC
