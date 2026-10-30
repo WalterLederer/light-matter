@@ -370,14 +370,16 @@
 }
 
 
-.capture-gamma-slider input[type='range'] {
+.capture-gamma-slider input[type='range'],
+.capture-quality-slider input[type='range'] {
   width: 100%;
   margin: 2px 0 0;
   accent-color: var(--accent-color, #4d9bcf);
   cursor: pointer;
 }
 
-.capture-gamma-slider input[type='range']:disabled {
+.capture-gamma-slider input[type='range']:disabled,
+.capture-quality-slider input[type='range']:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
