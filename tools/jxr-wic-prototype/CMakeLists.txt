@@ -11,4 +11,4 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(jxr-wic-encoder main.cpp)
 target_compile_definitions(jxr-wic-encoder PRIVATE UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
-target_link_libraries(jxr-wic-encoder PRIVATE windowscodecs ole32)
+target_link_libraries(jxr-wic-encoder PRIVATE windowscodecs ole32 oleaut32)
