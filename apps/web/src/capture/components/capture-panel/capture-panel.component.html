@@ -50,10 +50,6 @@
         </div>
       </div>
 
-      <button type="button" class="capture-secondary-button" (click)="loadSources()" [disabled]="loadingSources() || capturing() || previewing()">
-        {{ loadingSources() ? 'Loading sources…' : 'Refresh windows and monitors' }}
-      </button>
-
       <label class="capture-field">
         <span>Save format</span>
         <select [value]="selectedFormat()" (change)="changeFormat($any($event.target).value)" [disabled]="capturing() || previewing()">
@@ -64,8 +60,8 @@
       </label>
 
       <div class="capture-action-row">
-        <button type="button" class="capture-secondary-button" (click)="previewNow()" [disabled]="previewing() || capturing() || loadingSources() || !selectedTarget()">
-          {{ previewing() ? 'Creating preview…' : 'Preview source' }}
+        <button type="button" class="capture-secondary-button" (click)="loadSources()" [disabled]="loadingSources() || capturing() || previewing() || !selectedTarget()">
+          {{ loadingSources() ? 'Refreshing…' : previewing() ? 'Creating preview…' : 'Refresh' }}
         </button>
         <button type="button" class="capture-primary-button" (click)="captureNow()" [disabled]="capturing() || previewing() || loadingSources() || !selectedTarget() || !destinationFolder()">
           {{ capturing() ? 'Capturing…' : 'Capture HDR image' }}
