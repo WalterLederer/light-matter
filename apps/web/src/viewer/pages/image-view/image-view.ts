@@ -387,6 +387,7 @@ export class ImageView {
 
   protected readonly mainImageBrightness = signal(1);
   protected readonly imageContrast = signal(1);
+  protected readonly imageGamma = signal(1);
   protected readonly redChannelLevel = signal(1);
   protected readonly greenChannelLevel = signal(1);
   protected readonly blueChannelLevel = signal(1);
@@ -513,7 +514,7 @@ export class ImageView {
   };
   protected readonly setDebugImageSwitching = (enabled: boolean): void => { try { this.document.defaultView?.localStorage.setItem('light-matter.debugImageSwitching', String(enabled)); } catch { /* storage may be unavailable */ } this.debugImageSwitching.set(enabled); };
   protected readonly hdrImageAdjustmentActive = computed(() =>
-    this.mainImageBrightness() !== 1 || this.imageContrast() !== 1 ||
+    this.mainImageBrightness() !== 1 || this.imageContrast() !== 1 || this.imageGamma() !== 1 ||
     this.redChannelLevel() !== 1 || this.greenChannelLevel() !== 1 || this.blueChannelLevel() !== 1 ||
     this.invertRedChannel() || this.invertGreenChannel() || this.invertBlueChannel() || this.invertAllRgbChannels() ||
     this.colorIntensity() !== 1 || this.blackPoint() !== 0 || this.whitePoint() !== 1 ||
@@ -526,6 +527,10 @@ export class ImageView {
   protected readonly resetMainBrightness = (): void => this.setMainBrightness(1);
   protected readonly setImageContrast = (v: string | number): void => {
     this.imageContrast.set(Math.max(0, Math.min(2, Number(v))));
+    this.refreshHdrImageAdjustments();
+  };
+  protected readonly setImageGamma = (v: string | number): void => {
+    this.imageGamma.set(Math.max(0.1, Math.min(3, Number(v))));
     this.refreshHdrImageAdjustments();
   };
   protected readonly resetImageAdjustments = (): void => {
@@ -598,6 +603,7 @@ export class ImageView {
   protected readonly resetCorrections = (): void => {
     this.mainImageBrightness.set(1);
     this.imageContrast.set(1);
+    this.imageGamma.set(1);
     this.redChannelLevel.set(1);
     this.greenChannelLevel.set(1);
     this.blueChannelLevel.set(1);
@@ -1860,6 +1866,7 @@ export class ImageView {
       this.hdrImageAdjustmentSourceKey,
       {
         contrast: this.imageContrast(),
+        gamma: this.imageGamma(),
         red: this.redChannelLevel(),
         green: this.greenChannelLevel(),
         blue: this.blueChannelLevel(),
