@@ -88,8 +88,8 @@ export class ThumbnailComponent implements OnDestroy {
       return '—';
     }
 
-    const bitsPerSample = String((tags as Record<string, unknown> | null)?.['BitsPerSample'] ?? '')
-      .split(/[,,/ ]+/)
+    const bitsPerSample = String((tags as unknown as Record<string, unknown> | null)?.['BitsPerSample'] ?? '')
+      .split(/[,\s/]+/)
       .map(value => Number.parseInt(value, 10))
       .find(value => Number.isFinite(value) && value > 0);
 
