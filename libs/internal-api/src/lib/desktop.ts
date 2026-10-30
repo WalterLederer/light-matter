@@ -131,7 +131,7 @@ export interface DesktopCapture {
   readonly listSources: () => Promise<CaptureSources>;
   readonly chooseFolder: (initialPath?: string) => Promise<string | null>;
   readonly preview: (target: CaptureTarget) => Promise<CapturePreview>;
-  readonly capture: (target: CaptureTarget, folder: string, format?: CaptureFormat, gammaCorrection?: number) => Promise<CaptureResult>;
+  readonly capture: (target: CaptureTarget, folder: string, format?: CaptureFormat, gammaCorrection?: number, encoderQuality?: number) => Promise<CaptureResult>;
 }
 
 export interface DesktopHistogram {
