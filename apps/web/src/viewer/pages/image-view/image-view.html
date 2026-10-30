@@ -110,10 +110,15 @@
       @if (activeImageSidebarTab() === 'corrections') {
       <section>
         @if(sidebarSectionExpanded('corrections')) {
-          <label class="channel-control"><span><b>Brightness</b><span>{{((mainImageBrightness()-1)*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/></label>
-          <label class="channel-control"><span><b>Contrast</b><span>{{(imageContrast()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/></label>
-          <label class="channel-control"><span><b>Gamma</b><span>{{imageGamma().toFixed(2)}}</span></span><input type="range" min="0.1" max="3" step=".01" [value]="imageGamma()" (input)="setImageGamma($any($event.target).value)" title="Gamma correction; 1.00 = unchanged"/></label>
-          <label class="channel-control"><span><b>Color intensity</b><span>{{(colorIntensity()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="3" step=".01" [value]="colorIntensity()" (input)="setColorIntensity($any($event.target).value)" title="0% = black and white; 100% = original colors; 300% = strongly boosted colors"/></label>
+          <section class="correction-subsection basic-correction-section">
+            <button class="section-heading" (click)="toggleSidebarSection('basic')"><span class="section-chevron">{{sidebarSectionExpanded('basic') ? 'v' : '>'}}</span>Basic</button>
+            @if (sidebarSectionExpanded('basic')) {
+              <label class="channel-control"><span><b>Brightness</b><span>{{((mainImageBrightness()-1)*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="mainImageBrightness()" (input)="setMainBrightness($any($event.target).value)"/></label>
+              <label class="channel-control"><span><b>Contrast</b><span>{{(imageContrast()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="2" step=".01" [value]="imageContrast()" (input)="setImageContrast($any($event.target).value)"/></label>
+              <label class="channel-control"><span><b>Gamma</b><span>{{imageGamma().toFixed(2)}}</span></span><input type="range" min="0.1" max="3" step=".01" [value]="imageGamma()" (input)="setImageGamma($any($event.target).value)" title="Gamma correction; 1.00 = unchanged"/></label>
+              <label class="channel-control"><span><b>Color intensity</b><span>{{(colorIntensity()*100).toFixed(0)}}%</span></span><input type="range" min="0" max="3" step=".01" [value]="colorIntensity()" (input)="setColorIntensity($any($event.target).value)" title="0% = black and white; 100% = original colors; 300% = strongly boosted colors"/></label>
+            }
+          </section>
           <section class="correction-subsection rgb-correction-section">
             <button class="section-heading" (click)="toggleSidebarSection('rgbLevels')"><span class="section-chevron">{{sidebarSectionExpanded('rgbLevels') ? 'v' : '>'}}</span>RGB</button>
             @if (sidebarSectionExpanded('rgbLevels')) {
