@@ -4,7 +4,8 @@
 
   .surface {
     position: absolute;
-    overflow: hidden;
+    overflow: auto;
+    scrollbar-width: auto;
     left: 0;
     top: 0;
     right: 0;
@@ -68,6 +69,30 @@
     &.dual-side-by-side-surface .hdr-image {
       left: calc(50% + 0px) !important;
     }
+  }
+
+  .surface.pannable-surface {
+    cursor: grab;
+  }
+
+  .surface.pannable-surface:active {
+    cursor: grabbing;
+  }
+
+  .surface::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+
+  .surface::-webkit-scrollbar-thumb {
+    background: rgb(128 128 128 / 65%);
+    border: 3px solid transparent;
+    border-radius: 8px;
+    background-clip: padding-box;
+  }
+
+  .surface::-webkit-scrollbar-track {
+    background: rgb(128 128 128 / 12%);
   }
 
   .hdr-copy-diagnostic {
