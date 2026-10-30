@@ -1,25 +1,40 @@
 @let loading = isLoading();
 @let error = hasError();
 
-@if (loading) {
-  <div class="message">
-    <ui-caption>Loading...</ui-caption>
+<div class="thumbnail-preview">
+  @if (loading) {
+    <div class="message">
+      <ui-caption>Loading...</ui-caption>
+    </div>
+  }
+
+  @if (error) {
+    <div class="message">
+      <ui-caption variant="warn">Failed to load an image</ui-caption>
+    </div>
+  }
+
+  @if (!loading && !error) {
+    <button [title]="image().name"
+            (click)="clicked.emit(image())">
+      <img loading="lazy"
+           [alt]="image().name"
+           [src]="url()" />
+    </button>
+  }
+</div>
+
+@if (viewMode() === 'tiles') {
+  <div class="thumbnail-info">
+    <div class="thumbnail-name" [title]="image().name">{{ image().name }}</div>
+    <div>{{ image().modifiedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</div>
+    <div>{{ imageDimensions() }}</div>
   </div>
-}
-
-@if (error) {
-  <div class="message">
-    <ui-caption variant="warn">Failed to load an image</ui-caption>
+} @else if (viewMode() === 'details') {
+  <div class="detail-columns">
+    <span class="detail-name" [title]="image().name">{{ image().name }}</span>
+    <span>{{ image().modifiedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+    <span>{{ imageDimensions() }}</span>
+    <span>{{ image().size | number: '1.0-0' }} bytes</span>
   </div>
-}
-
-@if (!loading && !error) {
-  <button [title]="image().name"
-          (click)="clicked.emit(image())">
-
-    <img loading="lazy"
-         [alt]="image().name"
-         [src]="url()" />
-
-  </button>
 }
