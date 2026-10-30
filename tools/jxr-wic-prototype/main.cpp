@@ -44,6 +44,13 @@ int wmain(int argc, wchar_t** argv)
         CheckHr(comResult, "CoInitializeEx");
     }
 
+    // Keep the COM apartment alive until every WIC ComPtr has been destroyed.
+    // A function-scope guard outlives the try block's local COM interfaces.
+    struct ComUninitializer
+    {
+        ~ComUninitializer() { CoUninitialize(); }
+    } comUninitializer;
+
     try
     {
         if (argc != 6)
@@ -51,7 +58,6 @@ int wmain(int argc, wchar_t** argv)
             std::wcerr << L"Usage: jxr-wic-encoder.exe input.rgba16f output.jxr width height quality\n"
                        << L"Quality: integer from 0 to 100; 100 requests lossless JPEG XR.\n"
                        << L"Input layout: packed little-endian RGBA, four IEEE-754 binary16 values per pixel.\n";
-            CoUninitialize();
             return 2;
         }
 
@@ -172,13 +178,11 @@ int wmain(int argc, wchar_t** argv)
                    << L"Input format: GUID_WICPixelFormat64bppRGBAHalf (FP16 scRGB)\n"
                    << L"ImageQuality: " << imageQuality
                    << (qualityPercent == 100 ? L" (lossless)\n" : L"\n");
-        CoUninitialize();
         return 0;
     }
     catch (const std::exception& error)
     {
         std::cerr << "JXR WIC prototype error: " << error.what() << "\n";
-        CoUninitialize();
         return 1;
     }
 }
