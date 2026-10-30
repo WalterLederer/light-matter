@@ -213,7 +213,7 @@ const halfConversionFloat = new Float32Array(halfConversionBuffer);
 const halfConversionBits = new Uint32Array(halfConversionBuffer);
 
 const applyGamma22 = (value: number): number =>
-  value < 0 ? -Math.pow(-value, 1 / 2.2) : Math.pow(value, 1 / 2.2);
+  value < 0 ? -Math.pow(-value, 2.2) : Math.pow(value, 2.2);
 
 const floatToHalf = (value: number): number => {
   halfConversionFloat[0] = value;
