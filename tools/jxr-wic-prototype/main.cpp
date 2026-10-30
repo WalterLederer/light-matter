@@ -46,9 +46,10 @@ int wmain(int argc, wchar_t** argv)
 
     try
     {
-        if (argc != 5)
+        if (argc != 6)
         {
-            std::wcerr << L"Usage: jxr-wic-encoder.exe input.rgba16f output.jxr width height\n"
+            std::wcerr << L"Usage: jxr-wic-encoder.exe input.rgba16f output.jxr width height quality\n"
+                       << L"Quality: integer from 0 to 100; 100 requests lossless JPEG XR.\n"
                        << L"Input layout: packed little-endian RGBA, four IEEE-754 binary16 values per pixel.\n";
             CoUninitialize();
             return 2;
@@ -58,6 +59,13 @@ int wmain(int argc, wchar_t** argv)
         const std::filesystem::path outputPath(argv[2]);
         const std::uint32_t width = ParseDimension(argv[3], "width");
         const std::uint32_t height = ParseDimension(argv[4], "height");
+        wchar_t* qualityEnd = nullptr;
+        const unsigned long qualityPercent = std::wcstoul(argv[5], &qualityEnd, 10);
+        if (qualityEnd == argv[5] || *qualityEnd != L'\0' || qualityPercent > 100)
+        {
+            throw std::runtime_error("Quality must be an integer between 0 and 100.");
+        }
+        const float imageQuality = static_cast<float>(qualityPercent) / 100.0f;
 
         const std::uint64_t expectedBytes =
             static_cast<std::uint64_t>(width) * height * 8u;
@@ -124,7 +132,7 @@ int wmain(int argc, wchar_t** argv)
         VARIANT qualityValue;
         VariantInit(&qualityValue);
         qualityValue.vt = VT_R4;
-        qualityValue.fltVal = 1.0f;
+        qualityValue.fltVal = imageQuality;
         const HRESULT qualityResult = options->Write(1, &qualityProperty, &qualityValue);
         VariantClear(&qualityValue);
         CheckHr(qualityResult, "IPropertyBag2::Write(ImageQuality)");
@@ -162,7 +170,8 @@ int wmain(int argc, wchar_t** argv)
         std::wcout << L"JPEG XR written: " << outputPath.wstring() << L"\n"
                    << L"Dimensions: " << width << L"x" << height << L"\n"
                    << L"Input format: GUID_WICPixelFormat64bppRGBAHalf (FP16 scRGB)\n"
-                   << L"ImageQuality: 1.0 (lossless)\n";
+                   << L"ImageQuality: " << imageQuality
+                   << (qualityPercent == 100 ? L" (lossless)\n" : L"\n");
         CoUninitialize();
         return 0;
     }
