@@ -57,7 +57,7 @@ export class ImagesComponent {
   readonly viewMode = input<GalleryViewMode>('thumbnails');
   readonly sortDirection = input<'asc' | 'desc'>('desc');
 
-  readonly detailSortColumn = signal<'name' | 'date' | 'dimensions' | 'size' | 'hdr'>('date');
+  readonly detailSortColumn = signal<'name' | 'date' | 'dimensions' | 'size' | 'suffix' | 'hdr'>('date');
   readonly detailSortDirection = signal<'asc' | 'desc'>(this.sortDirection());
 
   readonly sortedDetailImages = computed(() => {
@@ -97,6 +97,9 @@ export class ImagesComponent {
           result = left.width - right.width || left.height - right.height;
           break;
         }
+        case 'suffix':
+          result = compareText(this.getSuffix(a.name), this.getSuffix(b.name));
+          break;
         case 'hdr':
           result = compareText(hdr(a.path), hdr(b.path));
           break;
@@ -124,7 +127,7 @@ export class ImagesComponent {
 
   readonly hovered = output<FileInfo | null>();
 
-  async sortDetailsBy(column: 'name' | 'date' | 'dimensions' | 'size' | 'hdr'): Promise<void> {
+  async sortDetailsBy(column: 'name' | 'date' | 'dimensions' | 'size' | 'suffix' | 'hdr'): Promise<void> {
     if (this.detailSortColumn() === column) {
       this.detailSortDirection.update(direction => direction === 'asc' ? 'desc' : 'asc');
     } else {
@@ -156,7 +159,15 @@ export class ImagesComponent {
     });
   }
 
-  sortIndicator(column: 'name' | 'date' | 'dimensions' | 'size' | 'hdr'): string {
+  private getSuffix(name: string): string {
+    const fileName = name.split(/[\\/]/).pop() ?? name;
+    const dotIndex = fileName.lastIndexOf('.');
+    return dotIndex > 0 && dotIndex < fileName.length - 1
+      ? fileName.slice(dotIndex + 1).toLocaleLowerCase()
+      : '';
+  }
+
+  sortIndicator(column: 'name' | 'date' | 'dimensions' | 'size' | 'suffix' | 'hdr'): string {
     if (this.detailSortColumn() !== column) return '';
     return this.detailSortDirection() === 'asc' ? ' ▲' : ' ▼';
   }
