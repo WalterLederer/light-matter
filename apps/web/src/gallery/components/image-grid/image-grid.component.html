@@ -12,12 +12,6 @@
   </ui-title>
 
   <aside>
-    <div class="gallery-view-modes" role="group" aria-label="Gallery view mode">
-      <span>View</span>
-      <button type="button" class="view-mode-button" [class.active]="viewMode() === 'thumbnails'" [attr.aria-pressed]="viewMode() === 'thumbnails'" title="Thumbnails" aria-label="Thumbnails" (click)="setViewMode('thumbnails')">▦</button>
-      <button type="button" class="view-mode-button" [class.active]="viewMode() === 'tiles'" [attr.aria-pressed]="viewMode() === 'tiles'" title="Thumbnails with information" aria-label="Thumbnails with information" (click)="setViewMode('tiles')">▤</button>
-      <button type="button" class="view-mode-button" [class.active]="viewMode() === 'details'" [attr.aria-pressed]="viewMode() === 'details'" title="Details" aria-label="Details" (click)="setViewMode('details')">☷</button>
-    </div>
     @if (viewMode() !== 'details') {
     <div class="thumbnail-size-control" title="Thumbnail size">
       <ui-text [inherit]="true">Small</ui-text>
@@ -48,6 +42,13 @@
       <ui-text [inherit]="true">{{ sortType === 'date' ? 'Date' : sortType === 'name' ? 'Name' : 'Size' }}</ui-text>
       <ui-icon icon="chevronDown" [inherit]="true" size="small" />
     </ui-action-button>
+
+    <div class="gallery-view-modes" role="group" aria-label="Gallery view mode">
+      <span>View</span>
+      <button type="button" class="view-mode-button" [class.active]="viewMode() === 'thumbnails'" [attr.aria-pressed]="viewMode() === 'thumbnails'" title="Thumbnails" aria-label="Thumbnails" (click)="setViewMode('thumbnails')">▦</button>
+      <button type="button" class="view-mode-button" [class.active]="viewMode() === 'tiles'" [attr.aria-pressed]="viewMode() === 'tiles'" title="Thumbnails with information" aria-label="Thumbnails with information" (click)="setViewMode('tiles')">▤</button>
+      <button type="button" class="view-mode-button" [class.active]="viewMode() === 'details'" [attr.aria-pressed]="viewMode() === 'details'" title="Details" aria-label="Details" (click)="setViewMode('details')">☷</button>
+    </div>
 
   </aside>
 </ui-toolbar>
