@@ -150,16 +150,25 @@ export class ImageGridComponent {
   };
 
   protected readonly adjustThumbnailSize = (direction: -1 | 1) => {
+    if (this.viewMode() === 'details') return;
     const next = Math.max(0, Math.min(this.thumbnailSliderMax, this.thumbSizeSlider.value + direction));
     this.thumbSizeSlider.setValue(next);
   };
 
   /* Constructor */
   constructor() {
+    effect(() => {
+      if (this.viewMode() === 'details') {
+        this.thumbSizeSlider.disable({ emitEvent: false });
+      } else {
+        this.thumbSizeSlider.enable({ emitEvent: false });
+      }
+    });
+
     fromEvent<KeyboardEvent>(this.document, 'keyup')
       .pipe(takeUntilDestroyed())
       .subscribe(event => {
-        if (event.ctrlKey || event.altKey || event.metaKey) return;
+        if (event.ctrlKey || event.altKey || event.metaKey || this.viewMode() === 'details') return;
         const target = event.target;
         if (target instanceof HTMLElement && target.matches('input, textarea, select, [contenteditable="true"]')) return;
         if (event.key === '+' || event.key === '=' || event.key === 'Add') {
