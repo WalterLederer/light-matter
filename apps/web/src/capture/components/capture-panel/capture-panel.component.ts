@@ -56,6 +56,8 @@ export class CapturePanelComponent {
   private previewContext: { unconfigure(): void; configure(options: any): void; getCurrentTexture(): any } | null = null;
   private previewRequestId = 0;
   protected readonly selectedFormat = signal<CaptureFormat>(this.readSavedFormat());
+  protected readonly applyGamma22OnSave = signal(false);
+  protected readonly setApplyGamma22OnSave = (enabled: boolean): void => this.applyGamma22OnSave.set(enabled);
   protected readonly status = signal('');
   protected readonly error = signal<string | null>(null);
   protected readonly lastOutputPath = signal('');
@@ -452,7 +454,7 @@ export class CapturePanelComponent {
     this.error.set(null);
     this.status.set('Capturing HDR frame…');
     try {
-      const result = await this.captureService.capture(target, folder, this.selectedFormat());
+      const result = await this.captureService.capture(target, folder, this.selectedFormat(), this.applyGamma22OnSave());
       this.galleryLocations.addLocation(folder);
       await firstValueFrom(this.galleryState.navigateTo(folder).pipe(take(1)));
       await firstValueFrom(this.viewNavigator.selectImage(result.path).pipe(take(1)));
