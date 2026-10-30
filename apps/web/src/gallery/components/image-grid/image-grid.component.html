@@ -48,7 +48,7 @@
                         [title]="'View: ' + (viewMode() === 'thumbnails' ? 'Thumbnails' : viewMode() === 'tiles' ? 'Tiles with information' : 'Details')"
                         [cdkMenuTriggerFor]="viewModeMenu"
                         uiStopPropagation>
-        <ui-icon [icon]="viewMode() === 'thumbnails' ? 'grid' : viewMode() === 'tiles' ? 'layoutGrid' : 'list'" [inherit]="true" />
+        <ui-text [inherit]="true">{{ viewMode() === 'thumbnails' ? '▦' : viewMode() === 'tiles' ? '▤' : '☷' }}</ui-text>
         <ui-text [inherit]="true">{{ viewMode() === 'thumbnails' ? 'Thumbnails' : viewMode() === 'tiles' ? 'Tiles' : 'Details' }}</ui-text>
         <ui-icon icon="chevronDown" [inherit]="true" size="small" />
       </ui-action-button>
@@ -94,17 +94,17 @@
   <ui-popup-menu cdkMenu>
     <ui-action-button cdkMenuItem (pressed)="setViewMode('thumbnails')">
       <ui-icon [icon]="viewMode() === 'thumbnails' ? 'circleSmallFilled' : 'EMPTY'" [inherit]="true" />
-      <ui-icon icon="grid" [inherit]="true" />
+      <ui-text [inherit]="true">▦</ui-text>
       <ui-text [inherit]="true">Thumbnails</ui-text>
     </ui-action-button>
     <ui-action-button cdkMenuItem (pressed)="setViewMode('tiles')">
       <ui-icon [icon]="viewMode() === 'tiles' ? 'circleSmallFilled' : 'EMPTY'" [inherit]="true" />
-      <ui-icon icon="layoutGrid" [inherit]="true" />
+      <ui-text [inherit]="true">▤</ui-text>
       <ui-text [inherit]="true">Tiles with information</ui-text>
     </ui-action-button>
     <ui-action-button cdkMenuItem (pressed)="setViewMode('details')">
       <ui-icon [icon]="viewMode() === 'details' ? 'circleSmallFilled' : 'EMPTY'" [inherit]="true" />
-      <ui-icon icon="list" [inherit]="true" />
+      <ui-text [inherit]="true">☷</ui-text>
       <ui-text [inherit]="true">Details</ui-text>
     </ui-action-button>
   </ui-popup-menu>
