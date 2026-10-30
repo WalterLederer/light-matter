@@ -3,6 +3,11 @@
 @if (imageList === null || imageList.length === 0) {
   <p>No images found in this folder.</p>
 } @else if (isDateSorted()) {
+  @if (viewMode() === 'details') {
+    <div class="detail-header" aria-hidden="true">
+      <span></span><span>Name</span><span>Date modified</span><span>Dimensions</span><span>File size</span>
+    </div>
+  }
   <div class="gallery-layout">
     <div class="groups-container">
       @for (yearGroup of groupedImages(); track yearGroup.year) {
@@ -19,9 +24,9 @@
                 <ui-text>{{ monthGroup.monthName }} {{ yearGroup.year }}</ui-text>
               </header>
 
-              <div class="images">
+              <div class="images" [class.info-tiles]="viewMode() === 'tiles'" [class.details-list]="viewMode() === 'details'">
                 @for (image of monthGroup.images; track image.path) {
-                  <app-thumbnail [image]="image"
+                  <app-thumbnail [image]="image" [viewMode]="viewMode()"
                                  (hovered)="hovered.emit($event)"
                                  (clicked)="this.selected.emit($event)" />
                 }
@@ -39,9 +44,14 @@
     />
   </div>
 } @else {
-  <div class="images">
+  @if (viewMode() === 'details') {
+    <div class="detail-header" aria-hidden="true">
+      <span></span><span>Name</span><span>Date modified</span><span>Dimensions</span><span>File size</span>
+    </div>
+  }
+  <div class="images" [class.info-tiles]="viewMode() === 'tiles'" [class.details-list]="viewMode() === 'details'">
     @for (image of imageList; track image.path) {
-      <app-thumbnail [image]="image"
+      <app-thumbnail [image]="image" [viewMode]="viewMode()"
                      (hovered)="hovered.emit($event)"
                      (clicked)="this.selected.emit($event)" />
     }
