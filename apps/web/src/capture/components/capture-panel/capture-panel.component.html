@@ -71,6 +71,9 @@
           {{ capturing() ? 'Capturing…' : 'Capture HDR image' }}
         </button>
       </div>
+      <label class="capture-field capture-gamma-option">
+        <span><input type="checkbox" [checked]="applyGamma22OnSave()" (change)="setApplyGamma22OnSave($any($event.target).checked)" [disabled]="capturing() || previewing()"/> Gamma 2.2 correction (saved file only)</span>
+      </label>
       @if (previewFrame()) {
         <figure class="capture-preview">
           <canvas #previewCanvas aria-label="HDR capture source preview"></canvas>
