@@ -61,7 +61,7 @@ export class CapturePanelComponent {
   protected readonly gammaCorrectionValue = signal<number>(this.readSavedGammaCorrection());
   protected readonly setGammaCorrectionValue = (value: number): void => {
     if (!Number.isFinite(value)) return;
-    const gamma = Math.min(2.2, Math.max(1, value));
+    const gamma = Math.min(2.2, Math.max(0.1, value));
     this.gammaCorrectionValue.set(gamma);
     try { localStorage.setItem('capture.gamma', String(gamma)); }
     catch { /* keep the current-session preference if storage is unavailable */ }
@@ -185,7 +185,7 @@ export class CapturePanelComponent {
   private readSavedGammaCorrection(): number {
     try {
       const value = Number(localStorage.getItem('capture.gamma'));
-      if (Number.isFinite(value) && value >= 1 && value <= 2.2) return value;
+      if (Number.isFinite(value) && value >= 0.1 && value <= 2.2) return value;
     } catch { /* use the default when storage is unavailable */ }
     return 1.3;
   }
