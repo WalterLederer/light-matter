@@ -848,27 +848,28 @@ ipcMain.handle(
       } else {
         let encoded: Buffer | Uint8Array;
         if (format === 'jxr') {
-          logPhase('pack tightly packed RGB16F input and encode JPEG XR');
-          // ImageEncoderPixelFormat.Rgb16F expects 6 bytes per pixel (R, G, B),
-          // not the native capture's 8-byte RGBA16F layout. Passing RGBA data
-          // here shifts every pixel after the first because the encoder advances
-          // by 6 bytes while the source advances by 8.
-          const rgb = Buffer.allocUnsafe(frame.width * frame.height * 3 * 2);
+          logPhase('pack RGBA16F input and encode JPEG XR');
+          // The native encoder's Rgb16F enum is misleading: windows-capture maps
+          // it to WIC BitmapPixelFormat.Rgba16 (64bppRGBAHalf), which consumes
+          // 8 bytes per pixel. Keep the capture's RGBA channel layout intact.
+          const rgba = Buffer.allocUnsafe(frame.width * frame.height * 4 * 2);
           for (let pixel = 0; pixel < frame.width * frame.height; pixel++) {
             const source = pixel * 4;
-            const destination = pixel * 3;
+            const destination = pixel * 8;
             for (let channel = 0; channel < 3; channel++) {
               const brightnessCorrected = halfToFloat(sourceChannels[source + channel]) * CAPTURE_BRIGHTNESS_CORRECTION;
               const value = gammaCorrection !== 1 ? applyGammaCorrection(brightnessCorrected, gammaCorrection) : brightnessCorrected;
-              rgb.writeUInt16LE(floatToHalf(value), (destination + channel) * 2);
+              rgba.writeUInt16LE(floatToHalf(value), destination + channel * 2);
             }
+            // Preserve the captured alpha half-float as the fourth 16-bit channel.
+            rgba.writeUInt16LE(sourceChannels[source + 3], destination + 6);
           }
-          const expectedByteLength = frame.width * frame.height * 6;
-          if (rgb.byteLength !== expectedByteLength) {
-            throw new Error('Packed RGB16F buffer has an unexpected byte length.');
+          const expectedByteLength = frame.width * frame.height * 8;
+          if (rgba.byteLength !== expectedByteLength) {
+            throw new Error('Packed RGBA16F buffer has an unexpected byte length.');
           }
           const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
-          encoded = encoder.encode(rgb, frame.width, frame.height);
+          encoded = encoder.encode(rgba, frame.width, frame.height);
         } else {
           logPhase(
             `convert native RGBA16F to Float32 RGBA (${frame.width}x${frame.height}) without brightness correction`
