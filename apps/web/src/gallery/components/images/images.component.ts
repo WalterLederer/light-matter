@@ -11,7 +11,6 @@ import {
   signal
 } from '@angular/core';
 import { TextComponent, TitleComponent } from '@light-matter/ui';
-import { GalleryViewMode } from './images.component.types';
 import {
   allSortTypes,
   defaultThumbnailSize,
@@ -22,7 +21,7 @@ import {
 } from 'internal-api';
 import { ThumbnailComponent } from '../../../ui/components/thumbnail/thumbnail.component';
 import { TimelineIndicatorsComponent } from '../timeline-indicators/timeline-indicators.component';
-import { groupImagesByYearAndMonth, YearGroup } from './images.component.types';
+import { GalleryViewMode, groupImagesByYearAndMonth, YearGroup } from './images.component.types';
 
 @Component({
   selector: 'app-images',
