@@ -51,6 +51,23 @@
   color: var(--color-content-default-medium);
   font-size: 12px;
   font-weight: 600;
+
+  button {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--color-content-primary-high);
+      text-decoration: underline;
+    }
+  }
 }
 
 .images {
