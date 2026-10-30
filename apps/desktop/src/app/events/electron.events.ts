@@ -848,7 +848,7 @@ ipcMain.handle(
       } else {
         let encoded: Buffer | Uint8Array;
         if (format === 'jxr') {
-          logPhase('pack RGBA16F input and encode JPEG XR');
+          logPhase('prepare packed RGBA16F input for the WIC JPEG XR encoder');
           const rgba = Buffer.allocUnsafe(frame.width * frame.height * 4 * 2);
           for (let pixel = 0; pixel < frame.width * frame.height; pixel++) {
             const source = pixel * 4;
@@ -858,9 +858,8 @@ ipcMain.handle(
               const value = gammaCorrection !== 1 ? applyGammaCorrection(brightnessCorrected, gammaCorrection) : brightnessCorrected;
               rgba.writeUInt16LE(floatToHalf(value), destination + channel * 2);
             }
-            // This is an opaque desktop capture. Force alpha to 1.0 because
-            // windows-capture's WIC encoder declares BitmapAlphaMode::Premultiplied.
-            // Passing the capture's undefined/non-opaque alpha can tint or darken RGB.
+            // This is an opaque desktop capture. Force alpha to 1.0 so the WIC
+            // encoder receives a valid opaque RGBA16F sample without changing RGB.
             rgba.writeUInt16LE(0x3c00, destination + 6);
           }
           const expectedByteLength = frame.width * frame.height * 8;
@@ -883,11 +882,22 @@ ipcMain.handle(
           try {
             await fs.writeFile(inputPath, rgba);
             logPhase(`encode FP16 JPEG XR with WIC (quality ${encoderQuality}%)`);
-            execFileSync(
-              encoderPath,
-              [inputPath, encodedPath, String(frame.width), String(frame.height), String(encoderQuality)],
-              { windowsHide: true, timeout: 120000, stdio: 'pipe' }
-            );
+            try {
+              execFileSync(
+                encoderPath,
+                [inputPath, encodedPath, String(frame.width), String(frame.height), String(encoderQuality)],
+                { windowsHide: true, timeout: 120000, stdio: 'pipe' }
+              );
+            } catch (error) {
+              const details = error && typeof error === 'object' && 'stderr' in error
+                ? String((error as { stderr?: Buffer }).stderr?.toString('utf8') ?? '').trim()
+                : '';
+              throw new Error(
+                details
+                  ? `The WIC JPEG XR encoder failed: ${details}`
+                  : `The WIC JPEG XR encoder failed: ${error instanceof Error ? error.message : String(error)}`
+              );
+            }
             encoded = await fs.readFile(encodedPath);
           } finally {
             await fs.rm(temporaryDirectory, { recursive: true, force: true });
