@@ -2066,6 +2066,13 @@ export class ImageView {
     this.setLoupeSize(Number((this.loupeSizeScale() + direction * 0.1).toFixed(1)));
   };
 
+  /** Return the displayed zoom factor for the current image location. */
+  protected readonly getZoomFactor = (location: ReturnType<ImagePositioningService['imageLocation']> extends import('rxjs').Observable<infer T> ? T : never): number => {
+    const zoom = location?.zoom;
+    if (zoom === 'fit') return (location?.fitZoom ?? 1) / 100;
+    return typeof zoom === 'number' ? zoom : 1;
+  };
+
   protected readonly adjustZoom = (direction: 1 | -1) => {
     this.imageLocation$
       .pipe(take(1))
