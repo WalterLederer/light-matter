@@ -41,18 +41,29 @@
       </ui-action-button>
     </div>
 
-    @if (viewMode() !== 'details') {
-    <div class="thumbnail-size-control" title="Thumbnail size">
+    <div class="thumbnail-size-control"
+         [class.disabled]="viewMode() === 'details'"
+         [attr.aria-disabled]="viewMode() === 'details'"
+         title="Thumbnail size">
       <ui-text [inherit]="true">Small</ui-text>
-      <button class="zoom-step-button" type="button" title="Smaller thumbnails (-)" aria-label="Smaller thumbnails" (click)="adjustThumbnailSize(-1)">−</button>
+      <button class="zoom-step-button"
+              type="button"
+              title="Smaller thumbnails (-)"
+              aria-label="Smaller thumbnails"
+              [disabled]="viewMode() === 'details'"
+              (click)="adjustThumbnailSize(-1)">−</button>
       <ui-slider [formControl]="thumbSizeSlider"
                  [min]="0"
                  [max]="8"
                  aria-label="Thumbnail size" />
-      <button class="zoom-step-button" type="button" title="Larger thumbnails (+)" aria-label="Larger thumbnails" (click)="adjustThumbnailSize(1)">+</button>
+      <button class="zoom-step-button"
+              type="button"
+              title="Larger thumbnails (+)"
+              aria-label="Larger thumbnails"
+              [disabled]="viewMode() === 'details'"
+              (click)="adjustThumbnailSize(1)">+</button>
       <ui-text [inherit]="true">Large</ui-text>
     </div>
-    }
 
   </aside>
 </ui-toolbar>
