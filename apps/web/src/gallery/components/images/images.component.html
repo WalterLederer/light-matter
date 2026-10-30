@@ -37,11 +37,13 @@
       }
     </div>
 
-    <app-timeline-indicators
-      [groups]="groupedImages()"
-      [activeSectionId]="activeSectionId()"
-      (sectionSelect)="scrollToSection($event)"
-    />
+    @if (viewMode() !== 'details') {
+      <app-timeline-indicators
+        [groups]="groupedImages()"
+        [activeSectionId]="activeSectionId()"
+        (sectionSelect)="scrollToSection($event)"
+      />
+    }
   </div>
 } @else {
   @if (viewMode() === 'details') {
