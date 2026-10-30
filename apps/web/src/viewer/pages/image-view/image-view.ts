@@ -27,7 +27,8 @@ import { imageDynamicRange } from '../../utils/image-dynamic-range';
 import { ImagePositioningService } from '../../services/image-positioning/image-positioning.service';
 import {
   defaultImagePositioningResult,
-  ImageDimensions
+  ImageDimensions,
+  ImagePositioningResult
 } from '../../services/image-positioning/image-positioning.types';
 import { ViewNavigator } from '../../services/view-navigator/view-navigator';
 
@@ -2067,7 +2068,7 @@ export class ImageView {
   };
 
   /** Return the displayed zoom factor for the current image location. */
-  protected readonly getZoomFactor = (location: ReturnType<ImagePositioningService['imageLocation']> extends import('rxjs').Observable<infer T> ? T : never): number => {
+  protected readonly getZoomFactor = (location: ImagePositioningResult | null | undefined): number => {
     const zoom = location?.zoom;
     if (zoom === 'fit') return (location?.fitZoom ?? 1) / 100;
     return typeof zoom === 'number' ? zoom : 1;
