@@ -66,7 +66,7 @@ const api: Desktop = {
     listSources: () => ipcRenderer.invoke('Capture.listSources'),
     chooseFolder: (initialPath?: string) => ipcRenderer.invoke('Capture.chooseFolder', initialPath),
     preview: target => ipcRenderer.invoke('Capture.preview', target),
-    capture: (target, folder: string, format?: 'exr' | 'jxr') => ipcRenderer.invoke('Capture.capture', target, folder, format)
+    capture: (target, folder: string, format?: 'exr' | 'jxr' | 'uhdr', applyGamma22?: boolean) => ipcRenderer.invoke('Capture.capture', target, folder, format, applyGamma22)
   },
 
   // TODO: Deprecated methods, should be moved into a handler class in the future
