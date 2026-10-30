@@ -13,7 +13,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CaptionComponent } from '@light-matter/ui';
 import { ExifTags, FileInfo, thumbnailDimensions } from 'internal-api';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ExifService } from '../../../ipc/exif';
 import { GalleryViewMode } from '../../../gallery/components/images/images.component.types';
 import { distinctUntilChanged, Subscription } from 'rxjs';
@@ -26,8 +26,7 @@ import { imageDynamicRange } from '../../../viewer/utils/image-dynamic-range';
   selector: 'app-thumbnail',
   imports: [
     CaptionComponent,
-    DatePipe,
-    DecimalPipe
+    DatePipe
   ],
   templateUrl: './thumbnail.component.html',
   styleUrl: './thumbnail.component.scss',
