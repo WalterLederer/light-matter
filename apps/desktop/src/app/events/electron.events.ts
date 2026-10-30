@@ -32,7 +32,6 @@ const halfToFloat = (half: number): number => {
   return sign * 2 ** (exponent - 15) * (1 + fraction / 1024);
 };
 
-const CAPTURE_BRIGHTNESS_CORRECTION = 0.4;
 
 interface CapturedHdrFrame {
   targetKey: string;
@@ -792,7 +791,7 @@ ipcMain.handle(
         outputPath = path.join(folder, `${baseName}_${suffix++}.${extension}`);
       }
       if (format === 'uhdr') {
-        logPhase(`convert FP16 scRGB frame to Float32 RGB with brightness correction ${CAPTURE_BRIGHTNESS_CORRECTION}`);
+        logPhase('convert FP16 scRGB frame to Float32 RGB without brightness correction');
 
         const rgb = new Float32Array(frame.width * frame.height * 3);
         let sourcePeakScRgb = 0;
@@ -815,8 +814,7 @@ ipcMain.handle(
 
             if (value < 0) negativeChannelSamples++;
             sourcePeakScRgb = Math.max(sourcePeakScRgb, value);
-            const brightnessCorrected = value * CAPTURE_BRIGHTNESS_CORRECTION;
-            const corrected = gammaCorrection !== 1 ? applyGammaCorrection(brightnessCorrected, gammaCorrection) : brightnessCorrected;
+            const corrected = gammaCorrection !== 1 ? applyGammaCorrection(value, gammaCorrection) : value;
             rgb[destination + channel] = corrected;
             outputMin = Math.min(outputMin, corrected);
             outputMax = Math.max(outputMax, corrected);
@@ -828,7 +826,7 @@ ipcMain.handle(
           height: frame.height,
           sourcePeakScRgb,
           sourcePeakNitsAt80NitsPerScRgb: sourcePeakScRgb * 80,
-          brightnessCorrection: CAPTURE_BRIGHTNESS_CORRECTION,
+          brightnessCorrection: 1,
           negativeChannelSamples,
           nonFiniteChannelSamples,
           outputMin,
