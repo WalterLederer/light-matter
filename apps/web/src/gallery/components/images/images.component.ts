@@ -11,6 +11,9 @@ import {
   signal
 } from '@angular/core';
 import { TextComponent, TitleComponent } from '@light-matter/ui';
+import { ExifTags } from 'internal-api';
+import { ExifService } from '../../../ipc/exif';
+import { imageDynamicRange } from '../../../viewer/utils/image-dynamic-range';
 import {
   allSortTypes,
   defaultThumbnailSize,
@@ -42,13 +45,66 @@ import { GalleryViewMode, groupImagesByYearAndMonth, YearGroup } from './images.
 export class ImagesComponent {
   private readonly elementRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly exif = inject(ExifService);
   private observer: IntersectionObserver | null = null;
+  private metadataRequest = 0;
+  private readonly metadata = signal<Map<string, ExifTags>>(new Map());
 
   /* Inputs */
   readonly images = input.required<FileInfo[] | null>();
   readonly sortBy = input<SortType>(allSortTypes[0]);
   readonly thumbSize = input<ThumbnailSize>(defaultThumbnailSize);
   readonly viewMode = input<GalleryViewMode>('thumbnails');
+  readonly sortDirection = input<'asc' | 'desc'>('desc');
+
+  readonly detailSortColumn = signal<'name' | 'date' | 'dimensions' | 'size' | 'hdr'>('date');
+  readonly detailSortDirection = signal<'asc' | 'desc'>('desc');
+
+  readonly sortedDetailImages = computed(() => {
+    const images = [...(this.images() ?? [])];
+    const column = this.detailSortColumn();
+    const direction = this.detailSortDirection() === 'asc' ? 1 : -1;
+    const metadata = this.metadata();
+
+    const compareText = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+    const dimensions = (path: string) => {
+      const tags = metadata.get(path);
+      const width = Number(tags?.ImageWidth) || 0;
+      const height = Number(tags?.ImageHeight) || 0;
+      return { width, height };
+    };
+    const hdr = (path: string) => {
+      const tags = metadata.get(path) ?? null;
+      const bits = tags?.BitsPerSample ?? tags?.BitDepth ?? tags?.ImagePixelDepth ?? null;
+      return imageDynamicRange(path, tags, bits === null ? null : String(bits));
+    };
+
+    images.sort((a, b) => {
+      let result = 0;
+      switch (column) {
+        case 'name':
+          result = compareText(a.name, b.name);
+          break;
+        case 'date':
+          result = (a.modifiedAt ?? a.createdAt) - (b.modifiedAt ?? b.createdAt);
+          break;
+        case 'size':
+          result = a.size - b.size;
+          break;
+        case 'dimensions': {
+          const left = dimensions(a.path);
+          const right = dimensions(b.path);
+          result = left.width - right.width || left.height - right.height;
+          break;
+        }
+        case 'hdr':
+          result = compareText(hdr(a.path), hdr(b.path));
+          break;
+      }
+      return result * direction || compareText(a.name, b.name);
+    });
+    return images;
+  });
 
   /* Computed */
   readonly dimensions = computed(() => thumbnailDimensions[this.thumbSize()]);
@@ -67,6 +123,43 @@ export class ImagesComponent {
   readonly selected = output<FileInfo>();
 
   readonly hovered = output<FileInfo | null>();
+
+  async sortDetailsBy(column: 'name' | 'date' | 'dimensions' | 'size' | 'hdr'): Promise<void> {
+    if (this.detailSortColumn() === column) {
+      this.detailSortDirection.update(direction => direction === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.detailSortColumn.set(column);
+      this.detailSortDirection.set(column === 'name' ? 'asc' : 'desc');
+    }
+
+    if (column !== 'dimensions' && column !== 'hdr') return;
+
+    const images = this.images() ?? [];
+    const request = ++this.metadataRequest;
+    const missing = images.filter(image => !this.metadata().has(image.path));
+    const results = await Promise.all(missing.map(async image => {
+      try {
+        const result = await this.exif.read(image.path);
+        return result.success ? [image.path, result.data] as const : null;
+      } catch {
+        return null;
+      }
+    }));
+
+    if (request !== this.metadataRequest) return;
+    this.metadata.update(current => {
+      const next = new Map(current);
+      for (const result of results) {
+        if (result) next.set(result[0], result[1]);
+      }
+      return next;
+    });
+  }
+
+  sortIndicator(column: 'name' | 'date' | 'dimensions' | 'size' | 'hdr'): string {
+    if (this.detailSortColumn() !== column) return '';
+    return this.detailSortDirection() === 'asc' ? ' ▲' : ' ▼';
+  }
 
   constructor() {
     effect(() => {
