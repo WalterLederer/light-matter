@@ -19,6 +19,13 @@ ui-toolbar {
   }
 }
 
+.gallery-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--dim-medium);
+  flex: 0 0 auto;
+}
+
 .gallery-view-modes {
   display: flex;
   margin-left: auto;
