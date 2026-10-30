@@ -45,5 +45,6 @@ Thumbs.db
 
 .angular
 .prototype/
+/tools/jxr-wic-prototype/build/
 .junie/plans
 .junie/requirements
