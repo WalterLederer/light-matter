@@ -879,6 +879,7 @@ ipcMain.handle(
           const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'light-matter-jxr-'));
           const inputPath = path.join(temporaryDirectory, 'capture.rgba16f');
           const encodedPath = path.join(temporaryDirectory, 'capture.jxr');
+          let retainTemporaryFiles = false;
           try {
             await fs.writeFile(inputPath, rgba);
             logPhase(`encode FP16 JPEG XR with WIC (quality ${encoderQuality}%)`);
@@ -889,18 +890,32 @@ ipcMain.handle(
                 { windowsHide: true, timeout: 120000, stdio: 'pipe' }
               );
             } catch (error) {
-              const details = error && typeof error === 'object' && 'stderr' in error
-                ? String((error as { stderr?: Buffer }).stderr?.toString('utf8') ?? '').trim()
-                : '';
-              throw new Error(
-                details
-                  ? `The WIC JPEG XR encoder failed: ${details}`
-                  : `The WIC JPEG XR encoder failed: ${error instanceof Error ? error.message : String(error)}`
-              );
+              retainTemporaryFiles = true;
+              const processError = error as NodeJS.ErrnoException & {
+                stderr?: Buffer | string;
+                stdout?: Buffer | string;
+                status?: number | null;
+                signal?: string | null;
+                code?: number | string;
+              };
+              const stderr = processError.stderr?.toString().trim() ?? '';
+              const stdout = processError.stdout?.toString().trim() ?? '';
+              throw new Error([
+                'The WIC JPEG XR encoder failed.',
+                `Executable: ${encoderPath}`,
+                `Exit code: ${processError.status ?? 'unknown'}`,
+                `Signal: ${processError.signal ?? 'none'}`,
+                `Error code: ${processError.code ?? 'none'}`,
+                stderr && `STDERR: ${stderr}`,
+                stdout && `STDOUT: ${stdout}`,
+                `Temporary files retained at: ${temporaryDirectory}`
+              ].filter(Boolean).join('\n'));
             }
             encoded = await fs.readFile(encodedPath);
           } finally {
-            await fs.rm(temporaryDirectory, { recursive: true, force: true });
+            if (!retainTemporaryFiles) {
+              await fs.rm(temporaryDirectory, { recursive: true, force: true });
+            }
           }
         } else {
           logPhase(
