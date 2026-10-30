@@ -25,7 +25,8 @@ ui-toolbar {
   display: flex;
   align-items: center;
   gap: var(--dim-medium);
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .gallery-view-modes {
@@ -65,14 +66,21 @@ ui-toolbar {
 .thumbnail-size-control {
   display: flex;
   margin-left: auto;
-  flex: 0 0 auto;
+  flex: 0 1 320px;
+  min-width: 0;
   align-items: center;
   gap: var(--dim-small);
-  padding: 0 var(--dim-medium);
+  padding: 0;
+
+  > ui-text {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
 
   ui-slider {
     width: 144px;
-    min-width: 0;
+    min-width: 64px;
+    flex: 1 1 144px;
   }
 
   &.disabled {
