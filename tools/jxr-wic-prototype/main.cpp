@@ -3,6 +3,7 @@
 #include <wrl/client.h>
 
 #include <cstdint>
+#include <cwchar>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -23,22 +24,21 @@ static void CheckHr(HRESULT hr, const char* operation)
     }
 }
 
-static std::uint32_t ParseDimension(const wchar_t* value, const wchar_t* name)
+static std::uint32_t ParseDimension(const wchar_t* value, const char* name)
 {
     wchar_t* end = nullptr;
     const unsigned long parsed = std::wcstoul(value, &end, 10);
     if (end == value || *end != L'\0' || parsed == 0 ||
         parsed > std::numeric_limits<std::uint32_t>::max())
     {
-        throw std::runtime_error(std::string("Invalid ") +
-            (name == std::wstring(L"width") ? "width." : "height."));
+        throw std::runtime_error(std::string("Invalid ") + name + ".");
     }
     return static_cast<std::uint32_t>(parsed);
 }
 
 int wmain(int argc, wchar_t** argv)
 {
-    HRESULT comResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    const HRESULT comResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     if (FAILED(comResult))
     {
         CheckHr(comResult, "CoInitializeEx");
@@ -56,8 +56,8 @@ int wmain(int argc, wchar_t** argv)
 
         const std::filesystem::path inputPath(argv[1]);
         const std::filesystem::path outputPath(argv[2]);
-        const std::uint32_t width = ParseDimension(argv[3], L"width");
-        const std::uint32_t height = ParseDimension(argv[4], L"height");
+        const std::uint32_t width = ParseDimension(argv[3], "width");
+        const std::uint32_t height = ParseDimension(argv[4], "height");
 
         const std::uint64_t expectedBytes =
             static_cast<std::uint64_t>(width) * height * 8u;
@@ -86,8 +86,7 @@ int wmain(int argc, wchar_t** argv)
             throw std::runtime_error("Could not read the complete FP16 input file.");
         }
 
-        // Desktop captures are opaque. Do not let undefined capture alpha
-        // premultiply or otherwise alter the RGB values during image encoding.
+        // Desktop captures are opaque. Force alpha to 1.0 without touching RGB.
         auto* halfPixels = reinterpret_cast<std::uint16_t*>(pixels.data());
         const std::uint64_t pixelCount = static_cast<std::uint64_t>(width) * height;
         for (std::uint64_t pixel = 0; pixel < pixelCount; ++pixel)
@@ -118,22 +117,25 @@ int wmain(int argc, wchar_t** argv)
         ComPtr<IPropertyBag2> options;
         CheckHr(encoder->CreateNewFrame(&frame, &options),
                 "IWICBitmapEncoder::CreateNewFrame");
-        CheckHr(frame->Initialize(options.Get()),
-                "IWICBitmapFrameEncode::Initialize");
-        CheckHr(frame->SetSize(width, height),
-                "IWICBitmapFrameEncode::SetSize");
 
-        // Request mathematically lossless JPEG XR quality for the diagnostic.
+        // Set lossless quality before initializing the frame with its options.
         PROPBAG2 qualityProperty{};
         qualityProperty.pstrName = const_cast<LPOLESTR>(L"ImageQuality");
         VARIANT qualityValue;
         VariantInit(&qualityValue);
         qualityValue.vt = VT_R4;
         qualityValue.fltVal = 1.0f;
-        CheckHr(options->Write(1, &qualityProperty, &qualityValue),
-                "IPropertyBag2::Write(ImageQuality)");
+        const HRESULT qualityResult = options->Write(1, &qualityProperty, &qualityValue);
         VariantClear(&qualityValue);
+        CheckHr(qualityResult, "IPropertyBag2::Write(ImageQuality)");
 
+        CheckHr(frame->Initialize(options.Get()),
+                "IWICBitmapFrameEncode::Initialize");
+        CheckHr(frame->SetSize(width, height),
+                "IWICBitmapFrameEncode::SetSize");
+
+        // The JPEG XR WIC encoder supports this exact FP16 RGBA format.
+        // Refuse any substitution so half-float samples can never be misread as UINT.
         WICPixelFormatGUID pixelFormat = GUID_WICPixelFormat64bppRGBAHalf;
         CheckHr(frame->SetPixelFormat(&pixelFormat),
                 "IWICBitmapFrameEncode::SetPixelFormat(64bppRGBAHalf)");
