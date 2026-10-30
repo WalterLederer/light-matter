@@ -898,7 +898,7 @@ ipcMain.handle(
               channelNames: [ 'R', 'G', 'B', 'A' ],
               interleavedPixels: rgba,
               precision: 'f32',
-              compression: 'piz'
+              compression: 'zip'
             } ]
           });
         }
