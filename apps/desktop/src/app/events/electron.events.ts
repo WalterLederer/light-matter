@@ -849,9 +849,10 @@ ipcMain.handle(
         let encoded: Buffer | Uint8Array;
         if (format === 'jxr') {
           logPhase('pack RGBA16F input and encode JPEG XR');
-          // The native encoder's Rgb16F enum is misleading: windows-capture maps
-          // it to WIC BitmapPixelFormat.Rgba16 (64bppRGBAHalf), which consumes
-          // 8 bytes per pixel. Keep the capture's RGBA channel layout intact.
+          // WARNING: this ImageEncoder path is not a valid FP16 JPEG XR path.
+          // windows-capture maps Rgb16F to WinRT BitmapPixelFormat.Rgba16 (UINT),
+          // not WIC GUID_WICPixelFormat64bppRGBAHalf (FP16). The standalone
+          // tools/jxr-wic-prototype verifies the correct WIC route before integration.
           const rgba = Buffer.allocUnsafe(frame.width * frame.height * 4 * 2);
           for (let pixel = 0; pixel < frame.width * frame.height; pixel++) {
             const source = pixel * 4;
