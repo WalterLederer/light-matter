@@ -2,12 +2,23 @@
 
 @if (imageList === null || imageList.length === 0) {
   <p>No images found in this folder.</p>
-} @else if (isDateSorted()) {
-  @if (viewMode() === 'details') {
-    <div class="detail-header" aria-hidden="true">
-      <span></span><span>Name</span><span>Date modified</span><span>Dimensions</span><span>File size</span><span>HDR</span><span>HDR</span>
+} @else if (viewMode() === 'details') {
+  <div class="detail-header">
+      <span></span>
+      <button type="button" (click)="sortDetailsBy('name')">Name{{ sortIndicator('name') }}</button>
+      <button type="button" (click)="sortDetailsBy('date')">Date modified{{ sortIndicator('date') }}</button>
+      <button type="button" (click)="sortDetailsBy('dimensions')">Dimensions{{ sortIndicator('dimensions') }}</button>
+      <button type="button" (click)="sortDetailsBy('size')">File size{{ sortIndicator('size') }}</button>
+      <button type="button" (click)="sortDetailsBy('hdr')">HDR{{ sortIndicator('hdr') }}</button>
     </div>
-  }
+  <div class="images details-list">
+    @for (image of sortedDetailImages(); track image.path) {
+      <app-thumbnail [image]="image" [viewMode]="viewMode()"
+                     (hovered)="hovered.emit($event)"
+                     (clicked)="this.selected.emit($event)" />
+    }
+  </div>
+} @else if (isDateSorted()) {
   <div class="gallery-layout">
     <div class="groups-container">
       @for (yearGroup of groupedImages(); track yearGroup.year) {
@@ -24,7 +35,7 @@
                 <ui-text>{{ monthGroup.monthName }} {{ yearGroup.year }}</ui-text>
               </header>
 
-              <div class="images" [class.info-tiles]="viewMode() === 'tiles'" [class.details-list]="viewMode() === 'details'">
+              <div class="images" [class.info-tiles]="viewMode() === 'tiles'">
                 @for (image of monthGroup.images; track image.path) {
                   <app-thumbnail [image]="image" [viewMode]="viewMode()"
                                  (hovered)="hovered.emit($event)"
@@ -37,21 +48,14 @@
       }
     </div>
 
-    @if (viewMode() !== 'details') {
-      <app-timeline-indicators
-        [groups]="groupedImages()"
-        [activeSectionId]="activeSectionId()"
-        (sectionSelect)="scrollToSection($event)"
-      />
-    }
+    <app-timeline-indicators
+      [groups]="groupedImages()"
+      [activeSectionId]="activeSectionId()"
+      (sectionSelect)="scrollToSection($event)"
+    />
   </div>
 } @else {
-  @if (viewMode() === 'details') {
-    <div class="detail-header" aria-hidden="true">
-      <span></span><span>Name</span><span>Date modified</span><span>Dimensions</span><span>File size</span><span>HDR</span>
-    </div>
-  }
-  <div class="images" [class.info-tiles]="viewMode() === 'tiles'" [class.details-list]="viewMode() === 'details'">
+  <div class="images" [class.info-tiles]="viewMode() === 'tiles'">
     @for (image of imageList; track image.path) {
       <app-thumbnail [image]="image" [viewMode]="viewMode()"
                      (hovered)="hovered.emit($event)"
