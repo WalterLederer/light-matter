@@ -1,8 +1,5 @@
 import {
   enumerateMonitors,
-  ImageEncoder,
-  ImageEncoderPixelFormat,
-  ImageFormat,
   ScreenCapture
 } from '@screen-capture/node';
 import { app, dialog, ipcMain, IpcMainInvokeEvent, screen } from 'electron';
@@ -758,12 +755,15 @@ ipcMain.handle(
 
 ipcMain.handle(
   'Capture.capture',
-  async (_event, target: CaptureTarget, folder: string, format: CaptureFormat = 'exr', gammaCorrection = 1): Promise<CaptureResult> => {
+  async (_event, target: CaptureTarget, folder: string, format: CaptureFormat = 'exr', gammaCorrection = 1, encoderQuality = 90): Promise<CaptureResult> => {
     if (format !== 'exr' && format !== 'jxr' && format !== 'uhdr') {
       throw new Error('Choose OpenEXR, JPEG XR, or Ultra HDR JPEG as the capture format.');
     }
     if (!Number.isFinite(gammaCorrection) || gammaCorrection < 0.1 || gammaCorrection > 2.2) {
       throw new Error('Gamma correction must be between 0.1 and 2.2.');
+    }
+    if (!Number.isInteger(encoderQuality) || encoderQuality < 0 || encoderQuality > 100) {
+      throw new Error('Encoder quality must be an integer between 0 and 100.');
     }
     if (process.platform !== 'win32') {
       throw new Error('HDR capture is currently supported on Windows only.');
@@ -842,7 +842,7 @@ ipcMain.handle(
         using image = vips.Image.newFromMemory(rgb, frame.width, frame.height, 3, vips.BandFormat.float);
         using scrgb = image.copy({ interpretation: vips.Interpretation.scrgb });
         logPhase('encode Ultra HDR JPEG with embedded gain map');
-        scrgb.uhdrsave(outputPath, { Q: 90 });
+        scrgb.uhdrsave(outputPath, { Q: encoderQuality });
         logPhase('Ultra HDR JPEG written');
 
       } else {
@@ -871,8 +871,31 @@ ipcMain.handle(
           if (rgba.byteLength !== expectedByteLength) {
             throw new Error('Packed RGBA16F buffer has an unexpected byte length.');
           }
-          const encoder = new ImageEncoder(ImageFormat.JpegXr, ImageEncoderPixelFormat.Rgb16F);
-          encoded = encoder.encode(rgba, frame.width, frame.height);
+
+          const encoderPath = app.isPackaged
+            ? path.join(process.resourcesPath, 'jxr-wic-encoder.exe')
+            : path.join(process.cwd(), 'tools', 'jxr-wic-prototype', 'build', 'Release', 'jxr-wic-encoder.exe');
+          await fs.access(encoderPath).catch(() => {
+            throw new Error(
+              `The native WIC JPEG XR encoder was not found at "${encoderPath}". Build it with "npm run build:jxr-wic-encoder" and retry.`
+            );
+          });
+
+          const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'light-matter-jxr-'));
+          const inputPath = path.join(temporaryDirectory, 'capture.rgba16f');
+          const encodedPath = path.join(temporaryDirectory, 'capture.jxr');
+          try {
+            await fs.writeFile(inputPath, rgba);
+            logPhase(`encode FP16 JPEG XR with WIC (quality ${encoderQuality}%)`);
+            execFileSync(
+              encoderPath,
+              [inputPath, encodedPath, String(frame.width), String(frame.height), String(encoderQuality)],
+              { windowsHide: true, timeout: 120000, stdio: 'pipe' }
+            );
+            encoded = await fs.readFile(encodedPath);
+          } finally {
+            await fs.rm(temporaryDirectory, { recursive: true, force: true });
+          }
         } else {
           logPhase(
             `convert native RGBA16F to Float32 RGBA (${frame.width}x${frame.height}) without brightness correction`
