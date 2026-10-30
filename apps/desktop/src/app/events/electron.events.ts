@@ -212,8 +212,8 @@ const halfConversionBuffer = new ArrayBuffer(4);
 const halfConversionFloat = new Float32Array(halfConversionBuffer);
 const halfConversionBits = new Uint32Array(halfConversionBuffer);
 
-const applyGammaCorrection = (value: number): number =>
-  value < 0 ? -Math.pow(-value, 1.6) : Math.pow(value, 1.6);
+const applyGammaCorrection = (value: number, gamma: number): number =>
+  value < 0 ? -Math.pow(-value, gamma) : Math.pow(value, gamma);
 
 const floatToHalf = (value: number): number => {
   halfConversionFloat[0] = value;
@@ -758,9 +758,12 @@ ipcMain.handle(
 
 ipcMain.handle(
   'Capture.capture',
-  async (_event, target: CaptureTarget, folder: string, format: CaptureFormat = 'exr', gamma22Correction = false): Promise<CaptureResult> => {
+  async (_event, target: CaptureTarget, folder: string, format: CaptureFormat = 'exr', gammaCorrection = 1): Promise<CaptureResult> => {
     if (format !== 'exr' && format !== 'jxr' && format !== 'uhdr') {
       throw new Error('Choose OpenEXR, JPEG XR, or Ultra HDR JPEG as the capture format.');
+    }
+    if (!Number.isFinite(gammaCorrection) || gammaCorrection < 1 || gammaCorrection > 2.2) {
+      throw new Error('Gamma correction must be between 1.0 and 2.2.');
     }
     if (process.platform !== 'win32') {
       throw new Error('HDR capture is currently supported on Windows only.');
@@ -813,7 +816,7 @@ ipcMain.handle(
             if (value < 0) negativeChannelSamples++;
             sourcePeakScRgb = Math.max(sourcePeakScRgb, value);
             const brightnessCorrected = value * CAPTURE_BRIGHTNESS_CORRECTION;
-            const corrected = gamma22Correction ? applyGammaCorrection(brightnessCorrected) : brightnessCorrected;
+            const corrected = gammaCorrection > 1 ? applyGammaCorrection(brightnessCorrected, gammaCorrection) : brightnessCorrected;
             rgb[destination + channel] = corrected;
             outputMin = Math.min(outputMin, corrected);
             outputMax = Math.max(outputMax, corrected);
@@ -856,7 +859,7 @@ ipcMain.handle(
             const destination = pixel * 3;
             for (let channel = 0; channel < 3; channel++) {
               const brightnessCorrected = halfToFloat(sourceChannels[source + channel]) * CAPTURE_BRIGHTNESS_CORRECTION;
-              const value = gamma22Correction ? applyGammaCorrection(brightnessCorrected) : brightnessCorrected;
+              const value = gammaCorrection > 1 ? applyGammaCorrection(brightnessCorrected, gammaCorrection) : brightnessCorrected;
               rgb.writeUInt16LE(floatToHalf(value), (destination + channel) * 2);
             }
           }
@@ -875,7 +878,7 @@ ipcMain.handle(
             const source = pixel * 4;
             for (let channel = 0; channel < 3; channel++) {
               const value = halfToFloat(sourceChannels[source + channel]);
-              rgba[source + channel] = gamma22Correction ? applyGammaCorrection(value) : value;
+              rgba[source + channel] = gammaCorrection > 1 ? applyGammaCorrection(value, gammaCorrection) : value;
             }
             rgba[source + 3] = halfToFloat(sourceChannels[source + 3]);
           }
