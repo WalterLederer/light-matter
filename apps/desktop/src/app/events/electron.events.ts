@@ -861,8 +861,10 @@ ipcMain.handle(
               const value = gammaCorrection !== 1 ? applyGammaCorrection(brightnessCorrected, gammaCorrection) : brightnessCorrected;
               rgba.writeUInt16LE(floatToHalf(value), destination + channel * 2);
             }
-            // Preserve the captured alpha half-float as the fourth 16-bit channel.
-            rgba.writeUInt16LE(sourceChannels[source + 3], destination + 6);
+            // This is an opaque desktop capture. Force alpha to 1.0 because
+            // windows-capture's WIC encoder declares BitmapAlphaMode::Premultiplied.
+            // Passing the capture's undefined/non-opaque alpha can tint or darken RGB.
+            rgba.writeUInt16LE(0x3c00, destination + 6);
           }
           const expectedByteLength = frame.width * frame.height * 8;
           if (rgba.byteLength !== expectedByteLength) {
