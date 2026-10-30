@@ -58,7 +58,7 @@ export class ImagesComponent {
   readonly sortDirection = input<'asc' | 'desc'>('desc');
 
   readonly detailSortColumn = signal<'name' | 'date' | 'dimensions' | 'size' | 'hdr'>('date');
-  readonly detailSortDirection = signal<'asc' | 'desc'>('desc');
+  readonly detailSortDirection = signal<'asc' | 'desc'>(this.sortDirection());
 
   readonly sortedDetailImages = computed(() => {
     const images = [...(this.images() ?? [])];
