@@ -1654,6 +1654,24 @@
   font-family: var(--font-family-monospace, monospace);
   font-variant-numeric: tabular-nums;
 }
+.image-location-panel .location-map-style-row {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 12px;
+}
+.image-location-panel .location-map-style-row select {
+  min-width: 130px;
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid var(--color-border-default, rgb(128 128 128 / 55%));
+  border-radius: 4px;
+  background: var(--color-surface-default);
+  color: var(--color-content-default);
+  font: inherit;
+}
 .image-location-panel .location-map-frame {
   position: relative;
   flex: 1 1 0;
