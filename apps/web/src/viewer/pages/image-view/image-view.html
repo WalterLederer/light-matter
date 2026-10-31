@@ -434,7 +434,7 @@
                 </select>
                 <select id="location-web-app" class="location-web-app-select"
                         [value]="locationWebApp()"
-                        (change)="openLocationWebApp($any($event.target).value)"
+                        (change)="openLocationWebApp($any($event.target))"
                         title="Choose which external map website to open with this image's GPS coordinates."
                         aria-label="Choose external map website">
                   <option value="">Select map website...</option>
