@@ -792,7 +792,7 @@ export class ImageView {
   private locationGpxLayers: LeafletPolyline[] = [];
   private readonly gpxTrackSegments = signal<[number, number][][]>([]);
   protected readonly gpxTrackFileName = signal<string | null>(null);
-  protected readonly gpxTrackVisible = signal(true);
+  protected readonly gpxTrackVisible = signal(this.readStoredBoolean('gpxTrackVisible', true));
   protected readonly gpxTrackStatus = signal<string | null>(null);
   protected readonly gpxTrackColors = [
     { name: 'Red', value: '#ff3b30' },
@@ -803,6 +803,8 @@ export class ImageView {
     { name: 'Magenta', value: '#bf5af2' }
   ] as const;
   protected readonly gpxTrackColor = signal(this.readStoredGpxTrackColor());
+  protected readonly gpxTrackSelection = computed(() => this.gpxTrackVisible() ? this.gpxTrackColor() : 'off');
+  private readonly gpxTrackRestore = this.restoreStoredGpxTrack();
   private readonly readStoredLocationMapZoom = (): number => {
     try {
       const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.locationMapZoom'));
@@ -845,49 +847,95 @@ export class ImageView {
       const file = input.files?.[0];
       if (!file) return;
       void file.text().then(content => {
-        const xml = new DOMParser().parseFromString(content, 'application/xml');
-        if (xml.getElementsByTagName('parsererror').length > 0) {
-          throw new Error('The selected file is not valid GPX/XML.');
+        this.setGpxTrackData(content, file.name, true);
+        const path = this.desktop?.getPathForFile(file);
+        if (path) {
+          try {
+            this.document.defaultView?.localStorage.setItem('light-matter.gpxTrackPath', path);
+            this.document.defaultView?.localStorage.setItem('light-matter.gpxTrackFileName', file.name);
+          } catch {
+            // The imported track remains available for the current session.
+          }
         }
-
-        const elements = Array.from(xml.getElementsByTagName('*'));
-        const trackSegments = elements
-          .filter(element => element.localName === 'trkseg')
-          .map(segment => Array.from(segment.getElementsByTagName('*'))
-            .filter(point => point.localName === 'trkpt')
-            .map(point => this.parseGpxPoint(point))
-            .filter((point): point is [number, number] => point !== null))
-          .filter(segment => segment.length > 0);
-
-        if (trackSegments.length === 0) {
-          const trackPoints = elements
-            .filter(element => element.localName === 'trkpt')
-            .map(point => this.parseGpxPoint(point))
-            .filter((point): point is [number, number] => point !== null);
-          if (trackPoints.length > 0) trackSegments.push(trackPoints);
-        }
-        if (trackSegments.length === 0) {
-          const routePoints = elements
-            .filter(element => element.localName === 'rtept')
-            .map(point => this.parseGpxPoint(point))
-            .filter((point): point is [number, number] => point !== null);
-          if (routePoints.length > 0) trackSegments.push(routePoints);
-        }
-        if (trackSegments.length === 0) {
-          throw new Error('No valid track or route points were found in the GPX file.');
-        }
-
-        this.gpxTrackSegments.set(trackSegments);
-        this.gpxTrackFileName.set(file.name);
-        this.gpxTrackVisible.set(true);
-        this.gpxTrackStatus.set(null);
-        this.applyGpxTrack(true);
       }).catch(error => {
         this.gpxTrackStatus.set(error instanceof Error ? error.message : 'Could not read the GPX file.');
       });
     }, { once: true });
     input.click();
   };
+
+  private async restoreStoredGpxTrack(): Promise<void> {
+    let path: string | null = null;
+    let fileName: string | null = null;
+    try {
+      path = this.document.defaultView?.localStorage.getItem('light-matter.gpxTrackPath') ?? null;
+      fileName = this.document.defaultView?.localStorage.getItem('light-matter.gpxTrackFileName') ?? null;
+    } catch {
+      return;
+    }
+    if (!path || !fileName || !this.desktop) return;
+
+    const result = await this.desktop.FileSystem.readText(path);
+    if (!result.success) {
+      this.clearStoredGpxTrack();
+      return;
+    }
+
+    try {
+      this.setGpxTrackData(result.data, fileName, false);
+    } catch {
+      this.clearStoredGpxTrack();
+    }
+  }
+
+  private clearStoredGpxTrack(): void {
+    try {
+      this.document.defaultView?.localStorage.removeItem('light-matter.gpxTrackPath');
+      this.document.defaultView?.localStorage.removeItem('light-matter.gpxTrackFileName');
+    } catch {
+      // A missing stored GPX path is ignored when browser storage is unavailable.
+    }
+  }
+
+  private setGpxTrackData(content: string, fileName: string, fitTrack: boolean): void {
+    const xml = new DOMParser().parseFromString(content, 'application/xml');
+    if (xml.getElementsByTagName('parsererror').length > 0) {
+      throw new Error('The selected file is not valid GPX/XML.');
+    }
+
+    const elements = Array.from(xml.getElementsByTagName('*'));
+    const trackSegments = elements
+      .filter(element => element.localName === 'trkseg')
+      .map(segment => Array.from(segment.getElementsByTagName('*'))
+        .filter(point => point.localName === 'trkpt')
+        .map(point => this.parseGpxPoint(point))
+        .filter((point): point is [number, number] => point !== null))
+      .filter(segment => segment.length > 0);
+
+    if (trackSegments.length === 0) {
+      const trackPoints = elements
+        .filter(element => element.localName === 'trkpt')
+        .map(point => this.parseGpxPoint(point))
+        .filter((point): point is [number, number] => point !== null);
+      if (trackPoints.length > 0) trackSegments.push(trackPoints);
+    }
+    if (trackSegments.length === 0) {
+      const routePoints = elements
+        .filter(element => element.localName === 'rtept')
+        .map(point => this.parseGpxPoint(point))
+        .filter((point): point is [number, number] => point !== null);
+      if (routePoints.length > 0) trackSegments.push(routePoints);
+    }
+    if (trackSegments.length === 0) {
+      throw new Error('No valid track or route points were found in the GPX file.');
+    }
+
+    this.gpxTrackSegments.set(trackSegments);
+    this.gpxTrackFileName.set(fileName);
+    if (fitTrack) this.setGpxTrackVisible(true);
+    this.gpxTrackStatus.set(null);
+    this.applyGpxTrack(fitTrack);
+  }
 
   private parseGpxPoint(point: Element): [number, number] | null {
     const latitude = Number(point.getAttribute('lat'));
@@ -907,19 +955,28 @@ export class ImageView {
     return '#ff3b30';
   }
 
-  protected readonly setGpxTrackColor = (color: string): void => {
-    if (!this.gpxTrackColors.some(option => option.value === color)) return;
-    this.gpxTrackColor.set(color);
-    try {
-      this.document.defaultView?.localStorage.setItem('light-matter.gpxTrackColor', color);
-    } catch {
-      // The selected GPX track color remains active for this session.
+  protected readonly setGpxTrackColor = (selection: string): void => {
+    if (selection === 'off') {
+      this.setGpxTrackVisible(false);
+      return;
     }
-    this.applyGpxTrack();
+    if (!this.gpxTrackColors.some(option => option.value === selection)) return;
+    this.gpxTrackColor.set(selection);
+    try {
+      this.document.defaultView?.localStorage.setItem('light-matter.gpxTrackColor', selection);
+    } catch {
+      // The selected GPX track color remains active for the current session.
+    }
+    this.setGpxTrackVisible(true);
   };
 
   protected readonly setGpxTrackVisible = (visible: boolean): void => {
     this.gpxTrackVisible.set(visible);
+    try {
+      this.document.defaultView?.localStorage.setItem('light-matter.gpxTrackVisible', String(visible));
+    } catch {
+      // The selected overlay state remains active for the current session.
+    }
     this.applyGpxTrack();
   };
 
