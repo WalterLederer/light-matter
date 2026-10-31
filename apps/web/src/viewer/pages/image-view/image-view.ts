@@ -813,7 +813,9 @@ export class ImageView {
     humanitarian: {
       url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; <a href="https://www.hotosm.org/">Humanitarian OpenStreetMap Team</a>',
-      maxZoom: 19
+      maxZoom: 19,
+      maxNativeZoom: 19,
+      maxDisplayZoom: 20
     }
   } as const;
 
