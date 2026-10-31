@@ -1757,7 +1757,26 @@
   background: #e8e4dc;
 }
 .image-location-panel .location-map-frame .leaflet-control-attribution {
+  padding: 2px 5px;
+  border-radius: 3px 0 0 0;
+  background: rgb(24 27 31 / 22%);
+  color: rgb(255 255 255 / 55%);
   font-size: 10px;
+  opacity: 0.28;
+  transition: opacity 160ms ease, background-color 160ms ease;
+}
+.image-location-panel .location-map-frame .leaflet-control-attribution a {
+  color: rgb(255 255 255 / 70%);
+}
+.image-location-panel .location-map-frame .leaflet-control-attribution:hover,
+.image-location-panel .location-map-frame .leaflet-control-attribution:focus-within {
+  background: rgb(24 27 31 / 88%);
+  color: #fff;
+  opacity: 0.95;
+}
+.image-location-panel .location-map-frame .leaflet-control-attribution:hover a,
+.image-location-panel .location-map-frame .leaflet-control-attribution:focus-within a {
+  color: #fff;
 }
 
 /* Map tile color presets are applied directly to Leaflet's generated tile pane. */
