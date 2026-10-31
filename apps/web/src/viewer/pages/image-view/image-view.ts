@@ -788,7 +788,7 @@ export class ImageView {
     }
   } as const;
 
-  private readStoredLocationMapStyle(): keyof typeof this.locationMapStyles {
+  private readStoredLocationMapStyle(): 'standard' | 'light' | 'dark' | 'satellite' {
     try {
       const stored = this.document.defaultView?.localStorage.getItem('light-matter.locationMapStyle');
       if (stored === 'standard' || stored === 'light' || stored === 'dark' || stored === 'satellite') return stored;
