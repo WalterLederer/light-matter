@@ -21,4 +21,7 @@ export class FileSystem implements DesktopFileSystem {
     window.desktop.FileSystem.readImages(path, sortBy, sortDir);
 
   readonly deleteFile = async (path: string) => window.desktop.FileSystem.deleteFile(path);
+
+  readonly copyFile = async (sourcePath: string, destinationDirectory: string) =>
+    window.desktop.FileSystem.copyFile(sourcePath, destinationDirectory);
 }
