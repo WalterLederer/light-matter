@@ -1642,7 +1642,9 @@
   font-size: 12px;
   overflow-wrap: anywhere;
 }
-.image-location-panel .location-coordinate-readout span {
+.image-location-panel .location-coordinate-readout > span {
+  flex: 0 1 auto;
+  min-width: 0;
   font-family: var(--font-family-monospace, monospace);
   font-variant-numeric: tabular-nums;
 }
@@ -1650,17 +1652,15 @@
   flex: 0 0 auto;
   white-space: nowrap;
 }
-.image-location-panel .location-coordinate-readout span {
-  font-family: var(--font-family-monospace, monospace);
-  font-variant-numeric: tabular-nums;
-}
 .image-location-panel .location-map-style-row {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
   font-size: 12px;
+}
+.image-location-panel .location-map-style-row label {
+  white-space: nowrap;
 }
 .image-location-panel .location-map-style-row select {
   min-width: 130px;
@@ -1690,11 +1690,6 @@
 }
 .image-location-panel .location-map-frame .leaflet-control-attribution {
   font-size: 10px;
-}
-.image-location-panel .location-map-link {
-  color: var(--color-content-default);
-  font-size: 12px;
-  text-decoration: underline;
 }
 .image-location-panel .location-no-gps {
   margin: 0;
