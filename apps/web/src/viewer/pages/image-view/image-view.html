@@ -406,7 +406,20 @@
               <strong>GPS/GNSS:</strong>
               <span>{{formatGpsCoordinate(coordinates.latitude, 'N', 'S')}}, {{formatGpsCoordinate(coordinates.longitude, 'O', 'W')}}</span>
               <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy'}}</button>
-              <div class="location-map-style-row">
+            </div>
+            <div class="location-gpx-row">
+              <strong>GPX</strong>
+              <button type="button" class="location-gpx-import-button" (click)="importGpxTrack()">Import GPX Track</button>
+              <label class="location-gpx-toggle">
+                <input type="checkbox" [checked]="gpxTrackVisible()" [disabled]="!gpxTrackFileName()" (change)="setGpxTrackVisible($any($event.target).checked)" />
+                Track overlay
+              </label>
+              <span class="location-gpx-filename" [title]="gpxTrackFileName() || ''">{{gpxTrackFileName() || 'No file loaded'}}</span>
+            </div>
+            @if (gpxTrackStatus(); as gpxError) {
+              <p class="location-no-gps">{{gpxError}}</p>
+            }
+            <div class="location-map-style-row">
                 <label class="location-map-control-label" for="location-map-style">Style</label>
                 <select id="location-map-style" [value]="locationMapStyle()" (change)="changeLocationMapStyle($any($event.target).value)">
                   <option value="standard">Standard</option>
