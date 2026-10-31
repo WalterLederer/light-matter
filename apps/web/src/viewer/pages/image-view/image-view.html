@@ -430,16 +430,13 @@
             <div class="location-gpx-row">
               <strong>GPX:</strong>
               <button type="button" class="location-gpx-import-button" (click)="importGpxTrack()">Import</button>
-              <label class="location-gpx-toggle">
-                <input type="checkbox" [checked]="gpxTrackVisible()" [disabled]="!gpxTrackFileName()" (change)="setGpxTrackVisible($any($event.target).checked)" />
-                Track
-              </label>
               <label class="location-gpx-color-select-label" for="location-gpx-track-color">| Color</label>
               <select id="location-gpx-track-color" class="location-gpx-color-select"
-                      [value]="gpxTrackColor()"
-                      [style.background-color]="gpxTrackColor()"
-                      [style.color]="gpxTrackColor() === '#ffd60a' ? '#111' : '#fff'"
+                      [value]="gpxTrackSelection()"
+                      [style.background-color]="gpxTrackSelection() === 'off' ? '#555' : gpxTrackColor()"
+                      [style.color]="gpxTrackSelection() === 'off' || gpxTrackColor() !== '#ffd60a' ? '#fff' : '#111'"
                       (change)="setGpxTrackColor($any($event.target).value)">
+                <option value="off" style="background-color: #555; color: #fff">OFF</option>
                 @for (color of gpxTrackColors; track color.value) {
                   <option [value]="color.value"
                           [style.background-color]="color.value"
