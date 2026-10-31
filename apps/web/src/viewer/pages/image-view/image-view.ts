@@ -1172,6 +1172,13 @@ export class ImageView {
     }
   };
 
+  protected readonly centerLocationMarker = (): void => {
+    const coordinates = this.gpsCoordinates();
+    const map = this.locationMapInstance;
+    if (!coordinates || !map) return;
+    map.setView([coordinates.latitude, coordinates.longitude], map.getZoom(), { animate: true });
+  };
+
   protected readonly formatGpsCoordinate = (value: number, positiveDirection: string, negativeDirection: string): string =>
     `${Math.abs(value).toFixed(6)}° ${value >= 0 ? positiveDirection : negativeDirection}`;
 
