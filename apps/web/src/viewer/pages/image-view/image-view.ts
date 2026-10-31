@@ -2574,8 +2574,11 @@ export class ImageView {
   protected readonly copyPhoto = (): void => {
     const desktop = this.desktop;
     const destinationFolder = this.copyDestinationFolder();
-    if (!desktop || !destinationFolder) {
-      this.copyPhotoStatus.set('Select a destination folder first.');
+    if (!desktop) return;
+    if (!destinationFolder) {
+      const message = 'Please select a destination folder before copying the image.';
+      this.copyPhotoStatus.set(message);
+      this.document.defaultView?.alert(message);
       return;
     }
     this.selectedImage$
