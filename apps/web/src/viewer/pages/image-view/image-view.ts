@@ -3,7 +3,7 @@ import { AsyncPipe, DecimalPipe, DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { ConfirmationDialogComponent, OverlayService } from '@light-matter/ui';
+import { ConfirmationDialogComponent, OverlayService, SliderComponent } from '@light-matter/ui';
 import { CapturePreview, Desktop, ExifTags, ImageHistogram } from 'internal-api';
 import { catchError, distinctUntilChanged, filter, from, fromEvent, map, of, startWith, switchMap, take, tap } from 'rxjs';
 import { ExifService } from '../../../ipc/exif';
@@ -114,6 +114,7 @@ const loadLeaflet = (document: Document): Promise<LeafletApi> => {
     SettingsPanelComponent,
     CapturePanelComponent,
     ReactiveFormsModule,
+    SliderComponent,
     DecimalPipe,
       ExifInfoComponent
   ],
