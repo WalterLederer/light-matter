@@ -6,17 +6,28 @@
     <ui-text [multiLine]="true">{{ options.description }}</ui-text>
   </section>
   <footer>
-    <ui-action-button [cdkFocusInitial]="options.defaultAction !== 'cancel'"
-                      [class.default-action]="options.defaultAction !== 'cancel'"
-                      variant="primary"
-                      (pressed)="dialogRef.close(true)">
-      {{ options.confirmLabel ?? 'Yes' }}
-    </ui-action-button>
+    @if (options.defaultAction === 'cancel') {
+      <ui-action-button variant="primary"
+                        (pressed)="dialogRef.close(true)">
+        {{ options.confirmLabel ?? 'Yes' }}
+      </ui-action-button>
 
-    <ui-action-button [cdkFocusInitial]="options.defaultAction === 'cancel'"
-                      [class.default-action]="options.defaultAction === 'cancel'"
-                      (pressed)="dialogRef.close(false)">
-      Cancel
-    </ui-action-button>
+      <ui-action-button cdkFocusInitial
+                        class="default-action"
+                        (pressed)="dialogRef.close(false)">
+        Cancel
+      </ui-action-button>
+    } @else {
+      <ui-action-button cdkFocusInitial
+                        class="default-action"
+                        variant="primary"
+                        (pressed)="dialogRef.close(true)">
+        {{ options.confirmLabel ?? 'Yes' }}
+      </ui-action-button>
+
+      <ui-action-button (pressed)="dialogRef.close(false)">
+        Cancel
+      </ui-action-button>
+    }
   </footer>
 </ui-dialog>
