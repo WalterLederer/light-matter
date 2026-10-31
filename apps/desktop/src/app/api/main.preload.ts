@@ -19,6 +19,7 @@ const api: Desktop = {
     join: (...paths: string[]) => ipcRenderer.invoke('FileSystem.join', ...paths),
     dirname: (fileName: string) => ipcRenderer.invoke('FileSystem.dirname', fileName),
     readDir: (path: string) => ipcRenderer.invoke('FileSystem.readDir', path),
+    readText: (path: string) => ipcRenderer.invoke('FileSystem.readText', path),
     readJson: (path: string) => ipcRenderer.invoke('FileSystem.readJson', path),
     writeJson: <T>(path: string, data: T) => ipcRenderer.invoke('FileSystem.writeJson', path, data),
     readGalleryLocation: (path: string) => ipcRenderer.invoke('FileSystem.readGalleryLocation', path),
