@@ -773,15 +773,30 @@ export class ImageView {
     },
     satellite: {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      attribution: 'Tiles &copy; Esri — Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+      attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> — Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+      maxZoom: 19
+    },
+    cycling: {
+      url: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; <a href="https://www.cyclosm.org/">CyclOSM</a>',
+      maxZoom: 20
+    },
+    topographic: {
+      url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+      attribution: 'Kartendaten: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, SRTM &middot; Kartendarstellung: &copy; <a href="https://opentopomap.org/">OpenTopoMap</a> (CC-BY-SA)',
+      maxZoom: 17
+    },
+    humanitarian: {
+      url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; <a href="https://www.hotosm.org/">Humanitarian OpenStreetMap Team</a>',
       maxZoom: 19
     }
   } as const;
 
-  private readStoredLocationMapStyle(): 'standard' | 'satellite' {
+  private readStoredLocationMapStyle(): 'standard' | 'satellite' | 'cycling' | 'topographic' | 'humanitarian' {
     try {
       const stored = this.document.defaultView?.localStorage.getItem('light-matter.locationMapStyle');
-      if (stored === 'standard' || stored === 'satellite') return stored;
+      if (stored === 'standard' || stored === 'satellite' || stored === 'cycling' || stored === 'topographic' || stored === 'humanitarian') return stored;
     } catch {
       // Use the standard map when browser storage is unavailable.
     }
@@ -789,7 +804,7 @@ export class ImageView {
   }
 
   protected readonly changeLocationMapStyle = (style: string): void => {
-    if (style !== 'standard' && style !== 'satellite') return;
+    if (style !== 'standard' && style !== 'satellite' && style !== 'cycling' && style !== 'topographic' && style !== 'humanitarian') return;
     this.locationMapStyle.set(style);
     try {
       this.document.defaultView?.localStorage.setItem('light-matter.locationMapStyle', style);
