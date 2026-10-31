@@ -461,7 +461,7 @@ export class ImageView {
     try { this.document.defaultView?.localStorage.setItem('light-matter.activeImageSidebarTab', tab); } catch { /* Ignore unavailable storage. */ }
   };
 
-  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, basic: true, rgb: true, rgbLevels: false, inverse: false, loupe: true, loupeRenderer: false, highlight: true, toneCurve: false, mode: true, histogram: false, info: true, general: true });
+  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, basic: true, rgb: true, rgbLevels: false, inverse: false, loupe: true, loupeRenderer: false, highlight: true, toneCurve: false, mode: true, histogram: false, info: true, general: true, actions: false });
   protected readonly sidebarSectionExpanded = (key: string): boolean => ['corrections', 'highlight', 'mode', 'info', 'general'].includes(key) || this.sidebarSections()[key] === true;
   protected readonly toggleSidebarSection = (key: string): void => {
     const sections = { ...this.sidebarSections(), [key]: !this.sidebarSectionExpanded(key) };
@@ -2109,6 +2109,87 @@ export class ImageView {
   protected readonly prevPhoto = () => this.viewNavigator.previous();
 
   protected readonly nextPhoto = () => this.viewNavigator.next();
+
+  protected readonly copyPathStatus = signal('');
+
+  protected readonly copyDestinationFolder = signal<string | null>(null);
+
+  protected readonly copyPhotoStatus = signal('');
+
+  protected readonly copyImagePath = async (): Promise<void> => {
+    const image = await this.selectedImage$.pipe(take(1)).toPromise();
+    if (!image) return;
+    try {
+      const normalizedPath = /^[a-zA-Z]:[\\/]/.test(image.path) || image.path.startsWith('\\\\')
+        ? image.path.replace(/\\//g, '\\\\').replace(/\\\\{2,}/g, '\\\\')
+        : image.path;
+      await this.document.defaultView?.navigator.clipboard.writeText(normalizedPath);
+      this.copyPathStatus.set('Copied');
+      this.document.defaultView?.setTimeout(() => this.copyPathStatus.set(''), 1800);
+    } catch (error) {
+      console.error('Failed to copy image path to clipboard', error);
+      this.copyPathStatus.set('Copy failed');
+      this.document.defaultView?.setTimeout(() => this.copyPathStatus.set(''), 2500);
+    }
+  };
+
+  protected readonly selectCopyFolder = async (): Promise<void> => {
+    const desktop = this.desktop;
+    if (!desktop) return;
+    const image = await this.selectedImage$.pipe(take(1)).toPromise();
+    if (!image) return;
+    const initialFolder = await desktop.FileSystem.dirname(image.path);
+    const result = await desktop.Dialogs.openFolder(initialFolder);
+    if (result.success) {
+      this.copyDestinationFolder.set(result.data);
+      this.copyPhotoStatus.set('');
+    }
+  };
+
+  protected readonly selectBestOfFolder = async (): Promise<void> => {
+    const desktop = this.desktop;
+    if (!desktop) return;
+    const image = await this.selectedImage$.pipe(take(1)).toPromise();
+    if (!image) return;
+    try {
+      const imageFolder = await desktop.FileSystem.dirname(image.path);
+      const parentFolder = await desktop.FileSystem.dirname(imageFolder);
+      const result = await desktop.FileSystem.readDirectories(parentFolder);
+      if (!result.success) throw new Error(result.errorMessage);
+      const bestOf = result.data.find(folder => folder.isDirectory && folder.name.toLowerCase() === 'bestof');
+      if (!bestOf) {
+        this.copyPhotoStatus.set('BestOf folder not found.');
+        return;
+      }
+      this.copyDestinationFolder.set(bestOf.path);
+      this.copyPhotoStatus.set('');
+    } catch (error) {
+      this.copyPhotoStatus.set(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  protected readonly copyPhoto = (): void => {
+    const desktop = this.desktop;
+    const destinationFolder = this.copyDestinationFolder();
+    if (!desktop || !destinationFolder) {
+      this.copyPhotoStatus.set('Select a destination folder first.');
+      return;
+    }
+    this.selectedImage$
+      .pipe(take(1), filter(image => image !== null))
+      .subscribe(image =>
+        ConfirmationDialogComponent
+          .open(this.dialog, {
+            title: 'Copy image?',
+            description: `Copy "${image.path}" to "${destinationFolder}"?`,
+            confirmLabel: 'Copy'
+          })
+          .subscribe(async () => {
+            const result = await desktop.FileSystem.copyFile(image.path, destinationFolder);
+            this.copyPhotoStatus.set(result.success ? `Copied to ${destinationFolder}` : result.errorMessage);
+          })
+      );
+  };
 
   protected readonly deletePhoto = () => {
     this.selectedImage$
