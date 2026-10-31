@@ -1658,6 +1658,9 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  margin-top: 2px;
+  padding-top: 9px;
+  border-top: 1px solid var(--color-content-default-low, rgb(128 128 128 / 35%));
   font-size: 12px;
 }
 .image-location-panel .location-map-style-row label {
@@ -1693,13 +1696,7 @@
   font-size: 10px;
 }
 
-/* Color presets affect map tiles only; markers, controls and attribution stay unchanged. */
-.image-location-panel .location-map-frame.map-color-light .leaflet-tile-pane { filter: brightness(1.12) saturate(.82); }
-.image-location-panel .location-map-frame.map-color-dark .leaflet-tile-pane { filter: brightness(.68) contrast(1.16) saturate(.82); }
-.image-location-panel .location-map-frame.map-color-grayscale .leaflet-tile-pane { filter: grayscale(1); }
-.image-location-panel .location-map-frame.map-color-pastel .leaflet-tile-pane { filter: saturate(.62) brightness(1.12) contrast(.88); }
-.image-location-panel .location-map-frame.map-color-contrast .leaflet-tile-pane { filter: saturate(1.35) contrast(1.22); }
-.image-location-panel .location-map-frame.map-color-night .leaflet-tile-pane { filter: brightness(.48) contrast(1.35) saturate(.72) hue-rotate(12deg); }
+/* Map tile color presets are applied directly to Leaflet's generated tile pane. */
 .image-location-panel .location-no-gps {
   margin: 0;
   color: var(--color-content-default-medium);
