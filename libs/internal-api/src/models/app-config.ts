@@ -1,11 +1,13 @@
-export type ThumbnailSize = 'small' | 'smallMedium' | 'medium' | 'mediumLarge' | 'large' | 'smallPlus' | 'smallMediumPlus' | 'mediumPlus' | 'mediumLargePlus';
-export const allThumbnailSizes = [ 'small', 'smallPlus', 'smallMedium', 'smallMediumPlus', 'medium', 'mediumPlus', 'mediumLarge', 'mediumLargePlus', 'large' ] as const;
+export type ThumbnailSize = 'extraSmall' | 'extraSmallPlus' | 'small' | 'smallMedium' | 'medium' | 'mediumLarge' | 'large' | 'smallPlus' | 'smallMediumPlus' | 'mediumPlus' | 'mediumLargePlus';
+export const allThumbnailSizes = [ 'extraSmall', 'extraSmallPlus', 'small', 'smallPlus', 'smallMedium', 'smallMediumPlus', 'medium', 'mediumPlus', 'mediumLarge', 'mediumLargePlus', 'large' ] as const;
 export const defaultThumbnailSize: ThumbnailSize = 'small';
 export const thumbnailDimensions: Record<ThumbnailSize, {
   width: number;
   height: number;
 }> = {
-  small: { width: 192, height: 128 },
+  extraSmall: { width: 144, height: 96 },
+  extraSmallPlus: { width: 168, height: 112 },
+  small: { width: 192, height: 128 }
   smallPlus: { width: 216, height: 144 },
   smallMedium: { width: 240, height: 160 },
   smallMediumPlus: { width: 264, height: 176 },
@@ -16,6 +18,8 @@ export const thumbnailDimensions: Record<ThumbnailSize, {
   large: { width: 384, height: 256 }
 };
 export const getThumbnailSize = (width?: number, height?: number): ThumbnailSize => {
+  if (width === thumbnailDimensions.extraSmall.width && height === thumbnailDimensions.extraSmall.height) return 'extraSmall';
+  if (width === thumbnailDimensions.extraSmallPlus.width && height === thumbnailDimensions.extraSmallPlus.height) return 'extraSmallPlus';
   if (width === thumbnailDimensions.smallPlus.width && height === thumbnailDimensions.smallPlus.height) return 'smallPlus';
   if (width === thumbnailDimensions.smallMediumPlus.width && height === thumbnailDimensions.smallMediumPlus.height) return 'smallMediumPlus';
   if (width === thumbnailDimensions.mediumPlus.width && height === thumbnailDimensions.mediumPlus.height) return 'mediumPlus';
