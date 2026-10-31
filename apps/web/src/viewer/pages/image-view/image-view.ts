@@ -3148,6 +3148,34 @@ export class ImageView {
     this.keyboard.keydown()
       .pipe(takeUntilDestroyed())
       .subscribe(event => {
+        // Handle confirmation navigation in the document capture phase, before
+        // the CDK overlay and any global image-navigation listeners process it.
+        if (this.dialog.openDialogs.length > 0 &&
+            (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+          const dialogHost = this.document.querySelector('ui-confirmation-dialog');
+          const buttons = dialogHost?.querySelectorAll(
+            'button:not(:disabled)'
+          ) as NodeListOf<HTMLButtonElement> | undefined;
+
+          if (buttons && buttons.length >= 2) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const activeElement = this.document.activeElement;
+            let activeIndex = -1;
+            buttons.forEach((button, index) => {
+              if (button === activeElement) activeIndex = index;
+            });
+
+            const direction = event.key === 'ArrowRight' ? 1 : -1;
+            const nextIndex = activeIndex < 0
+              ? (direction > 0 ? 0 : buttons.length - 1)
+              : (activeIndex + direction + buttons.length) % buttons.length;
+            buttons[nextIndex].focus();
+            return;
+          }
+        }
+
         if (this.isPointerOverLocationMap &&
             (event.key === 'ArrowLeft' || event.key === 'ArrowRight' ||
              event.key === 'ArrowUp' || event.key === 'ArrowDown' ||
