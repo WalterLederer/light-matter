@@ -406,12 +406,8 @@
           @if (sidebarSectionExpanded('actions')) {
             <button class="danger-action" type="button" (click)="deletePhoto()">Delete file (DEL)</button>
             <section class="copy-file-section">
-              <button class="section-heading" type="button" (click)="toggleSidebarSection('copy')"><span class="section-chevron">{{sidebarSectionExpanded('copy') ? 'v' : '>'}}</span>Copy file (C, F8)</button>
+              <button class="section-heading" type="button" (click)="toggleSidebarSection('copy')"><span class="section-chevron">{{sidebarSectionExpanded('copy') ? 'v' : '>'}}</span>Copy file</button>
               @if (sidebarSectionExpanded('copy')) {
-                <div class="copy-folder-select-row">
-                  <button type="button" (click)="selectCopyFolder()">Select folder</button>
-                  <button type="button" (click)="selectBestOfFolder()">Select BestOf folder</button>
-                </div>
                 <div class="copy-folder-info-box">
                   <div class="copy-folder-info-title">Source</div>
                   <div class="copy-folder-info-path" [title]="sourceFolderPath() || ''">{{sourceFolderPath() || 'No source folder'}}</div>
@@ -421,9 +417,13 @@
                   <div class="copy-folder-info-title">Destination</div>
                   <div class="copy-folder-info-path" [title]="copyDestinationFolder() || ''">{{copyDestinationFolder() || 'No destination folder selected'}}</div>
                   <div class="copy-folder-info-files">Files: {{copyDestinationFileCount() ?? '—'}}</div>
+                  <div class="copy-folder-select-row">
+                    <button type="button" (click)="selectCopyFolder()">Select folder</button>
+                    <button type="button" (click)="selectBestOfFolder()">Select BestOf folder</button>
+                  </div>
                 </div>
                 @if (copyPhotoStatus()) { <div class="copy-photo-status" role="status">{{copyPhotoStatus()}}</div> }
-                <button class="danger-action copy-confirm-button" type="button" [disabled]="!copyDestinationFolder()" (click)="copyPhoto()">Copy</button>
+                <button class="danger-action copy-confirm-button" type="button" [disabled]="!copyDestinationFolder()" (click)="copyPhoto()">Copy (C, F8)</button>
               }
             </section>
             <button type="button" (click)="copyImagePath()">{{copyPathStatus() || 'Copy path'}}</button>
