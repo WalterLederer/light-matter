@@ -931,6 +931,7 @@ export class ImageView {
       .pipe(takeUntilDestroyed())
       .subscribe(image => {
         this.debugSelectedImagePath = image?.path ?? 'none';
+        if (image) void this.refreshSourceFileCount(image.path);
         this.traceDebugSwitching(`selected ${image?.path?.split(/[\\/]/).pop() ?? 'none'}`);
         this.processManager.setWindowTitle(this.makeWindowTitle(image?.path)).catch(() => undefined);
         if (this.debugImageSwitching()) {
@@ -2118,6 +2119,25 @@ export class ImageView {
 
   protected readonly copyDestinationFileCount = signal<number | null>(null);
 
+  protected readonly sourceFileCount = signal<number | null>(null);
+
+  private sourceFileCountFolder: string | null = null;
+
+  private readonly refreshSourceFileCount = async (imagePath: string, force = false): Promise<void> => {
+    const desktop = this.desktop;
+    if (!desktop) return;
+    try {
+      const folder = await desktop.FileSystem.dirname(imagePath);
+      if (!force && folder === this.sourceFileCountFolder) return;
+      this.sourceFileCountFolder = folder;
+      const files = await desktop.FileSystem.readDir(folder);
+      this.sourceFileCount.set(files.filter(file => !file.isDirectory).length);
+    } catch (error) {
+      console.error('Failed to count files in source folder', error);
+      this.sourceFileCount.set(null);
+    }
+  };
+
   protected readonly copyImagePath = async (): Promise<void> => {
     const image = await this.selectedImage$.pipe(take(1)).toPromise();
     if (!image) return;
@@ -2225,6 +2245,8 @@ export class ImageView {
 
             if (!deleted) {
               this.document.defaultView?.alert('The image could not be deleted.');
+            } else {
+              await this.refreshSourceFileCount(image.path, true);
             }
           })
       );
