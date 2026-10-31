@@ -2447,9 +2447,9 @@ export class ImageView {
           return;
         }
 
-        if ((event.key === 'c' || event.key === 'C') && this.loupeEnabled()) {
+        if (event.key === 'c' || event.key === 'C' || event.key === 'F8') {
           event.preventDefault();
-          void this.copyLoupeValuesToClipboard();
+          this.copyPhoto();
           return;
         }
 
