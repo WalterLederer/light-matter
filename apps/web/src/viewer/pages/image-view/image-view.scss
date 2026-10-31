@@ -1756,27 +1756,28 @@
   font: inherit;
   background: #e8e4dc;
 }
-.image-location-panel .location-map-frame .leaflet-control-attribution {
+/* Leaflet creates attribution nodes dynamically, so pierce Angular's style encapsulation. */
+:host ::ng-deep .image-location-panel .location-map-frame .leaflet-control-attribution {
   padding: 2px 5px;
   border-radius: 3px 0 0 0;
-  background: rgb(24 27 31 / 22%);
-  color: rgb(255 255 255 / 55%);
+  background: rgb(24 27 31 / 22%) !important;
+  color: rgb(255 255 255 / 55%) !important;
   font-size: 10px;
-  opacity: 0.28;
+  opacity: 0.28 !important;
   transition: opacity 160ms ease, background-color 160ms ease;
 }
-.image-location-panel .location-map-frame .leaflet-control-attribution a {
-  color: rgb(255 255 255 / 70%);
+:host ::ng-deep .image-location-panel .location-map-frame .leaflet-control-attribution a {
+  color: rgb(255 255 255 / 70%) !important;
 }
-.image-location-panel .location-map-frame .leaflet-control-attribution:hover,
-.image-location-panel .location-map-frame .leaflet-control-attribution:focus-within {
-  background: rgb(24 27 31 / 88%);
-  color: #fff;
-  opacity: 0.95;
+:host ::ng-deep .image-location-panel .location-map-frame .leaflet-control-attribution:hover,
+:host ::ng-deep .image-location-panel .location-map-frame .leaflet-control-attribution:focus-within {
+  background: rgb(24 27 31 / 88%) !important;
+  color: #fff !important;
+  opacity: 0.95 !important;
 }
-.image-location-panel .location-map-frame .leaflet-control-attribution:hover a,
-.image-location-panel .location-map-frame .leaflet-control-attribution:focus-within a {
-  color: #fff;
+:host ::ng-deep .image-location-panel .location-map-frame .leaflet-control-attribution:hover a,
+:host ::ng-deep .image-location-panel .location-map-frame .leaflet-control-attribution:focus-within a {
+  color: #fff !important;
 }
 
 /* Map tile color presets are applied directly to Leaflet's generated tile pane. */
