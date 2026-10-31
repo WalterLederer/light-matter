@@ -404,7 +404,7 @@
         <section class="image-actions-section">
           <button class="section-heading" type="button" (click)="toggleSidebarSection('actions')"><span class="section-chevron">{{sidebarSectionExpanded('actions') ? 'v' : '>'}}</span>Actions</button>
           @if (sidebarSectionExpanded('actions')) {
-            <button type="button" (click)="deletePhoto()">Delete file</button>
+            <button class="danger-action" type="button" (click)="deletePhoto()">Delete file</button>
             <section class="copy-file-section">
               <button class="section-heading" type="button" (click)="toggleSidebarSection('copy')"><span class="section-chevron">{{sidebarSectionExpanded('copy') ? 'v' : '>'}}</span>Copy file</button>
               @if (sidebarSectionExpanded('copy')) {
@@ -413,8 +413,11 @@
                 <div class="copy-destination-path" [title]="copyDestinationFolder() || ''">
                   {{copyDestinationFolder() || 'No copy destination selected'}}
                 </div>
-                <button type="button" [disabled]="!copyDestinationFolder()" (click)="copyPhoto()">Copy</button>
+                <button class="danger-action" type="button" [disabled]="!copyDestinationFolder()" (click)="copyPhoto()">Copy</button>
                 @if (copyPhotoStatus()) { <div class="copy-photo-status" role="status">{{copyPhotoStatus()}}</div> }
+                @if (copyDestinationFileCount() !== null) {
+                  <div class="copy-destination-count" role="status">Files in destination: {{copyDestinationFileCount()}}</div>
+                }
               }
             </section>
             <button type="button" (click)="copyImagePath()">{{copyPathStatus() || 'Copy path'}}</button>
