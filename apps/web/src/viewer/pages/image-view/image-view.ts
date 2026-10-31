@@ -43,6 +43,7 @@ interface LeafletMap {
 interface LeafletPolyline {
   addTo(map: LeafletMap): LeafletPolyline;
   remove(): LeafletPolyline;
+  setStyle(style: { opacity?: number }): LeafletPolyline;
 }
 
 interface LeafletMarker {
@@ -764,11 +765,37 @@ export class ImageView {
   protected readonly locationMapStyle = signal(this.readStoredLocationMapStyle());
   protected readonly locationMapColor = signal(this.readStoredLocationMapColor());
   protected readonly locationMapOpacity = signal(this.readStoredLocationMapOpacity());
+  protected readonly gpxTrackOpacity = signal(this.readStoredGpxTrackOpacity());
   private readonly locationMapColors = ['original', 'light', 'extra-light', 'ultra-light', 'dark', 'grayscale', 'pastel', 'contrast', 'night'] as const;
+
+  private readStoredGpxTrackOpacity(): number {
+    try {
+      const storedValue = this.document.defaultView?.localStorage.getItem('light-matter.gpxTrackOpacity');
+      if (storedValue === null || storedValue === undefined) return 100;
+      const stored = Number(storedValue);
+      return Number.isFinite(stored) && stored >= 0 && stored <= 100 ? stored : 100;
+    } catch {
+      return 100;
+    }
+  }
+
+  protected readonly changeGpxTrackOpacity = (value: string | number): void => {
+    const opacity = Math.max(0, Math.min(100, Math.round(Number(value))));
+    if (!Number.isFinite(opacity)) return;
+    this.gpxTrackOpacity.set(opacity);
+    try {
+      this.document.defaultView?.localStorage.setItem('light-matter.gpxTrackOpacity', String(opacity));
+    } catch {
+      // The selected GPX track opacity remains active for this session.
+    }
+    for (const layer of this.locationGpxLayers) layer.setStyle({ opacity: 0.92 * opacity / 100 });
+  };
 
   private readStoredLocationMapOpacity(): number {
     try {
-      const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.locationMapOpacity'));
+      const storedValue = this.document.defaultView?.localStorage.getItem('light-matter.locationMapOpacity');
+      if (storedValue === null || storedValue === undefined) return 100;
+      const stored = Number(storedValue);
       return Number.isFinite(stored) && stored >= 0 && stored <= 100 ? stored : 100;
     } catch {
       return 100;
@@ -1016,7 +1043,7 @@ export class ImageView {
       this.locationGpxLayers.push(leaflet.polyline(segment, {
         color: this.gpxTrackColor(),
         weight: 4,
-        opacity: 0.92,
+        opacity: 0.92 * this.gpxTrackOpacity() / 100,
         lineCap: 'round',
         lineJoin: 'round'
       }).addTo(map));
