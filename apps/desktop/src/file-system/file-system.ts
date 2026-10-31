@@ -20,6 +20,15 @@ export class FileSystem {
     return result.map(this.toFileInfo);
   };
 
+  @IpcHandler({ name: 'FileSystem.readText' })
+  readonly readText = async (_: IpcMainInvokeEvent, path: string): Promise<ApiResponse<string>> => {
+    try {
+      return { success: true, data: await readFile(path, 'utf-8') };
+    } catch (_) {
+      return { success: false, errorMessage: `Failed to read file ${path}.` };
+    }
+  };
+
   @IpcHandler({ name: 'FileSystem.readJson' })
   readonly readJson = async <T>(_: IpcMainInvokeEvent, path: string): Promise<ApiResponse<T>> => {
     try {
