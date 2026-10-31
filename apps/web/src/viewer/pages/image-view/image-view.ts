@@ -106,6 +106,8 @@ export class ImageView {
 
   private readonly dialog = inject(Dialog);
 
+  private escapePressedWhileDialogOpen = false;
+
   private readonly configuration = inject(Configuration);
 
   protected readonly themeService = inject(ThemeService);
@@ -2451,10 +2453,25 @@ export class ImageView {
     }
   };
 
-  private readonly trackKeyboard = () =>
+  private readonly trackKeyboard = () => {
+    // Capture Escape before the CDK dialog handles and closes the overlay.
+    // The matching keyup must not also trigger the image-view back action.
+    this.keyboard.keydown()
+      .pipe(takeUntilDestroyed())
+      .subscribe(event => {
+        if (event.key === 'Escape' && this.dialog.openDialogs.length > 0) {
+          this.escapePressedWhileDialogOpen = true;
+        }
+      });
+
     this.keyboard.keyup()
       .pipe(takeUntilDestroyed())
       .subscribe(event => {
+        if (event.key === 'Escape' && this.escapePressedWhileDialogOpen) {
+          this.escapePressedWhileDialogOpen = false;
+          return;
+        }
+
         if ((event.shiftKey && event.key !== '+' && event.key !== '_') || event.ctrlKey || event.altKey || event.metaKey) {
           return;
         }
@@ -2567,4 +2584,5 @@ export class ImageView {
             break;
         }
       });
+  };
 }
