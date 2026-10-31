@@ -408,16 +408,20 @@
               <button type="button" class="location-copy-button" (click)="copyLocation()" title="Copy GPS coordinates to the clipboard" aria-label="Copy GPS coordinates to the clipboard">{{copyLocationStatus() || 'Copy'}}</button>
               <button type="button" class="location-copy-button location-center-button" (click)="centerLocationMarker()" aria-label="Center map on GPS marker" title="Center map on GPS marker"><span class="location-center-icon" aria-hidden="true">⌖</span> Center</button>
               <div class="location-map-style-row">
-                <select id="location-map-style" title="Map style" aria-label="Map style"
+                <select id="location-map-style"
+                        title="Choose the map layer: standard street map, satellite imagery, cycling, topographic, or humanitarian map."
+                        aria-label="Choose map layer"
                         [value]="locationMapStyle()" (change)="changeLocationMapStyle($any($event.target).value)">
-                  <option value="standard"></option>
+                  <option value="standard">Standard</option>
                   <option value="satellite">Satellite</option>
                   <option value="cycling">Cycling (CyclOSM)</option>
                   <option value="topographic">Topographic</option>
                   <option value="humanitarian">Humanitarian (HOT)</option>
                 </select>
-                <label class="location-map-control-label" for="location-map-color">Colors</label>
-                <select id="location-map-color" [value]="locationMapColor()" (change)="changeLocationMapColor($any($event.target).value)">
+                <select id="location-map-color"
+                        title="Apply a color filter to the map tiles, for example light, dark, grayscale, pastel, or high contrast."
+                        aria-label="Choose map color filter"
+                        [value]="locationMapColor()" (change)="changeLocationMapColor($any($event.target).value)">
                   <option value="original">Original</option>
                   <option value="light">Light</option>
                   <option value="extra-light">Extra light</option>
@@ -431,8 +435,8 @@
                 <select id="location-web-app" class="location-web-app-select"
                         [value]="locationWebApp()"
                         (change)="openLocationWebApp($any($event.target).value)"
-                        title="Open the image GPS coordinates in an external map website"
-                        aria-label="Open GPS coordinates in a map website">
+                        title="Choose which external map website to open with this image's GPS coordinates."
+                        aria-label="Choose external map website">
                   <option value="google-earth">Google Earth</option>
                   <option value="google-maps">Google Maps</option>
                   <option value="openstreetmap">OpenStreetMap</option>
