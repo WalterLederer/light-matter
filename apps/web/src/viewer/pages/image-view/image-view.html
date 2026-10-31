@@ -434,7 +434,7 @@
                 <input type="checkbox" [checked]="gpxTrackVisible()" [disabled]="!gpxTrackFileName()" (change)="setGpxTrackVisible($any($event.target).checked)" />
                 Track
               </label>
-              <label class="location-gpx-color-select-label" for="location-gpx-track-color">Color</label>
+              <label class="location-gpx-color-select-label" for="location-gpx-track-color">| Color</label>
               <select id="location-gpx-track-color" class="location-gpx-color-select"
                       [value]="gpxTrackColor()"
                       [style.background-color]="gpxTrackColor()"
