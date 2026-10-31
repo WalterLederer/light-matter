@@ -3096,6 +3096,11 @@ export class ImageView {
     this.keyboard.keydown()
       .pipe(takeUntilDestroyed())
       .subscribe(event => {
+        if (this.isPointerOverLocationMap &&
+            (event.key === 'ArrowLeft' || event.key === 'ArrowRight' ||
+             event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+          event.preventDefault();
+        }
         if (event.key === 'Escape' && this.dialog.openDialogs.length > 0) {
           this.escapePressedWhileDialogOpen = true;
         }
