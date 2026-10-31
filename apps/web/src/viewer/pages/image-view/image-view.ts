@@ -762,6 +762,7 @@ export class ImageView {
   protected readonly copyLocationStatus = signal('');
 
   protected readonly locationMapElement = viewChild<ElementRef<HTMLDivElement>>('locationMapElement');
+  private locationMapResizeObserver: ResizeObserver | null = null;
   private isPointerOverLocationMap = false;
   protected readonly onLocationMapPointerEnter = (): void => { this.isPointerOverLocationMap = true; };
   protected readonly onLocationMapPointerLeave = (): void => { this.isPointerOverLocationMap = false; };
@@ -1201,6 +1202,8 @@ export class ImageView {
   };
 
   private readonly disposeLocationMap = (): void => {
+    this.locationMapResizeObserver?.disconnect();
+    this.locationMapResizeObserver = null;
     if (this.locationMapInstance) {
       this.storeLocationMapZoom(this.locationMapInstance.getZoom());
       this.locationMapInstance.remove();
@@ -1227,6 +1230,20 @@ export class ImageView {
         this.locationMapContainer = container;
         this.locationMapInstance = leaflet.map(container, { zoomControl: false, keyboard: false, minZoom: 1, maxZoom: 20 })
           .setView(position, this.locationMapZoom, { animate: false });
+        // Leaflet caches its container dimensions. Observe sidebar-driven width changes
+        // and invalidate the map so tiles and controls are laid out at the new size.
+        if (typeof ResizeObserver !== 'undefined') {
+          this.locationMapResizeObserver = new ResizeObserver(() => {
+            const map = this.locationMapInstance;
+            if (!map || this.locationMapContainer !== container || !container.isConnected) return;
+            this.document.defaultView?.requestAnimationFrame(() => {
+              if (this.locationMapInstance === map && this.locationMapContainer === container) {
+                map.invalidateSize({ animate: false, pan: false, debounceMoveend: true });
+              }
+            });
+          });
+          this.locationMapResizeObserver.observe(container);
+        }
         const mapStyle = this.locationMapStyles[this.locationMapStyle()];
         this.locationMapTileLayer = leaflet.tileLayer(mapStyle.url, {
           attribution: mapStyle.attribution,
