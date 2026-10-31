@@ -7,7 +7,7 @@ export const thumbnailDimensions: Record<ThumbnailSize, {
 }> = {
   extraSmall: { width: 144, height: 96 },
   extraSmallPlus: { width: 168, height: 112 },
-  small: { width: 192, height: 128 }
+  small: { width: 192, height: 128 },
   smallPlus: { width: 216, height: 144 },
   smallMedium: { width: 240, height: 160 },
   smallMediumPlus: { width: 264, height: 176 },
