@@ -25,11 +25,13 @@ const api: Desktop = {
     readDirectories: (path: string) => ipcRenderer.invoke('FileSystem.readDirectories', path),
     readImages: (path: string, sortBy: SortType, sortDir: SortDirection) =>
       ipcRenderer.invoke('FileSystem.readImages', path, sortBy, sortDir),
-    deleteFile: (path: string) => ipcRenderer.invoke('FileSystem.deleteFile', path)
+    deleteFile: (path: string) => ipcRenderer.invoke('FileSystem.deleteFile', path),
+    copyFile: (sourcePath: string, destinationDirectory: string) =>
+      ipcRenderer.invoke('FileSystem.copyFile', sourcePath, destinationDirectory)
   },
 
   Dialogs: {
-    openFolder: () => ipcRenderer.invoke('Dialogs.openFolder')
+    openFolder: (initialPath?: string) => ipcRenderer.invoke('Dialogs.openFolder', initialPath)
   },
 
   Exif: {
