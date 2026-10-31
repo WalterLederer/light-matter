@@ -40,11 +40,12 @@
     user-select: none;
   }
 
-  /* Indent expandable rows inside Image information by nesting depth. */
+  /* File, Color and Performance are peer sections, not nested sections. */
   > details > summary {
-    padding-left: 12px;
+    padding-left: 0;
   }
 
+  /* Measurement logic is genuinely nested inside Performance. */
   .measurement-details > summary {
     padding-left: 24px;
   }
