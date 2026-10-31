@@ -808,7 +808,7 @@ export class ImageView {
   private readonly applyLocationMapColor = (): void => {
     const tilePane = this.locationMapContainer?.querySelector<HTMLElement>('.leaflet-tile-pane');
     if (!tilePane) return;
-    const filters: Record<typeof this.locationMapColors[number], string> = {
+    const filters: Record<(typeof this.locationMapColors)[number], string> = {
       original: 'none',
       light: 'brightness(1.12) saturate(.82)',
       dark: 'brightness(.68) contrast(1.16) saturate(.82)',
