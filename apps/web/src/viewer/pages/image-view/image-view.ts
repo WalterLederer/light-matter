@@ -1,27 +1,19 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { AsyncPipe, DecimalPipe, DOCUMENT } from '@angular/common';
+import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import {
-  ConfirmationDialogComponent,
-  OverlayService,
-  SliderComponent
-} from '@light-matter/ui';
+import { ConfirmationDialogComponent, OverlayService } from '@light-matter/ui';
 import { CapturePreview, Desktop, ExifTags, ImageHistogram } from 'internal-api';
 import { catchError, distinctUntilChanged, filter, from, fromEvent, map, of, startWith, switchMap, take, tap } from 'rxjs';
 import { ExifService } from '../../../ipc/exif';
 import { HistogramService } from '../../../ipc/histogram';
 import { ProcessManager } from '../../../ipc/process-manager';
 import { CacheManager } from '../../../ipc/cache-manager';
-import { SettingsPanelComponent } from '../../../settings/components/settings-dialog/settings-dialog.component';
 import { Configuration } from '../../../system/services/configuration/configuration';
 import { ThemeService } from '../../../system/services/theme/theme.service';
 import { Keyboard } from '../../../system/services/keyboard/keyboard';
-import { CapturePanelComponent } from '../../../capture/components/capture-panel/capture-panel.component';
 import { CapturePreviewStore } from '../../../capture/capture-preview-store';
-import { ExifInfoComponent } from '../../components/exif-info/exif-info.component';
-import { ImageRendererComponent } from '../../components/image-renderer/image-renderer.component';
 import { HdrImageBrightnessRenderer, HdrLoupeRenderer, HdrLoupeRegion } from './hdr-loupe-renderer';
 import { imageDynamicRange } from '../../utils/image-dynamic-range';
 import { ImagePositioningService } from '../../services/image-positioning/image-positioning.service';
@@ -36,11 +28,17 @@ const HDR_WEBGPU_BRIGHTNESS_CORRECTION = 0.4;
 
 interface LeafletMap {
   setView(center: [number, number], zoom: number, options?: { animate?: boolean }): LeafletMap;
+  fitBounds(bounds: [[number, number], [number, number]], options?: { padding?: [number, number]; maxZoom?: number; animate?: boolean }): LeafletMap;
   getZoom(): number;
   setZoom(zoom: number, options?: { animate?: boolean }): LeafletMap;
   invalidateSize(options?: { animate?: boolean; pan?: boolean }): LeafletMap;
   on(event: 'zoomend', callback: () => void): LeafletMap;
   remove(): void;
+}
+
+interface LeafletPolyline {
+  addTo(map: LeafletMap): LeafletPolyline;
+  remove(): LeafletPolyline;
 }
 
 interface LeafletMarker {
@@ -792,6 +790,15 @@ export class ImageView {
   protected readonly gpxTrackFileName = signal<string | null>(null);
   protected readonly gpxTrackVisible = signal(true);
   protected readonly gpxTrackStatus = signal<string | null>(null);
+  protected readonly gpxTrackColors = [
+    { name: 'Red', value: '#ff3b30' },
+    { name: 'Orange', value: '#ff9500' },
+    { name: 'Yellow', value: '#ffd60a' },
+    { name: 'Green', value: '#34c759' },
+    { name: 'Blue', value: '#0a84ff' },
+    { name: 'Magenta', value: '#bf5af2' }
+  ] as const;
+  protected readonly gpxTrackColor = signal(this.readStoredGpxTrackColor());
   private readonly readStoredLocationMapZoom = (): number => {
     try {
       const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.locationMapZoom'));
@@ -886,6 +893,27 @@ export class ImageView {
     return [latitude, longitude];
   }
 
+  private readStoredGpxTrackColor(): string {
+    try {
+      const stored = this.document.defaultView?.localStorage.getItem('light-matter.gpxTrackColor');
+      if (this.gpxTrackColors.some(color => color.value === stored)) return stored as string;
+    } catch {
+      // Use the default GPX track color when browser storage is unavailable.
+    }
+    return '#ff3b30';
+  }
+
+  protected readonly setGpxTrackColor = (color: string): void => {
+    if (!this.gpxTrackColors.some(option => option.value === color)) return;
+    this.gpxTrackColor.set(color);
+    try {
+      this.document.defaultView?.localStorage.setItem('light-matter.gpxTrackColor', color);
+    } catch {
+      // The selected GPX track color remains active for this session.
+    }
+    this.applyGpxTrack();
+  };
+
   protected readonly setGpxTrackVisible = (visible: boolean): void => {
     this.gpxTrackVisible.set(visible);
     this.applyGpxTrack();
@@ -903,7 +931,7 @@ export class ImageView {
     for (const segment of segments) {
       if (segment.length < 2) continue;
       this.locationGpxLayers.push(leaflet.polyline(segment, {
-        color: '#ff3b30',
+        color: this.gpxTrackColor(),
         weight: 4,
         opacity: 0.92,
         lineCap: 'round',
@@ -1072,6 +1100,8 @@ export class ImageView {
           map.invalidateSize({ animate: false, pan: false });
           this.locationMapMarker?.setLatLng(position);
           map.setView(position, map.getZoom(), { animate: false });
+          // Keep an imported GPX overlay visible and aligned after image navigation.
+          this.applyGpxTrack(this.gpxTrackVisible());
         });
       });
     } catch (error) {
