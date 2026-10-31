@@ -3173,6 +3173,13 @@ export class ImageView {
           return;
         }
 
+        // Modal dialogs own keyboard interaction. In particular, left/right
+        // must remain available to move between confirmation actions instead
+        // of navigating to another image behind the dialog.
+        if (this.dialog.openDialogs.length > 0) {
+          return;
+        }
+
         // Arrow keys pan the GPS map only while the pointer is over it.
         // Disable Leaflet's built-in keyboard handler and pan explicitly so
         // the same keys never trigger image navigation in this situation.
