@@ -758,6 +758,28 @@ export class ImageView {
   protected readonly locationMapElement = viewChild<ElementRef<HTMLDivElement>>('locationMapElement');
   protected readonly locationMapError = signal<string | null>(null);
   protected readonly locationMapStyle = signal(this.readStoredLocationMapStyle());
+  protected readonly locationMapColor = signal(this.readStoredLocationMapColor());
+  private readonly locationMapColors = ['original', 'light', 'dark', 'grayscale', 'pastel', 'contrast', 'night'] as const;
+
+  private readStoredLocationMapColor(): typeof this.locationMapColors[number] {
+    try {
+      const stored = this.document.defaultView?.localStorage.getItem('light-matter.locationMapColor');
+      if (this.locationMapColors.includes(stored as typeof this.locationMapColors[number])) return stored as typeof this.locationMapColors[number];
+    } catch {
+      // Use original tile colors when browser storage is unavailable.
+    }
+    return 'original';
+  }
+
+  protected readonly changeLocationMapColor = (color: string): void => {
+    if (!this.locationMapColors.includes(color as typeof this.locationMapColors[number])) return;
+    this.locationMapColor.set(color as typeof this.locationMapColors[number]);
+    try {
+      this.document.defaultView?.localStorage.setItem('light-matter.locationMapColor', color);
+    } catch {
+      // The selected color preset remains active for the current session.
+    }
+  };
   private locationMapInstance: LeafletMap | null = null;
   private locationMapTileLayer: LeafletTileLayer | null = null;
   private locationMapMarker: LeafletMarker | null = null;
