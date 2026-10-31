@@ -406,7 +406,7 @@
               <strong>GPS/GNSS:</strong>
               <span>{{formatGpsCoordinate(coordinates.latitude, 'N', 'S')}}, {{formatGpsCoordinate(coordinates.longitude, 'O', 'W')}}</span>
               <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy'}}</button>
-              <button type="button" class="location-copy-button" (click)="centerLocationMarker()">Center</button>
+              <button type="button" class="location-copy-button location-center-button" (click)="centerLocationMarker()" aria-label="Center map on GPS marker" title="Center map on GPS marker">⌖</button>
               <div class="location-map-style-row">
                 <label class="location-map-control-label" for="location-map-style">Style</label>
                 <select id="location-map-style" [value]="locationMapStyle()" (change)="changeLocationMapStyle($any($event.target).value)">
@@ -431,15 +431,15 @@
             <div class="location-gpx-row">
               <strong>GPX:</strong>
               <button type="button" class="location-gpx-import-button" (click)="importGpxTrack()">Import</button>
-              <label class="location-gpx-color-select-label" for="location-gpx-track-color">| Color</label>
               <select id="location-gpx-track-color" class="location-gpx-color-select"
                       [value]="gpxTrackSelection()"
                       [style.background-color]="gpxTrackSelection() === 'off' ? '#555' : gpxTrackColor()"
                       [style.color]="gpxTrackSelection() === 'off' || gpxTrackColor() !== '#ffd60a' ? '#fff' : '#111'"
                       (change)="setGpxTrackColor($any($event.target).value)">
-                <option value="off" style="background-color: #555; color: #fff">OFF</option>
+                <option value="off" [selected]="gpxTrackSelection() === 'off'" style="background-color: #555; color: #fff">OFF</option>
                 @for (color of gpxTrackColors; track color.value) {
                   <option [value]="color.value"
+                          [selected]="gpxTrackSelection() === color.value"
                           [style.background-color]="color.value"
                           [style.color]="color.value === '#ffd60a' ? '#111' : '#fff'">{{color.name}} ({{color.value}})</option>
                 }
