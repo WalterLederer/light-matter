@@ -32,8 +32,11 @@ export class ConfirmationDialogComponent {
 
   private readonly elementRef = inject(ElementRef<HTMLElement>);
 
-  @HostListener('keydown', ['$event'])
+  @HostListener('document:keydown', ['$event'])
   protected readonly handleDialogArrowKeys = (event: KeyboardEvent): void => {
+    // The document-level listener also works when focus is managed by the CDK
+    // overlay or focus trap. Ignore key presses that originate outside this dialog.
+    if (!event.composedPath().includes(this.elementRef.nativeElement)) return;
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 
     const buttons = this.elementRef.nativeElement.querySelectorAll(
@@ -45,7 +48,11 @@ export class ConfirmationDialogComponent {
     event.stopPropagation();
 
     const activeElement = this.elementRef.nativeElement.ownerDocument.activeElement;
-    const activeIndex = Array.prototype.indexOf.call(buttons, activeElement) as number;
+    let activeIndex = -1;
+    buttons.forEach((button, index) => {
+      if (button === activeElement) activeIndex = index;
+    });
+
     const direction = event.key === 'ArrowRight' ? 1 : -1;
     const nextIndex = activeIndex < 0
       ? (direction > 0 ? 0 : buttons.length - 1)
