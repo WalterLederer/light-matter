@@ -36,9 +36,9 @@ export class ConfirmationDialogComponent {
   protected readonly handleDialogArrowKeys = (event: KeyboardEvent): void => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 
-    const buttons = Array.from(
-      this.elementRef.nativeElement.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')
-    );
+    const buttons = this.elementRef.nativeElement.querySelectorAll(
+      'button:not(:disabled)'
+    ) as NodeListOf<HTMLButtonElement>;
     if (buttons.length < 2) return;
 
     event.preventDefault();
