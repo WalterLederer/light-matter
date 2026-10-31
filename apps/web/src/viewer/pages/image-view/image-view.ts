@@ -36,7 +36,7 @@ interface LeafletMap {
   getZoom(): number;
   setZoom(zoom: number, options?: { animate?: boolean }): LeafletMap;
   panBy(offset: [number, number], options?: { animate?: boolean }): LeafletMap;
-  invalidateSize(options?: { animate?: boolean; pan?: boolean }): LeafletMap;
+  invalidateSize(options?: { animate?: boolean; pan?: boolean; debounceMoveend?: boolean }): LeafletMap;
   on(event: 'zoomend', callback: () => void): LeafletMap;
   remove(): void;
 }
