@@ -113,7 +113,6 @@ const loadLeaflet = (document: Document): Promise<LeafletApi> => {
     ImageRendererComponent,
     SettingsPanelComponent,
     CapturePanelComponent,
-    SliderComponent,
     ReactiveFormsModule,
     DecimalPipe,
       ExifInfoComponent
