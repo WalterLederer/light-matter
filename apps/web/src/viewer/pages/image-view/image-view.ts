@@ -815,6 +815,11 @@ export class ImageView {
     this.locationMapInstance?.setZoom(zoom, { animate: false });
   };
 
+  protected readonly adjustLocationMapZoom = (direction: -1 | 1): void => {
+    if (!this.locationMapInstance) return;
+    this.changeLocationMapZoom(this.locationMapInstance.getZoom() + direction);
+  };
+
   private readonly applyLocationMapColor = (): void => {
     const tilePane = this.locationMapContainer?.querySelector<HTMLElement>('.leaflet-tile-pane');
     if (!tilePane) return;
@@ -927,7 +932,7 @@ export class ImageView {
       if (!this.locationMapInstance || this.locationMapContainer !== container) {
         this.disposeLocationMap();
         this.locationMapContainer = container;
-        this.locationMapInstance = leaflet.map(container, { zoomControl: true, minZoom: 1, maxZoom: 20 })
+        this.locationMapInstance = leaflet.map(container, { zoomControl: false, minZoom: 1, maxZoom: 20 })
           .setView(position, this.locationMapZoom, { animate: false });
         const mapStyle = this.locationMapStyles[this.locationMapStyle()];
         this.locationMapTileLayer = leaflet.tileLayer(mapStyle.url, {
