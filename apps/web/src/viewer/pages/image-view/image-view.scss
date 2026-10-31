@@ -1809,3 +1809,41 @@
   flex: 0 0 auto;
   white-space: nowrap;
 }
+
+
+/* GPX import and track overlay controls below the GPS coordinate row. */
+.image-location-panel .location-gpx-row {
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+.image-location-panel .location-gpx-row > strong {
+  flex: 0 0 auto;
+}
+.image-location-panel .location-gpx-import-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.image-location-panel .location-gpx-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.image-location-panel .location-gpx-toggle input {
+  margin: 0;
+  accent-color: #2684ff;
+}
+.image-location-panel .location-gpx-filename {
+  flex: 1 1 100px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: .78;
+}
