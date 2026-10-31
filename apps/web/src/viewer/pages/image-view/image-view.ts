@@ -688,6 +688,8 @@ export class ImageView {
 
   protected readonly imageTags = signal<ExifTags | null>(null);
 
+  protected readonly copyLocationStatus = signal('');
+
   protected readonly gpsCoordinates = computed(() => {
     const tags = this.imageTags() as (Record<string, unknown> | null);
     if (!tags) return null;
@@ -726,6 +728,21 @@ export class ImageView {
     const url = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bounds + '&layer=mapnik&marker=' + latitude.toFixed(6) + '%2C' + longitude.toFixed(6);
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
+
+  protected readonly copyLocation = async (): Promise<void> => {
+    const coordinates = this.gpsCoordinates();
+    if (!coordinates) return;
+    const value = `${coordinates.latitude.toFixed(6)}, ${coordinates.longitude.toFixed(6)}`;
+    try {
+      await this.document.defaultView?.navigator.clipboard.writeText(value);
+      this.copyLocationStatus.set('Copied');
+      this.document.defaultView?.setTimeout(() => this.copyLocationStatus.set(''), 1800);
+    } catch (error) {
+      console.error('Failed to copy GPS coordinates', error);
+      this.copyLocationStatus.set('Copy failed');
+      this.document.defaultView?.setTimeout(() => this.copyLocationStatus.set(''), 2500);
+    }
+  };
 
   protected readonly displayImagePath = (path: string): string => {
     if (/^[a-zA-Z]:[\\/]/.test(path) || path.startsWith('\\\\') || path.startsWith('//')) {
