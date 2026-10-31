@@ -28,10 +28,11 @@ export interface DesktopFileSystem {
   readonly readDirectories: (path: string) => Promise<ApiResponse<FileInfo[]>>;
   readonly readImages: (path: string, sortBy: SortType, sortDir: SortDirection) => Promise<ApiResponse<FileInfo[]>>;
   readonly deleteFile: (path: string) => Promise<ApiResponse<undefined>>;
+  readonly copyFile: (sourcePath: string, destinationDirectory: string) => Promise<ApiResponse<undefined>>;
 }
 
 export interface DesktopDialogs {
-  readonly openFolder: () => Promise<ApiResponse<string>>;
+  readonly openFolder: (initialPath?: string) => Promise<ApiResponse<string>>;
 }
 
 export interface DesktopExif {
