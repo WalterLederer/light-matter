@@ -428,7 +428,7 @@
               </div>
             </div>
             <div class="location-gpx-row">
-              <strong>GPX</strong>
+              <strong>GPX:</strong>
               <button type="button" class="location-gpx-import-button" (click)="importGpxTrack()">Import</button>
               <label class="location-gpx-toggle">
                 <input type="checkbox" [checked]="gpxTrackVisible()" [disabled]="!gpxTrackFileName()" (change)="setGpxTrackVisible($any($event.target).checked)" />
