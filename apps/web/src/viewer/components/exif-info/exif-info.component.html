@@ -5,10 +5,6 @@
 
 @if (mode() !== 'cache') {
 <section class="info-box file-info">
-  <div class="full-path-row">
-    <div class="full-path-value" [title]="normalizedPath()">{{ normalizedPath() }}</div>
-
-  </div>
   <details>
     <summary>File · Size {{ fileSize() | byteSize }} · Modified {{ timestamp === undefined ? '—' : (timestamp | date: 'yyyy-MM-dd HH:mm:ss') }}</summary>
   <dl>
