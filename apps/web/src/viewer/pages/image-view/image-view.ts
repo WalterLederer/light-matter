@@ -767,6 +767,48 @@ export class ImageView {
   protected readonly onLocationMapPointerLeave = (): void => { this.isPointerOverLocationMap = false; };
   protected readonly locationMapError = signal<string | null>(null);
   protected readonly locationMapStyle = signal(this.readStoredLocationMapStyle());
+  protected readonly locationWebApp = signal(this.readStoredLocationWebApp());
+
+  private readStoredLocationWebApp(): string {
+    try {
+      const stored = this.document.defaultView?.localStorage.getItem('light-matter.locationWebApp');
+      return ['google-earth', 'google-maps', 'openstreetmap', 'bing-maps', 'here-wego', 'google-street-view', 'mapillary'].includes(stored ?? '')
+        ? stored!
+        : 'google-maps';
+    } catch {
+      return 'google-maps';
+    }
+  }
+
+  protected readonly openLocationWebApp = (webApp: string): void => {
+    const coordinates = this.gpsCoordinates();
+    const latitude = coordinates?.latitude;
+    const longitude = coordinates?.longitude;
+    if (latitude === undefined || longitude === undefined) return;
+
+    const lat = latitude.toFixed(6);
+    const lon = longitude.toFixed(6);
+    const encodedCoordinates = encodeURIComponent(`${lat},${lon}`);
+    const urls: Record<string, string> = {
+      'google-earth': `https://earth.google.com/web/search/${lat},${lon}`,
+      'google-maps': `https://www.google.com/maps/search/?api=1&query=${encodedCoordinates}`,
+      openstreetmap: `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`,
+      'bing-maps': `https://www.bing.com/maps?cp=${lat}~${lon}&lvl=16`,
+      'here-wego': `https://wego.here.com/?map=${lat},${lon},16,normal`,
+      'google-street-view': `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodedCoordinates}`,
+      mapillary: `https://www.mapillary.com/app/?lat=${lat}&lng=${lon}&z=17`
+    };
+    const url = urls[webApp];
+    if (!url) return;
+
+    this.locationWebApp.set(webApp);
+    try {
+      this.document.defaultView?.localStorage.setItem('light-matter.locationWebApp', webApp);
+    } catch {
+      // Keep the selected destination for the current session.
+    }
+    this.document.defaultView?.open(url, '_blank', 'noopener,noreferrer');
+  };
   protected readonly locationMapColor = signal(this.readStoredLocationMapColor());
   protected readonly locationMapOpacity = signal(this.readStoredLocationMapOpacity());
   protected readonly gpxTrackOpacity = signal(this.readStoredGpxTrackOpacity());
