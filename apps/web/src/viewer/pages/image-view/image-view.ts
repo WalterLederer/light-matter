@@ -30,6 +30,10 @@ import { ViewNavigator } from '../../services/view-navigator/view-navigator';
 
 const HDR_WEBGPU_BRIGHTNESS_CORRECTION = 0.4;
 
+// A global key event can be observed by more than one mounted image-view instance.
+// Claim each navigation keyup once so one physical press advances only one image.
+const handledImageNavigationKeyEvents = new WeakSet<KeyboardEvent>();
+
 interface LeafletMap {
   setView(center: [number, number], zoom: number, options?: { animate?: boolean }): LeafletMap;
   fitBounds(bounds: [[number, number], [number, number]], options?: { padding?: [number, number]; maxZoom?: number; animate?: boolean }): LeafletMap;
@@ -3194,6 +3198,17 @@ export class ImageView {
           const zoomIn = event.key === '+' || event.key === '=' || event.key === 'Add';
           this.adjustLocationMapZoom(zoomIn ? 1 : -1);
           return;
+        }
+
+        // A single document keyup may reach multiple mounted image-view instances.
+        // Handle it only once to prevent double navigation and a doubled position change.
+        const isImageNavigationKey =
+          event.key === ' ' || event.key === 'Spacebar' || event.key === 'Space' ||
+          event.key === 'ArrowRight' || event.key === 'ArrowLeft' ||
+          event.key === 'PageDown' || event.key === 'PageUp';
+        if (isImageNavigationKey) {
+          if (handledImageNavigationKeyEvents.has(event)) return;
+          handledImageNavigationKeyEvents.add(event);
         }
 
         // Image navigation keys are global: they work regardless of which
