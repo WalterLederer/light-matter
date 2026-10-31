@@ -19,6 +19,7 @@ export interface DesktopFileSystem {
   readonly join: (...paths: string[]) => Promise<string>;
   readonly dirname: (fileName: string) => Promise<string>;
   readonly readDir: (path: string) => Promise<FileInfo[]>;
+  readonly readText: (path: string) => Promise<ApiResponse<string>>;
   readonly readJson: <T>(path: string) => Promise<ApiResponse<T>>;
   readonly writeJson: <T>(path: string, data: T) => Promise<ApiResponse<undefined>>;
   /**
