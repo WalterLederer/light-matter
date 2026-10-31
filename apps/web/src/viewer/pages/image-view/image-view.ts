@@ -35,6 +35,70 @@ import { ViewNavigator } from '../../services/view-navigator/view-navigator';
 
 const HDR_WEBGPU_BRIGHTNESS_CORRECTION = 0.4;
 
+interface LeafletMap {
+  setView(center: [number, number], zoom: number, options?: { animate?: boolean }): LeafletMap;
+  getZoom(): number;
+  invalidateSize(options?: { animate?: boolean }): LeafletMap;
+  on(event: 'zoomend', callback: () => void): LeafletMap;
+  remove(): void;
+}
+
+interface LeafletMarker {
+  setLatLng(position: [number, number]): LeafletMarker;
+  addTo(map: LeafletMap): LeafletMarker;
+}
+
+interface LeafletTileLayer {
+  addTo(map: LeafletMap): LeafletTileLayer;
+}
+
+interface LeafletApi {
+  map(element: HTMLElement, options?: { zoomControl?: boolean }): LeafletMap;
+  tileLayer(url: string, options: { attribution: string; maxZoom: number }): LeafletTileLayer;
+  marker(position: [number, number]): LeafletMarker;
+}
+
+let leafletLoadPromise: Promise<LeafletApi> | null = null;
+
+const loadLeaflet = (document: Document): Promise<LeafletApi> => {
+  const view = document.defaultView as (Window & { L?: LeafletApi }) | null;
+  if (view?.L) return Promise.resolve(view.L);
+  if (leafletLoadPromise) return leafletLoadPromise;
+
+  leafletLoadPromise = new Promise<LeafletApi>((resolve, reject) => {
+    const cssId = 'light-matter-leaflet-css';
+    if (!document.getElementById(cssId)) {
+      const link = document.createElement('link');
+      link.id = cssId;
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+
+    const scriptId = 'light-matter-leaflet-script';
+    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
+    const script = existing ?? document.createElement('script');
+    const finish = (): void => {
+      const leaflet = (document.defaultView as (Window & { L?: LeafletApi }) | null)?.L;
+      if (leaflet) resolve(leaflet);
+      else reject(new Error('Leaflet loaded but its API was not available.'));
+    };
+    script.addEventListener('load', finish, { once: true });
+    script.addEventListener('error', () => reject(new Error('Could not load the Leaflet map library.')), { once: true });
+    if (!existing) {
+      script.id = scriptId;
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }).catch(error => {
+    leafletLoadPromise = null;
+    throw error;
+  });
+
+  return leafletLoadPromise;
+};
+
 @Component({
   selector: 'app-image-view',
   imports: [
@@ -690,6 +754,64 @@ export class ImageView {
 
   protected readonly copyLocationStatus = signal('');
 
+  protected readonly locationMapElement = viewChild<ElementRef<HTMLDivElement>>('locationMapElement');
+  protected readonly locationMapError = signal<string | null>(null);
+  private locationMapInstance: LeafletMap | null = null;
+  private locationMapMarker: LeafletMarker | null = null;
+  private locationMapContainer: HTMLDivElement | null = null;
+  private locationMapZoom = 13;
+  private locationMapRequest = 0;
+
+  private readonly disposeLocationMap = (): void => {
+    if (this.locationMapInstance) {
+      this.locationMapZoom = this.locationMapInstance.getZoom();
+      this.locationMapInstance.remove();
+    }
+    this.locationMapInstance = null;
+    this.locationMapMarker = null;
+    this.locationMapContainer = null;
+  };
+
+  private readonly syncLocationMap = async (
+    container: HTMLDivElement,
+    coordinates: { latitude: number; longitude: number },
+    request: number
+  ): Promise<void> => {
+    try {
+      const leaflet = await loadLeaflet(this.document);
+      if (request !== this.locationMapRequest || this.activeImageSidebarTab() !== 'location' || !container.isConnected) return;
+
+      const position: [number, number] = [coordinates.latitude, coordinates.longitude];
+      if (!this.locationMapInstance || this.locationMapContainer !== container) {
+        this.disposeLocationMap();
+        this.locationMapContainer = container;
+        this.locationMapInstance = leaflet.map(container, { zoomControl: true })
+          .setView(position, this.locationMapZoom, { animate: false });
+        leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19
+        }).addTo(this.locationMapInstance);
+        this.locationMapMarker = leaflet.marker(position).addTo(this.locationMapInstance);
+        this.locationMapInstance.on('zoomend', () => {
+          if (this.locationMapInstance) this.locationMapZoom = this.locationMapInstance.getZoom();
+        });
+      } else {
+        // Recenter on the new image while keeping the zoom chosen by the user.
+        this.locationMapMarker?.setLatLng(position);
+        this.locationMapInstance.setView(position, this.locationMapInstance.getZoom(), { animate: false });
+      }
+
+      this.locationMapError.set(null);
+      this.document.defaultView?.requestAnimationFrame(() => {
+        if (request === this.locationMapRequest) this.locationMapInstance?.invalidateSize({ animate: false });
+      });
+    } catch (error) {
+      if (request === this.locationMapRequest) {
+        this.locationMapError.set(error instanceof Error ? error.message : String(error));
+      }
+    }
+  };
+
   protected readonly gpsCoordinates = computed(() => {
     const tags = this.imageTags() as (Record<string, unknown> | null);
     if (!tags) return null;
@@ -898,6 +1020,18 @@ export class ImageView {
   /* Constructor */
   constructor() {
     effect(() => {
+      const tab = this.activeImageSidebarTab();
+      const container = this.locationMapElement()?.nativeElement ?? null;
+      const coordinates = this.gpsCoordinates();
+      const request = ++this.locationMapRequest;
+      if (tab !== 'location' || !container || !coordinates) {
+        this.disposeLocationMap();
+        return;
+      }
+      void this.syncLocationMap(container, coordinates, request);
+    });
+
+    effect(() => {
       const frame = this.loupeShowsCapturePreview() ? this.capturePreviewStore.frame() : null;
       const canvas = this.loupeCapturePreviewCanvas()?.nativeElement;
       if (frame && canvas) void this.renderLoupeCapturePreviewHdr(canvas, frame); else this.disposeLoupeCapturePreview();
@@ -1010,6 +1144,8 @@ export class ImageView {
     this.destroyRef.onDestroy(() => {
       this.sidebarResizeCleanup?.();
       this.loupeResizeObserver?.disconnect();
+    this.locationMapRequest++;
+    this.disposeLocationMap();
       this.loupeResizeObserver = null;
       if (this.loupeResizeTimer !== null) clearTimeout(this.loupeResizeTimer);
       this.loupeResizeTimer = null;
