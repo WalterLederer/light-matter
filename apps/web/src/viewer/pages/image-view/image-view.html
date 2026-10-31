@@ -414,13 +414,24 @@
                 <input type="checkbox" [checked]="gpxTrackVisible()" [disabled]="!gpxTrackFileName()" (change)="setGpxTrackVisible($any($event.target).checked)" />
                 Track overlay
               </label>
-              <span class="location-gpx-filename" [title]="gpxTrackFileName() || ''">{{gpxTrackFileName() || 'No file loaded'}}</span>
+              <div class="location-gpx-colors" role="group" aria-label="GPX track color">
+                @for (color of gpxTrackColors; track color.value) {
+                  <button type="button" class="location-gpx-color-button"
+                          [style.background-color]="color.value"
+                          [class.selected]="gpxTrackColor() === color.value"
+                          [attr.aria-label]="color.name"
+                          [attr.aria-pressed]="gpxTrackColor() === color.value"
+                          [title]="color.name"
+                          (click)="setGpxTrackColor(color.value)"></button>
+                }
+              </div>
+              <span class="location-gpx-filename" [title]="gpxTrackFileName() || ''">{{gpxTrackFileName() || ''}}</span>
             </div>
             @if (gpxTrackStatus(); as gpxError) {
               <p class="location-no-gps">{{gpxError}}</p>
             }
             <div class="location-map-style-row">
-                <label class="location-map-control-label" for="location-map-style">Style</label>
+              <label class="location-map-control-label" for="location-map-style">Style</label>
                 <select id="location-map-style" [value]="locationMapStyle()" (change)="changeLocationMapStyle($any($event.target).value)">
                   <option value="standard">Standard</option>
                   <option value="satellite">Satellite</option>
@@ -438,7 +449,6 @@
                   <option value="contrast">High contrast</option>
                   <option value="night">Night</option>
                 </select>
-              </div>
             </div>
             <div class="location-map-stage">
               <div #locationMapElement class="location-map-frame"
