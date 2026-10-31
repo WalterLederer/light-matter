@@ -3,6 +3,7 @@ import { AsyncPipe, DecimalPipe, DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { DomSanitizer } from '@angular/platform-browser';
 import {
   ConfirmationDialogComponent,
   OverlayService,
@@ -54,6 +55,8 @@ const HDR_WEBGPU_BRIGHTNESS_CORRECTION = 0.4;
 export class ImageView {
   /* DI */
   protected readonly viewNavigator = inject(ViewNavigator);
+
+  private readonly sanitizer = inject(DomSanitizer);
 
   private readonly keyboard = inject(Keyboard);
 
@@ -720,7 +723,8 @@ export class ImageView {
     const south = latitude - latitudeSpan;
     const north = latitude + latitudeSpan;
     const bounds = [west, south, east, north].map(value => value.toFixed(6)).join(',');
-    return 'https://www.openstreetmap.org/export/embed.html?bbox=' + bounds + '&layer=mapnik&marker=' + latitude.toFixed(6) + '%2C' + longitude.toFixed(6);
+    const url = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bounds + '&layer=mapnik&marker=' + latitude.toFixed(6) + '%2C' + longitude.toFixed(6);
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
 
   protected readonly displayImagePath = (path: string): string => {
