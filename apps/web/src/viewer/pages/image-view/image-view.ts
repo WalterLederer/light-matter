@@ -771,16 +771,6 @@ export class ImageView {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     },
-    light: {
-      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      maxZoom: 20
-    },
-    dark: {
-      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      maxZoom: 20
-    },
     satellite: {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       attribution: 'Tiles &copy; Esri — Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
@@ -788,10 +778,10 @@ export class ImageView {
     }
   } as const;
 
-  private readStoredLocationMapStyle(): 'standard' | 'light' | 'dark' | 'satellite' {
+  private readStoredLocationMapStyle(): 'standard' | 'satellite' {
     try {
       const stored = this.document.defaultView?.localStorage.getItem('light-matter.locationMapStyle');
-      if (stored === 'standard' || stored === 'light' || stored === 'dark' || stored === 'satellite') return stored;
+      if (stored === 'standard' || stored === 'satellite') return stored;
     } catch {
       // Use the standard map when browser storage is unavailable.
     }
@@ -799,7 +789,7 @@ export class ImageView {
   }
 
   protected readonly changeLocationMapStyle = (style: string): void => {
-    if (style !== 'standard' && style !== 'light' && style !== 'dark' && style !== 'satellite') return;
+    if (style !== 'standard' && style !== 'satellite') return;
     this.locationMapStyle.set(style);
     try {
       this.document.defaultView?.localStorage.setItem('light-matter.locationMapStyle', style);
