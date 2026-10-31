@@ -1714,6 +1714,12 @@
   box-shadow: 0 1px 5px rgb(0 0 0 / 28%);
   backdrop-filter: blur(3px);
   font-size: 12px;
+  opacity: 0.18;
+  transition: opacity 160ms ease, background-color 160ms ease;
+}
+.image-location-panel .location-map-zoom-overlay:hover,
+.image-location-panel .location-map-zoom-overlay:focus-within {
+  opacity: 0.95;
 }
 .image-location-panel .location-map-zoom-overlay .location-map-zoom-button {
   flex: 0 0 24px;
