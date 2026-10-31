@@ -37,7 +37,7 @@ const HDR_WEBGPU_BRIGHTNESS_CORRECTION = 0.4;
 interface LeafletMap {
   setView(center: [number, number], zoom: number, options?: { animate?: boolean }): LeafletMap;
   getZoom(): number;
-  invalidateSize(options?: { animate?: boolean }): LeafletMap;
+  invalidateSize(options?: { animate?: boolean; pan?: boolean }): LeafletMap;
   on(event: 'zoomend', callback: () => void): LeafletMap;
   remove(): void;
 }
@@ -49,6 +49,7 @@ interface LeafletMarker {
 
 interface LeafletTileLayer {
   addTo(map: LeafletMap): LeafletTileLayer;
+  remove(): LeafletTileLayer;
 }
 
 interface LeafletApi {
@@ -756,11 +757,69 @@ export class ImageView {
 
   protected readonly locationMapElement = viewChild<ElementRef<HTMLDivElement>>('locationMapElement');
   protected readonly locationMapError = signal<string | null>(null);
+  protected readonly locationMapStyle = signal(this.readStoredLocationMapStyle());
   private locationMapInstance: LeafletMap | null = null;
+  private locationMapTileLayer: LeafletTileLayer | null = null;
   private locationMapMarker: LeafletMarker | null = null;
   private locationMapContainer: HTMLDivElement | null = null;
   private locationMapZoom = 13;
   private locationMapRequest = 0;
+
+  private readonly locationMapStyles = {
+    standard: {
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    },
+    light: {
+      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      maxZoom: 20
+    },
+    dark: {
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      maxZoom: 20
+    },
+    satellite: {
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      attribution: 'Tiles &copy; Esri — Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+      maxZoom: 19
+    }
+  } as const;
+
+  private readStoredLocationMapStyle(): keyof typeof this.locationMapStyles {
+    try {
+      const stored = this.document.defaultView?.localStorage.getItem('light-matter.locationMapStyle');
+      if (stored === 'standard' || stored === 'light' || stored === 'dark' || stored === 'satellite') return stored;
+    } catch {
+      // Use the standard map when browser storage is unavailable.
+    }
+    return 'standard';
+  }
+
+  protected readonly changeLocationMapStyle = (style: string): void => {
+    if (style !== 'standard' && style !== 'light' && style !== 'dark' && style !== 'satellite') return;
+    this.locationMapStyle.set(style);
+    try {
+      this.document.defaultView?.localStorage.setItem('light-matter.locationMapStyle', style);
+    } catch {
+      // The selected style remains active for the current session.
+    }
+    this.applyLocationMapStyle();
+  };
+
+  private readonly applyLocationMapStyle = (): void => {
+    if (!this.locationMapInstance) return;
+    const leaflet = (this.document.defaultView as (Window & { L?: LeafletApi }) | null)?.L;
+    if (!leaflet) return;
+    this.locationMapTileLayer?.remove();
+    const style = this.locationMapStyles[this.locationMapStyle()];
+    this.locationMapTileLayer = leaflet.tileLayer(style.url, {
+      attribution: style.attribution,
+      maxZoom: style.maxZoom
+    }).addTo(this.locationMapInstance);
+  };
 
   private readonly disposeLocationMap = (): void => {
     if (this.locationMapInstance) {
@@ -768,6 +827,7 @@ export class ImageView {
       this.locationMapInstance.remove();
     }
     this.locationMapInstance = null;
+    this.locationMapTileLayer = null;
     this.locationMapMarker = null;
     this.locationMapContainer = null;
   };
@@ -787,9 +847,10 @@ export class ImageView {
         this.locationMapContainer = container;
         this.locationMapInstance = leaflet.map(container, { zoomControl: true })
           .setView(position, this.locationMapZoom, { animate: false });
-        leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19
+        const mapStyle = this.locationMapStyles[this.locationMapStyle()];
+        this.locationMapTileLayer = leaflet.tileLayer(mapStyle.url, {
+          attribution: mapStyle.attribution,
+          maxZoom: mapStyle.maxZoom
         }).addTo(this.locationMapInstance);
         this.locationMapMarker = leaflet.marker(position).addTo(this.locationMapInstance);
         this.locationMapInstance.on('zoomend', () => {
