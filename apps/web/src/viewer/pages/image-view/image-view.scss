@@ -1566,3 +1566,56 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+
+/* Source and destination details are grouped into clearly separated bordered panels. */
+.image-controls-sidebar .copy-folder-select-row {
+  display: flex;
+  gap: 6px;
+  margin: 5px 0 8px;
+}
+.image-controls-sidebar .copy-folder-select-row button {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+}
+.image-controls-sidebar .copy-folder-info-box {
+  margin: 7px 0;
+  padding: 8px 9px;
+  border: 1px solid rgb(128 128 128 / 55%);
+  border-radius: 4px;
+  background: rgb(128 128 128 / 8%);
+}
+.image-controls-sidebar .copy-folder-info-title {
+  margin-bottom: 5px;
+  color: var(--color-content-default);
+  font-size: 12px;
+  font-weight: 700;
+}
+.image-controls-sidebar .copy-folder-info-path {
+  color: var(--color-content-default);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.image-controls-sidebar .copy-folder-info-files {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgb(128 128 128 / 30%);
+  color: var(--color-content-default);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.image-controls-sidebar button.copy-confirm-button {
+  width: 100%;
+  margin-top: 7px;
+}
+:host-context(html[data-theme='light']) .image-controls-sidebar button.danger-action {
+  color: #111;
+}
+:host-context(html[data-theme='light']) .image-controls-sidebar button.danger-action:hover:not(:disabled) {
+  color: #fff;
+}
