@@ -39,6 +39,9 @@ export class GalleryState {
           sortDir: config.gallery.sortDir ?? defaultSort.sortDir
         });
 
+        const savedLocation = config.gallery.selectedLocation;
+        if (savedLocation) this.selectedLocation$.next(savedLocation);
+
         const selectedLocation = this.selectedLocation$.value;
         if (selectedLocation !== null) {
           this.navigateTo(selectedLocation).subscribe();
@@ -83,6 +86,7 @@ export class GalleryState {
   /* Modifiers */
   readonly navigateTo = (path: string): Observable<boolean> => {
     this.selectedLocation$.next(path);
+    this.configuration.updateGalleryConfig({ selectedLocation: path });
 
     return this.sortMode$
       .pipe(
