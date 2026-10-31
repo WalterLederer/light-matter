@@ -779,13 +779,46 @@ export class ImageView {
     } catch {
       // The selected color preset remains active for the current session.
     }
+    this.applyLocationMapColor();
   };
   private locationMapInstance: LeafletMap | null = null;
   private locationMapTileLayer: LeafletTileLayer | null = null;
   private locationMapMarker: LeafletMarker | null = null;
   private locationMapContainer: HTMLDivElement | null = null;
-  private locationMapZoom = 13;
+  private readonly readStoredLocationMapZoom = (): number => {
+    try {
+      const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.locationMapZoom'));
+      return Number.isFinite(stored) && stored >= 1 && stored <= 20 ? stored : 13;
+    } catch {
+      return 13;
+    }
+  };
+  private locationMapZoom = this.readStoredLocationMapZoom();
   private locationMapRequest = 0;
+
+  private readonly storeLocationMapZoom = (zoom: number): void => {
+    this.locationMapZoom = Math.max(1, Math.min(20, zoom));
+    try {
+      this.document.defaultView?.localStorage.setItem('light-matter.locationMapZoom', String(this.locationMapZoom));
+    } catch {
+      // The current map zoom remains active for this session.
+    }
+  };
+
+  private readonly applyLocationMapColor = (): void => {
+    const tilePane = this.locationMapContainer?.querySelector<HTMLElement>('.leaflet-tile-pane');
+    if (!tilePane) return;
+    const filters: Record<typeof this.locationMapColors[number], string> = {
+      original: 'none',
+      light: 'brightness(1.12) saturate(.82)',
+      dark: 'brightness(.68) contrast(1.16) saturate(.82)',
+      grayscale: 'grayscale(1)',
+      pastel: 'saturate(.62) brightness(1.12) contrast(.88)',
+      contrast: 'saturate(1.35) contrast(1.22)',
+      night: 'brightness(.48) contrast(1.35) saturate(.72) hue-rotate(12deg)'
+    };
+    tilePane.style.filter = filters[this.locationMapColor()];
+  };
 
   private readonly locationMapStyles = {
     standard: {
@@ -857,11 +890,12 @@ export class ImageView {
       maxZoom: style.maxDisplayZoom ?? style.maxZoom,
       ...(style.maxNativeZoom ? { maxNativeZoom: style.maxNativeZoom } : {})
     }).addTo(this.locationMapInstance);
+    this.applyLocationMapColor();
   };
 
   private readonly disposeLocationMap = (): void => {
     if (this.locationMapInstance) {
-      this.locationMapZoom = this.locationMapInstance.getZoom();
+      this.storeLocationMapZoom(this.locationMapInstance.getZoom());
       this.locationMapInstance.remove();
     }
     this.locationMapInstance = null;
@@ -891,9 +925,10 @@ export class ImageView {
           maxZoom: mapStyle.maxDisplayZoom ?? mapStyle.maxZoom,
           ...(mapStyle.maxNativeZoom ? { maxNativeZoom: mapStyle.maxNativeZoom } : {})
         }).addTo(this.locationMapInstance);
+        this.applyLocationMapColor();
         this.locationMapMarker = leaflet.marker(position).addTo(this.locationMapInstance);
         this.locationMapInstance.on('zoomend', () => {
-          if (this.locationMapInstance) this.locationMapZoom = this.locationMapInstance.getZoom();
+          if (this.locationMapInstance) this.storeLocationMapZoom(this.locationMapInstance.getZoom());
         });
       } else {
         // Recenter on the new image while keeping the zoom chosen by the user.
@@ -2338,11 +2373,6 @@ export class ImageView {
     }
   };
 
-  protected readonly adjustActiveBrightness = (direction: 1 | -1) => {
-    const next = Math.max(0.03, Math.min(9, Number((this.mainImageBrightness() + direction * 0.1).toFixed(2))));
-    this.setMainBrightness(next);
-  };
-
   protected readonly setLoupeSize = (value: string | number) => {
     this.loupeSizeScale.set(Math.max(0.5, Math.min(1.2, Number(value))));
     const mouse = this.lastMousePosition();
@@ -2814,12 +2844,6 @@ export class ImageView {
 
         const target = event.target;
         if (target instanceof HTMLElement && target.matches('input:not([type="checkbox"]), textarea, [contenteditable="true"]')) {
-          return;
-        }
-
-        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-          event.preventDefault();
-          this.adjustActiveBrightness(event.key === 'ArrowUp' ? 1 : -1);
           return;
         }
 
