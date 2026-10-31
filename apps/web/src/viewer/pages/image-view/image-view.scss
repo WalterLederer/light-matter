@@ -1486,3 +1486,56 @@
   opacity: 0.35;
   cursor: default;
 }
+
+
+/* Nested Copy file controls follow the indentation of other sidebar subsections. */
+.image-controls-sidebar .copy-file-section {
+  margin: 2px 0 6px 12px;
+  padding-left: 9px;
+  border-left: 2px solid var(--color-content-default-low);
+}
+.image-controls-sidebar .copy-file-section > .section-heading {
+  width: 100%;
+  text-align: left;
+}
+.image-controls-sidebar .copy-destination-path {
+  margin: 5px 0;
+  padding: 8px 9px;
+  border: 1px solid rgb(128 128 128 / 45%);
+  border-radius: 4px;
+  background: rgb(128 128 128 / 12%);
+  color: var(--color-content-default);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.image-controls-sidebar .copy-photo-status {
+  margin: 5px 0 2px;
+  padding: 5px 7px;
+  border-radius: 3px;
+  background: rgb(38 132 255 / 10%);
+  color: var(--color-content-default);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+:host-context(html[data-theme='light']) .image-controls-sidebar .copy-destination-path {
+  color: #202124;
+  background: #fff;
+  border-color: #aeb4bd;
+}
+:host-context(html[data-theme='light']) .image-controls-sidebar .copy-photo-status {
+  color: #174f80;
+  background: #e8f2ff;
+}
+:host-context(html[data-theme='dark']) .image-controls-sidebar .copy-destination-path {
+  color: #f2f4f7;
+  background: #303238;
+  border-color: #626873;
+}
+:host-context(html[data-theme='dark']) .image-controls-sidebar .copy-photo-status {
+  color: #d9e8ff;
+  background: rgb(38 132 255 / 16%);
+}
