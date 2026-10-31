@@ -464,13 +464,23 @@
                    [class.map-color-night]="locationMapColor() === 'night'"
                    role="application" aria-label="Interactive map showing the image GPS location"></div>
               <div class="location-map-zoom-overlay">
-                <button type="button" class="location-map-zoom-button" (click)="adjustLocationMapZoom(-1)" aria-label="Zoom out" title="Zoom out">−</button>
-                 <button type="button" class="location-map-zoom-button" (click)="adjustLocationMapZoom(1)" aria-label="Zoom in" title="Zoom in">+</button>
-                <input id="location-map-zoom" type="range" min="1" max="20" step="1"
-                       [value]="locationMapZoomLevel()"
-                       [attr.aria-valuetext]="'Map zoom level ' + locationMapZoomLevel()"
-                       (input)="changeLocationMapZoom($any($event.target).value)">
-                 <label for="location-map-zoom">Zoom {{ locationMapZoomLevel() }}</label>
+                <div class="location-map-zoom-control">
+                  <button type="button" class="location-map-zoom-button" (click)="adjustLocationMapZoom(-1)" aria-label="Zoom out" title="Zoom out">−</button>
+                  <button type="button" class="location-map-zoom-button" (click)="adjustLocationMapZoom(1)" aria-label="Zoom in" title="Zoom in">+</button>
+                  <input id="location-map-zoom" type="range" min="1" max="20" step="1"
+                         [value]="locationMapZoomLevel()"
+                         [attr.aria-valuetext]="'Map zoom level ' + locationMapZoomLevel()"
+                         (input)="changeLocationMapZoom($any($event.target).value)">
+                  <label for="location-map-zoom">Zoom {{ locationMapZoomLevel() }}</label>
+                </div>
+                <div class="location-map-opacity-control">
+                  <input id="location-map-opacity" type="range" min="0" max="100" step="1"
+                         [value]="locationMapOpacity()"
+                         [attr.aria-valuetext]="'Map opacity ' + locationMapOpacity() + ' percent'"
+                         (input)="changeLocationMapOpacity($any($event.target).value)"
+                         title="Adjust map opacity without affecting the GPS marker or GPX track">
+                  <label for="location-map-opacity" title="Map opacity">Map {{ locationMapOpacity() }}%</label>
+                </div>
               </div>
             </div>
             @if (locationMapError(); as mapError) {
