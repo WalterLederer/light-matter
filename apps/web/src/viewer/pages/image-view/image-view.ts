@@ -57,6 +57,7 @@ interface LeafletApi {
   map(element: HTMLElement, options?: { zoomControl?: boolean; minZoom?: number; maxZoom?: number }): LeafletMap;
   tileLayer(url: string, options: { attribution: string; maxZoom: number; maxNativeZoom?: number }): LeafletTileLayer;
   marker(position: [number, number]): LeafletMarker;
+  polyline(positions: [number, number][], options?: { color?: string; weight?: number; opacity?: number; lineCap?: string; lineJoin?: string }): LeafletPolyline;
 }
 
 let leafletLoadPromise: Promise<LeafletApi> | null = null;
@@ -786,6 +787,11 @@ export class ImageView {
   private locationMapTileLayer: LeafletTileLayer | null = null;
   private locationMapMarker: LeafletMarker | null = null;
   private locationMapContainer: HTMLDivElement | null = null;
+  private locationGpxLayers: LeafletPolyline[] = [];
+  private readonly gpxTrackSegments = signal<[number, number][][]>([]);
+  protected readonly gpxTrackFileName = signal<string | null>(null);
+  protected readonly gpxTrackVisible = signal(true);
+  protected readonly gpxTrackStatus = signal<string | null>(null);
   private readonly readStoredLocationMapZoom = (): number => {
     try {
       const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.locationMapZoom'));
@@ -818,6 +824,110 @@ export class ImageView {
   protected readonly adjustLocationMapZoom = (direction: -1 | 1): void => {
     if (!this.locationMapInstance) return;
     this.changeLocationMapZoom(this.locationMapInstance.getZoom() + direction);
+  };
+
+  protected readonly importGpxTrack = (): void => {
+    const input = this.document.createElement('input');
+    input.type = 'file';
+    input.accept = '.gpx,application/gpx+xml,application/xml,text/xml';
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      void file.text().then(content => {
+        const xml = new DOMParser().parseFromString(content, 'application/xml');
+        if (xml.getElementsByTagName('parsererror').length > 0) {
+          throw new Error('The selected file is not valid GPX/XML.');
+        }
+
+        const elements = Array.from(xml.getElementsByTagName('*'));
+        const trackSegments = elements
+          .filter(element => element.localName === 'trkseg')
+          .map(segment => Array.from(segment.getElementsByTagName('*'))
+            .filter(point => point.localName === 'trkpt')
+            .map(point => this.parseGpxPoint(point))
+            .filter((point): point is [number, number] => point !== null))
+          .filter(segment => segment.length > 0);
+
+        if (trackSegments.length === 0) {
+          const trackPoints = elements
+            .filter(element => element.localName === 'trkpt')
+            .map(point => this.parseGpxPoint(point))
+            .filter((point): point is [number, number] => point !== null);
+          if (trackPoints.length > 0) trackSegments.push(trackPoints);
+        }
+        if (trackSegments.length === 0) {
+          const routePoints = elements
+            .filter(element => element.localName === 'rtept')
+            .map(point => this.parseGpxPoint(point))
+            .filter((point): point is [number, number] => point !== null);
+          if (routePoints.length > 0) trackSegments.push(routePoints);
+        }
+        if (trackSegments.length === 0) {
+          throw new Error('No valid track or route points were found in the GPX file.');
+        }
+
+        this.gpxTrackSegments.set(trackSegments);
+        this.gpxTrackFileName.set(file.name);
+        this.gpxTrackVisible.set(true);
+        this.gpxTrackStatus.set(null);
+        this.applyGpxTrack(true);
+      }).catch(error => {
+        this.gpxTrackStatus.set(error instanceof Error ? error.message : 'Could not read the GPX file.');
+      });
+    }, { once: true });
+    input.click();
+  };
+
+  private parseGpxPoint(point: Element): [number, number] | null {
+    const latitude = Number(point.getAttribute('lat'));
+    const longitude = Number(point.getAttribute('lon'));
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+        Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+    return [latitude, longitude];
+  }
+
+  protected readonly setGpxTrackVisible = (visible: boolean): void => {
+    this.gpxTrackVisible.set(visible);
+    this.applyGpxTrack();
+  };
+
+  private readonly applyGpxTrack = (fitTrack = false): void => {
+    for (const layer of this.locationGpxLayers) layer.remove();
+    this.locationGpxLayers = [];
+    const map = this.locationMapInstance;
+    const segments = this.gpxTrackSegments();
+    if (!map || !this.gpxTrackVisible() || segments.length === 0) return;
+
+    const leaflet = (this.document.defaultView as (Window & { L?: LeafletApi }) | null)?.L;
+    if (!leaflet) return;
+    for (const segment of segments) {
+      if (segment.length < 2) continue;
+      this.locationGpxLayers.push(leaflet.polyline(segment, {
+        color: '#ff3b30',
+        weight: 4,
+        opacity: 0.92,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(map));
+    }
+
+    if (fitTrack && this.locationGpxLayers.length > 0) {
+      const points = segments.flat();
+      const latitudes = points.map(point => point[0]);
+      const longitudes = points.map(point => point[1]);
+      const bounds: [[number, number], [number, number]] = [
+        [Math.min(...latitudes), Math.min(...longitudes)],
+        [Math.max(...latitudes), Math.max(...longitudes)]
+      ];
+      const requestMap = map;
+      this.document.defaultView?.requestAnimationFrame(() => {
+        this.document.defaultView?.requestAnimationFrame(() => {
+          if (this.locationMapInstance !== requestMap || !this.gpxTrackVisible()) return;
+          requestMap.invalidateSize({ animate: false, pan: false });
+          requestMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 16, animate: false });
+        });
+      });
+    }
   };
 
   private readonly applyLocationMapColor = (): void => {
@@ -917,6 +1027,7 @@ export class ImageView {
     this.locationMapTileLayer = null;
     this.locationMapMarker = null;
     this.locationMapContainer = null;
+    this.locationGpxLayers = [];
   };
 
   private readonly syncLocationMap = async (
@@ -942,6 +1053,7 @@ export class ImageView {
         }).addTo(this.locationMapInstance);
         this.applyLocationMapColor();
         this.locationMapMarker = leaflet.marker(position).addTo(this.locationMapInstance);
+        this.applyGpxTrack();
         this.locationMapInstance.on('zoomend', () => {
           if (this.locationMapInstance) this.storeLocationMapZoom(this.locationMapInstance.getZoom());
         });
