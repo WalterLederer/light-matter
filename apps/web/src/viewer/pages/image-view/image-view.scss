@@ -1847,3 +1847,29 @@
   white-space: nowrap;
   opacity: .78;
 }
+
+
+.image-location-panel .location-gpx-colors {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+}
+.image-location-panel .location-gpx-color-button {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  padding: 0;
+  border: 2px solid rgb(255 255 255 / 55%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 35%);
+  cursor: pointer;
+}
+.image-location-panel .location-gpx-color-button.selected {
+  outline: 2px solid var(--color-content-default);
+  outline-offset: 2px;
+}
+.image-location-panel .location-gpx-color-button:focus-visible {
+  outline: 2px solid var(--color-content-default);
+  outline-offset: 3px;
+}
