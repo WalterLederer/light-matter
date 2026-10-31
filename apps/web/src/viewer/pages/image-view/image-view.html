@@ -427,14 +427,23 @@
                 </select>
               </div>
             </div>
-            <div #locationMapElement class="location-map-frame"
-                 [class.map-color-light]="locationMapColor() === 'light'"
-                 [class.map-color-dark]="locationMapColor() === 'dark'"
-                 [class.map-color-grayscale]="locationMapColor() === 'grayscale'"
-                 [class.map-color-pastel]="locationMapColor() === 'pastel'"
-                 [class.map-color-contrast]="locationMapColor() === 'contrast'"
-                 [class.map-color-night]="locationMapColor() === 'night'"
-                 role="application" aria-label="Interactive map showing the image GPS location"></div>
+            <div class="location-map-stage">
+              <div #locationMapElement class="location-map-frame"
+                   [class.map-color-light]="locationMapColor() === 'light'"
+                   [class.map-color-dark]="locationMapColor() === 'dark'"
+                   [class.map-color-grayscale]="locationMapColor() === 'grayscale'"
+                   [class.map-color-pastel]="locationMapColor() === 'pastel'"
+                   [class.map-color-contrast]="locationMapColor() === 'contrast'"
+                   [class.map-color-night]="locationMapColor() === 'night'"
+                   role="application" aria-label="Interactive map showing the image GPS location"></div>
+              <div class="location-map-zoom-overlay">
+                <label for="location-map-zoom">Zoom {{ locationMapZoomLevel() }}</label>
+                <input id="location-map-zoom" type="range" min="1" max="20" step="1"
+                       [value]="locationMapZoomLevel()"
+                       [attr.aria-valuetext]="'Map zoom level ' + locationMapZoomLevel()"
+                       (input)="changeLocationMapZoom($any($event.target).value)">
+              </div>
+            </div>
             @if (locationMapError(); as mapError) {
               <p class="location-no-gps">Map could not be loaded: {{mapError}}</p>
             }
