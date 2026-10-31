@@ -1539,3 +1539,30 @@
   color: #d9e8ff;
   background: rgb(38 132 255 / 16%);
 }
+
+
+/* Destructive and file-copy actions use a muted red accent to distinguish them. */
+.image-controls-sidebar button.danger-action {
+  border-color: #a94442;
+  background: #8f302e;
+  color: #fff;
+  font-weight: 600;
+}
+.image-controls-sidebar button.danger-action:hover:not(:disabled) {
+  border-color: #c65b57;
+  background: #a83b38;
+}
+.image-controls-sidebar button.danger-action:disabled {
+  opacity: .45;
+  cursor: default;
+}
+.image-controls-sidebar .copy-destination-count {
+  margin: 5px 0 2px;
+  padding: 5px 7px;
+  border-radius: 3px;
+  background: rgb(128 128 128 / 12%);
+  color: var(--color-content-default);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
