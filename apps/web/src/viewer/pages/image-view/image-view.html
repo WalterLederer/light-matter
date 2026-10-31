@@ -406,29 +406,8 @@
               <strong>GPS/GNSS:</strong>
               <span>{{formatGpsCoordinate(coordinates.latitude, 'N', 'S')}}, {{formatGpsCoordinate(coordinates.longitude, 'O', 'W')}}</span>
               <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy'}}</button>
-            </div>
-            <div class="location-gpx-row">
-              <strong>GPX</strong>
-              <button type="button" class="location-gpx-import-button" (click)="importGpxTrack()">Import</button>
-              <label class="location-gpx-toggle">
-                <input type="checkbox" [checked]="gpxTrackVisible()" [disabled]="!gpxTrackFileName()" (change)="setGpxTrackVisible($any($event.target).checked)" />
-                Track overlay
-              </label>
-              <label class="location-gpx-color-select-label" for="location-gpx-track-color">Color</label>
-              <select id="location-gpx-track-color" class="location-gpx-color-select"
-                      [value]="gpxTrackColor()"
-                      (change)="setGpxTrackColor($any($event.target).value)">
-                @for (color of gpxTrackColors; track color.value) {
-                  <option [value]="color.value">{{color.name}}</option>
-                }
-              </select>
-              <span class="location-gpx-filename" [title]="gpxTrackFileName() || ''">{{gpxTrackFileName() || ''}}</span>
-            </div>
-            @if (gpxTrackStatus(); as gpxError) {
-              <p class="location-no-gps">{{gpxError}}</p>
-            }
-            <div class="location-map-style-row">
-              <label class="location-map-control-label" for="location-map-style">Style</label>
+              <div class="location-map-style-row">
+                <label class="location-map-control-label" for="location-map-style">Style</label>
                 <select id="location-map-style" [value]="locationMapStyle()" (change)="changeLocationMapStyle($any($event.target).value)">
                   <option value="standard">Standard</option>
                   <option value="satellite">Satellite</option>
@@ -446,7 +425,28 @@
                   <option value="contrast">High contrast</option>
                   <option value="night">Night</option>
                 </select>
+              </div>
             </div>
+            <div class="location-gpx-row">
+              <strong>GPX</strong>
+              <button type="button" class="location-gpx-import-button" (click)="importGpxTrack()">Import</button>
+              <label class="location-gpx-toggle">
+                <input type="checkbox" [checked]="gpxTrackVisible()" [disabled]="!gpxTrackFileName()" (change)="setGpxTrackVisible($any($event.target).checked)" />
+                Track
+              </label>
+              <label class="location-gpx-color-select-label" for="location-gpx-track-color">Color</label>
+              <select id="location-gpx-track-color" class="location-gpx-color-select"
+                      [value]="gpxTrackColor()"
+                      (change)="setGpxTrackColor($any($event.target).value)">
+                @for (color of gpxTrackColors; track color.value) {
+                  <option [value]="color.value">{{color.name}}</option>
+                }
+              </select>
+              <span class="location-gpx-filename" [title]="gpxTrackFileName() || ''">{{gpxTrackFileName() || ''}}</span>
+            </div>
+            @if (gpxTrackStatus(); as gpxError) {
+              <p class="location-no-gps">{{gpxError}}</p>
+            }
             <div class="location-map-stage">
               <div #locationMapElement class="location-map-frame"
                    [class.map-color-light]="locationMapColor() === 'light'"
