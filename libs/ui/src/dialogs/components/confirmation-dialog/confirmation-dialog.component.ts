@@ -9,6 +9,7 @@ export interface ConfirmationDialogOptions {
   title: string;
   description: string;
   confirmLabel?: string;
+  defaultAction?: 'confirm' | 'cancel';
 }
 
 @Component({
