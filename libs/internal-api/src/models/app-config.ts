@@ -47,6 +47,7 @@ export interface AppConfigV1Gallery {
   thumbHeight?: number;
   sortBy?: 'date' | 'name' | 'size';
   sortDir?: 'asc' | 'desc';
+  selectedLocation?: string;
 }
 export interface AppConfigV1System {
   minimiseOnStart: boolean;
@@ -79,7 +80,8 @@ export const isAppConfig: (input: unknown) => input is AppConfigV1 = (() => {
     && (undefined === input.thumbWidth || 'number' === typeof input.thumbWidth)
     && (undefined === input.thumbHeight || 'number' === typeof input.thumbHeight)
     && (undefined === input.sortBy || 'date' === input.sortBy || 'name' === input.sortBy || 'size' === input.sortBy)
-    && (undefined === input.sortDir || 'asc' === input.sortDir || 'desc' === input.sortDir);
+    && (undefined === input.sortDir || 'asc' === input.sortDir || 'desc' === input.sortDir)
+    && (undefined === input.selectedLocation || 'string' === typeof input.selectedLocation);
   const _io2 = (input: any): boolean =>
     'boolean' === typeof input.minimiseOnStart
     && (undefined === input.theme || 'dark' === input.theme || 'light' === input.theme)
