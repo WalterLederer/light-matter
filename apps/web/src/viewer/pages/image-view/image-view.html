@@ -473,14 +473,14 @@
         </div>
         <div class="status-control-group status-zoom" aria-label="Zoom">
           <button type="button" class="status-icon-button" (click)="resetZoom()" title="Zoom zurücksetzen / an Fenster anpassen" aria-label="Zoom zurücksetzen">⟲</button>
-          <button type="button" class="status-icon-button" (click)="zoomOut()" title="Zoom verkleinern" aria-label="Zoom verkleinern">−</button>
-          <button type="button" class="status-icon-button" (click)="zoomIn()" title="Zoom vergrößern" aria-label="Zoom vergrößern">+</button>
+          <button type="button" class="status-icon-button" (click)="zoomOut()" title="Zoom verkleinern (−)" aria-label="Zoom verkleinern">−</button>
+          <button type="button" class="status-icon-button" (click)="zoomIn()" title="Zoom vergrößern (+)" aria-label="Zoom vergrößern">+</button>
           <div class="status-zoom-slider"><ui-slider [formControl]="zoomSlider" [min]="zoomConfig.min" [max]="zoomConfig.max"/></div>
           <span class="zoom-factor-readout">{{ getZoomFactor(currentImageLocation).toFixed(2) }}×</span>
         </div>
         <div class="status-control-group status-navigation">
-          <button type="button" class="status-icon-button" [disabled]="!(hasPrevious$ | async)" (click)="prevPhoto()" title="Vorheriges Bild" aria-label="Vorheriges Bild">‹</button>
-          <button type="button" class="status-icon-button" [disabled]="!(hasNext$ | async)" (click)="nextPhoto()" title="Nächstes Bild" aria-label="Nächstes Bild">›</button>
+          <button type="button" class="status-icon-button" [disabled]="!(hasPrevious$ | async)" (click)="prevPhoto()" title="Vorheriges Bild (←, PageUp)" aria-label="Vorheriges Bild">‹</button>
+          <button type="button" class="status-icon-button" [disabled]="!(hasNext$ | async)" (click)="nextPhoto()" title="Nächstes Bild (→, Space, PageDown)" aria-label="Nächstes Bild">›</button>
           <div class="status-position-slider" [title]="(imagePosition?.position ?? 0) + ' / ' + (imagePosition?.total ?? 0)">
             <input type="range" min="1" [max]="imagePosition?.total ?? 1" [value]="imagePosition?.position ?? 1"
                    [disabled]="(imagePosition?.total ?? 0) < 2"
