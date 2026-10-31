@@ -405,14 +405,19 @@
           <button class="section-heading" type="button" (click)="toggleSidebarSection('actions')"><span class="section-chevron">{{sidebarSectionExpanded('actions') ? 'v' : '>'}}</span>Actions</button>
           @if (sidebarSectionExpanded('actions')) {
             <button type="button" (click)="deletePhoto()">Delete file</button>
-            <button type="button" [disabled]="!copyDestinationFolder()" (click)="copyPhoto()">Copy file</button>
-            <button type="button" (click)="selectCopyFolder()">Select folder</button>
-            <button type="button" (click)="selectBestOfFolder()">Select BestOf</button>
-            <div class="copy-destination-path" [title]="copyDestinationFolder() || ''">
-              {{copyDestinationFolder() || 'No copy destination selected'}}
-            </div>
+            <section class="copy-file-section">
+              <button class="section-heading" type="button" (click)="toggleSidebarSection('copy')"><span class="section-chevron">{{sidebarSectionExpanded('copy') ? 'v' : '>'}}</span>Copy file</button>
+              @if (sidebarSectionExpanded('copy')) {
+                <button type="button" (click)="selectCopyFolder()">Select folder</button>
+                <button type="button" (click)="selectBestOfFolder()">Select BestOf</button>
+                <div class="copy-destination-path" [title]="copyDestinationFolder() || ''">
+                  {{copyDestinationFolder() || 'No copy destination selected'}}
+                </div>
+                <button type="button" [disabled]="!copyDestinationFolder()" (click)="copyPhoto()">Copy</button>
+                @if (copyPhotoStatus()) { <div class="copy-photo-status" role="status">{{copyPhotoStatus()}}</div> }
+              }
+            </section>
             <button type="button" (click)="copyImagePath()">{{copyPathStatus() || 'Copy path'}}</button>
-            @if (copyPhotoStatus()) { <div class="copy-photo-status" role="status">{{copyPhotoStatus()}}</div> }
           }
         </section>
       }
