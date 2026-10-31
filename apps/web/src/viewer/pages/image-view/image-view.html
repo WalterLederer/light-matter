@@ -437,9 +437,13 @@
               <label class="location-gpx-color-select-label" for="location-gpx-track-color">Color</label>
               <select id="location-gpx-track-color" class="location-gpx-color-select"
                       [value]="gpxTrackColor()"
+                      [style.background-color]="gpxTrackColor()"
+                      [style.color]="gpxTrackColor() === '#ffd60a' ? '#111' : '#fff'"
                       (change)="setGpxTrackColor($any($event.target).value)">
                 @for (color of gpxTrackColors; track color.value) {
-                  <option [value]="color.value">{{color.name}}</option>
+                  <option [value]="color.value"
+                          [style.background-color]="color.value"
+                          [style.color]="color.value === '#ffd60a' ? '#111' : '#fff'">{{color.name}} ({{color.value}})</option>
                 }
               </select>
               <span class="location-gpx-filename" [title]="gpxTrackFileName() || ''">{{gpxTrackFileName() || ''}}</span>
