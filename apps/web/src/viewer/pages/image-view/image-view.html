@@ -455,6 +455,8 @@
             }
             <div class="location-map-stage">
               <div #locationMapElement class="location-map-frame"
+                   (pointerenter)="onLocationMapPointerEnter()"
+                   (pointerleave)="onLocationMapPointerLeave()"
                    [class.map-color-light]="locationMapColor() === 'light'"
                    [class.map-color-extra-light]="locationMapColor() === 'extra-light'"
                    [class.map-color-dark]="locationMapColor() === 'dark'"
