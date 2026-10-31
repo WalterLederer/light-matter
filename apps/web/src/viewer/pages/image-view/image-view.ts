@@ -763,7 +763,29 @@ export class ImageView {
   protected readonly locationMapError = signal<string | null>(null);
   protected readonly locationMapStyle = signal(this.readStoredLocationMapStyle());
   protected readonly locationMapColor = signal(this.readStoredLocationMapColor());
+  protected readonly locationMapOpacity = signal(this.readStoredLocationMapOpacity());
   private readonly locationMapColors = ['original', 'light', 'extra-light', 'ultra-light', 'dark', 'grayscale', 'pastel', 'contrast', 'night'] as const;
+
+  private readStoredLocationMapOpacity(): number {
+    try {
+      const stored = Number(this.document.defaultView?.localStorage.getItem('light-matter.locationMapOpacity'));
+      return Number.isFinite(stored) && stored >= 0 && stored <= 100 ? stored : 100;
+    } catch {
+      return 100;
+    }
+  }
+
+  protected readonly changeLocationMapOpacity = (value: string | number): void => {
+    const opacity = Math.max(0, Math.min(100, Math.round(Number(value))));
+    if (!Number.isFinite(opacity)) return;
+    this.locationMapOpacity.set(opacity);
+    try {
+      this.document.defaultView?.localStorage.setItem('light-matter.locationMapOpacity', String(opacity));
+    } catch {
+      // The selected map opacity remains active for this session.
+    }
+    this.applyLocationMapOpacity();
+  };
 
   private readStoredLocationMapColor(): typeof this.locationMapColors[number] {
     try {
@@ -1019,6 +1041,12 @@ export class ImageView {
     }
   };
 
+  private readonly applyLocationMapOpacity = (): void => {
+    const tilePane = this.locationMapContainer?.querySelector<HTMLElement>('.leaflet-tile-pane');
+    if (!tilePane) return;
+    tilePane.style.opacity = String(this.locationMapOpacity() / 100);
+  };
+
   private readonly applyLocationMapColor = (): void => {
     const tilePane = this.locationMapContainer?.querySelector<HTMLElement>('.leaflet-tile-pane');
     if (!tilePane) return;
@@ -1034,6 +1062,7 @@ export class ImageView {
       night: 'brightness(.48) contrast(1.35) saturate(.72) hue-rotate(12deg)'
     };
     tilePane.style.filter = filters[this.locationMapColor()];
+    this.applyLocationMapOpacity();
   };
 
   private readonly locationMapStyles = {
