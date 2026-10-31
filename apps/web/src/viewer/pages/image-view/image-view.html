@@ -405,9 +405,9 @@
             <div class="location-coordinate-readout">
               <strong>GPS coordinates:</strong>
               <span>{{formatGpsCoordinate(coordinates.latitude, 'N', 'S')}}, {{formatGpsCoordinate(coordinates.longitude, 'O', 'W')}}</span>
-              <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy location'}}</button>
+              <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy'}}</button>
               <div class="location-map-style-row">
-                <label for="location-map-style">Map style</label>
+                <label for="location-map-style">Style</label>
                 <select id="location-map-style" [value]="locationMapStyle()" (change)="changeLocationMapStyle($any($event.target).value)">
                   <option value="standard">Standard</option>
                   <option value="satellite">Satellite</option>
@@ -415,9 +415,26 @@
                   <option value="topographic">Topographic</option>
                   <option value="humanitarian">Humanitarian (HOT)</option>
                 </select>
+                <label for="location-map-color">Colors</label>
+                <select id="location-map-color" [value]="locationMapColor()" (change)="changeLocationMapColor($any($event.target).value)">
+                  <option value="original">Original</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="grayscale">Grayscale</option>
+                  <option value="pastel">Pastel</option>
+                  <option value="contrast">High contrast</option>
+                  <option value="night">Night</option>
+                </select>
               </div>
             </div>
-            <div #locationMapElement class="location-map-frame" role="application" aria-label="Interactive map showing the image GPS location"></div>
+            <div #locationMapElement class="location-map-frame"
+                 [class.map-color-light]="locationMapColor() === 'light'"
+                 [class.map-color-dark]="locationMapColor() === 'dark'"
+                 [class.map-color-grayscale]="locationMapColor() === 'grayscale'"
+                 [class.map-color-pastel]="locationMapColor() === 'pastel'"
+                 [class.map-color-contrast]="locationMapColor() === 'contrast'"
+                 [class.map-color-night]="locationMapColor() === 'night'"
+                 role="application" aria-label="Interactive map showing the image GPS location"></div>
             @if (locationMapError(); as mapError) {
               <p class="location-no-gps">Map could not be loaded: {{mapError}}</p>
             }
