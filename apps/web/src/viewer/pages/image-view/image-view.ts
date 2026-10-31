@@ -2121,7 +2121,7 @@ export class ImageView {
     if (!image) return;
     try {
       const normalizedPath = /^[a-zA-Z]:[\\/]/.test(image.path) || image.path.startsWith('\\\\')
-        ? image.path.replace(/\\//g, '\\\\').replace(/\\\\{2,}/g, '\\\\')
+        ? image.path.replace(/\//g, '\\').replace(/\\{2,}/g, '\\')
         : image.path;
       await this.document.defaultView?.navigator.clipboard.writeText(normalizedPath);
       this.copyPathStatus.set('Copied');
