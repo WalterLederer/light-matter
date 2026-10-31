@@ -1655,6 +1655,7 @@
 .image-location-panel .location-map-style-row {
   display: flex;
   flex: 0 0 auto;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   font-size: 12px;
@@ -1663,7 +1664,7 @@
   white-space: nowrap;
 }
 .image-location-panel .location-map-style-row select {
-  min-width: 130px;
+  min-width: 105px;
   max-width: 100%;
   padding: 4px 7px;
   border: 1px solid var(--color-border-default, rgb(128 128 128 / 55%));
