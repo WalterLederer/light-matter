@@ -12,22 +12,18 @@
         {{ options.confirmLabel ?? 'Yes' }}
       </ui-action-button>
 
-      <ui-action-button cdkFocusInitial
-                        class="default-action"
+      <ui-action-button class="default-action"
                         (pressed)="dialogRef.close(false)">
         Cancel
       </ui-action-button>
     } @else {
-      <ui-action-button cdkFocusInitial
-                        class="default-action"
+      <ui-action-button class="default-action"
                         variant="primary"
                         (pressed)="dialogRef.close(true)">
         {{ options.confirmLabel ?? 'Yes' }}
       </ui-action-button>
 
-      <ui-action-button (pressed)="dialogRef.close(false)">
-        Cancel
-      </ui-action-button>
+      <ui-action-button (pressed)="dialogRef.close(false)">Cancel</ui-action-button>
     }
   </footer>
 </ui-dialog>
