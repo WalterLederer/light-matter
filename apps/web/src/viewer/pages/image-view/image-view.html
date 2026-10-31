@@ -406,6 +406,7 @@
               <strong>GPS/GNSS:</strong>
               <span>{{formatGpsCoordinate(coordinates.latitude, 'N', 'S')}}, {{formatGpsCoordinate(coordinates.longitude, 'O', 'W')}}</span>
               <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy'}}</button>
+              <button type="button" class="location-copy-button" (click)="centerLocationMarker()">Center</button>
               <div class="location-map-style-row">
                 <label class="location-map-control-label" for="location-map-style">Style</label>
                 <select id="location-map-style" [value]="locationMapStyle()" (change)="changeLocationMapStyle($any($event.target).value)">
