@@ -439,7 +439,7 @@ export class ImageView {
     view.addEventListener('pointercancel', onUp);
     this.sidebarResizeCleanup = onUp;
   };
-  protected readonly imageSidebarTabs = [{"id":"general","label":"General"},{"id":"capture","label":"Capture"},{"id":"cache","label":"Cache"},{"id":"view","label":"View"},{"id":"image","label":"Image"},{"id":"histogram","label":"Histogram"},{"id":"highlight","label":"Highlight"},{"id":"zoom","label":"Zoom"},{"id":"corrections","label":"Corrections"}];
+  protected readonly imageSidebarTabs = [{"id":"general","label":"General"},{"id":"capture","label":"Capture"},{"id":"cache","label":"Cache"},{"id":"view","label":"View"},{"id":"image","label":"Image"},{"id":"location","label":"Location"},{"id":"histogram","label":"Histogram"},{"id":"highlight","label":"Highlight"},{"id":"zoom","label":"Zoom"},{"id":"corrections","label":"Corrections"}];
   private readActiveImageSidebarTab(): string {
     try { const saved = this.document.defaultView?.localStorage.getItem('light-matter.activeImageSidebarTab'); return this.imageSidebarTabs.some(tab => tab.id === saved) ? saved! : 'general'; }
     catch { return 'general'; }
@@ -684,6 +684,51 @@ export class ImageView {
   protected readonly imageBitDepth = signal<string | null>(null);
 
   protected readonly imageTags = signal<ExifTags | null>(null);
+
+  protected readonly gpsCoordinates = computed(() => {
+    const tags = this.imageTags() as (Record<string, unknown> | null);
+    if (!tags) return null;
+
+    const parseCoordinate = (value: unknown, reference: unknown): number | null => {
+      if (typeof value !== 'number' && typeof value !== 'string') return null;
+      const parts = String(value).match(/-?\d+(?:\.\d+)?/g);
+      if (!parts?.length) return null;
+      const degrees = Math.abs(Number(parts[0]));
+      const minutes = Number(parts[1] ?? 0);
+      const seconds = Number(parts[2] ?? 0);
+      if (![degrees, minutes, seconds].every(Number.isFinite) || minutes >= 60 || seconds >= 60) return null;
+      let result = degrees + minutes / 60 + seconds / 3600;
+      const ref = String(reference ?? '').toLowerCase();
+      if (String(parts[0]).startsWith('-') || ['s', 'south', 'w', 'west'].includes(ref)) result *= -1;
+      return Number.isFinite(result) ? result : null;
+    };
+
+    const latitude = parseCoordinate(tags['GPSLatitude'], tags['GPSLatitudeRef']);
+    const longitude = parseCoordinate(tags['GPSLongitude'], tags['GPSLongitudeRef']);
+    if (latitude === null || longitude === null || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+    return { latitude, longitude };
+  });
+
+  protected readonly locationMapUrl = computed(() => {
+    const coordinates = this.gpsCoordinates();
+    if (!coordinates) return null;
+    const { latitude, longitude } = coordinates;
+    const latitudeSpan = 0.006;
+    const longitudeSpan = latitudeSpan / Math.max(0.15, Math.cos(latitude * Math.PI / 180));
+    const west = longitude - longitudeSpan;
+    const east = longitude + longitudeSpan;
+    const south = latitude - latitudeSpan;
+    const north = latitude + latitudeSpan;
+    const bounds = [west, south, east, north].map(value => value.toFixed(6)).join(',');
+    return 'https://www.openstreetmap.org/export/embed.html?bbox=' + bounds + '&layer=mapnik&marker=' + latitude.toFixed(6) + '%2C' + longitude.toFixed(6);
+  });
+
+  protected readonly displayImagePath = (path: string): string => {
+    if (/^[a-zA-Z]:[\\/]/.test(path) || path.startsWith('\\\\') || path.startsWith('//')) {
+      return path.replace(/\//g, '\\').replace(/\\{3,}/g, '\\\\');
+    }
+    return path.replace(/\\/g, '/');
+  };
 
   protected readonly histogramVisible = signal(false);
 
