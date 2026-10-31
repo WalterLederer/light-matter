@@ -1676,6 +1676,13 @@
   color: var(--color-content-default);
   font: inherit;
 }
+.image-location-panel .location-map-stage {
+  position: relative;
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+}
 .image-location-panel .location-map-frame {
   position: relative;
   flex: 1 1 0;
@@ -1687,6 +1694,40 @@
   border-radius: 5px;
   background: var(--color-surface-default-low);
   isolation: isolate;
+}
+.image-location-panel .location-map-zoom-overlay {
+  position: absolute;
+  z-index: 1000;
+  right: 50%;
+  bottom: 12px;
+  transform: translateX(50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(290px, calc(100% - 28px));
+  padding: 7px 12px;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 7px;
+  background: rgb(24 27 31 / 72%);
+  color: #fff;
+  box-shadow: 0 1px 5px rgb(0 0 0 / 28%);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  font-size: 12px;
+}
+.image-location-panel .location-map-zoom-overlay label {
+  flex: 0 0 auto;
+  min-width: 54px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.image-location-panel .location-map-zoom-overlay input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  accent-color: #fff;
+  cursor: pointer;
 }
 .image-location-panel .location-map-frame.leaflet-container {
   font: inherit;
