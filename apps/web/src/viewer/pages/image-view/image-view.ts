@@ -3,7 +3,6 @@ import { AsyncPipe, DecimalPipe, DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { DomSanitizer } from '@angular/platform-browser';
 import {
   ConfirmationDialogComponent,
   OverlayService,
@@ -122,8 +121,6 @@ const loadLeaflet = (document: Document): Promise<LeafletApi> => {
 export class ImageView {
   /* DI */
   protected readonly viewNavigator = inject(ViewNavigator);
-
-  private readonly sanitizer = inject(DomSanitizer);
 
   private readonly keyboard = inject(Keyboard);
 
@@ -837,21 +834,6 @@ export class ImageView {
     const longitude = parseCoordinate(tags['GPSLongitude'], tags['GPSLongitudeRef']);
     if (latitude === null || longitude === null || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
     return { latitude, longitude };
-  });
-
-  protected readonly locationMapUrl = computed(() => {
-    const coordinates = this.gpsCoordinates();
-    if (!coordinates) return null;
-    const { latitude, longitude } = coordinates;
-    const latitudeSpan = 0.006;
-    const longitudeSpan = latitudeSpan / Math.max(0.15, Math.cos(latitude * Math.PI / 180));
-    const west = longitude - longitudeSpan;
-    const east = longitude + longitudeSpan;
-    const south = latitude - latitudeSpan;
-    const north = latitude + latitudeSpan;
-    const bounds = [west, south, east, north].map(value => value.toFixed(6)).join(',');
-    const url = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bounds + '&layer=mapnik&marker=' + latitude.toFixed(6) + '%2C' + longitude.toFixed(6);
-    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
 
   protected readonly copyLocation = async (): Promise<void> => {
