@@ -9,6 +9,8 @@ export class FileSystem implements DesktopFileSystem {
 
   readonly readDir = (path: string) => window.desktop.FileSystem.readDir(path);
 
+  readonly readText = (path: string) => window.desktop.FileSystem.readText(path);
+
   readonly readJson = <T>(path: string): Promise<ApiResponse<T>> => window.desktop.FileSystem.readJson(path);
 
   readonly writeJson = async <T>(path: string, data: T) => window.desktop.FileSystem.writeJson(path, data);
