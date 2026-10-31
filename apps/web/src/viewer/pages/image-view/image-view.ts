@@ -2116,6 +2116,8 @@ export class ImageView {
 
   protected readonly copyPhotoStatus = signal('');
 
+  protected readonly copyDestinationFileCount = signal<number | null>(null);
+
   protected readonly copyImagePath = async (): Promise<void> => {
     const image = await this.selectedImage$.pipe(take(1)).toPromise();
     if (!image) return;
@@ -2142,6 +2144,7 @@ export class ImageView {
     const result = await desktop.Dialogs.openFolder(initialFolder);
     if (result.success) {
       this.copyDestinationFolder.set(result.data);
+      this.copyDestinationFileCount.set(null);
       this.copyPhotoStatus.set('');
     }
   };
@@ -2162,6 +2165,7 @@ export class ImageView {
         return;
       }
       this.copyDestinationFolder.set(bestOf.path);
+      this.copyDestinationFileCount.set(null);
       this.copyPhotoStatus.set('');
     } catch (error) {
       this.copyPhotoStatus.set(error instanceof Error ? error.message : String(error));
@@ -2187,7 +2191,21 @@ export class ImageView {
           })
           .subscribe(async () => {
             const result = await desktop.FileSystem.copyFile(image.path, destinationFolder);
-            this.copyPhotoStatus.set(result.success ? `Copied to ${destinationFolder}` : result.errorMessage);
+            if (!result.success) {
+              this.copyDestinationFileCount.set(null);
+              this.copyPhotoStatus.set(result.errorMessage);
+              return;
+            }
+
+            this.copyPhotoStatus.set(`Copied to ${destinationFolder}`);
+            try {
+              const files = await desktop.FileSystem.readDir(destinationFolder);
+              this.copyDestinationFileCount.set(files.filter(file => !file.isDirectory).length);
+            } catch (error) {
+              console.error('Failed to count files in copy destination', error);
+              this.copyDestinationFileCount.set(null);
+              this.copyPhotoStatus.set(`Copied to ${destinationFolder}, but the destination file count could not be read.`);
+            }
           })
       );
   };
