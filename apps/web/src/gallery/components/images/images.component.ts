@@ -57,8 +57,22 @@ export class ImagesComponent {
   readonly viewMode = input<GalleryViewMode>('thumbnails');
   readonly sortDirection = input<'asc' | 'desc'>('desc');
 
-  readonly detailSortColumn = signal<'name' | 'date' | 'dimensions' | 'size' | 'suffix' | 'hdr'>('date');
-  readonly detailSortDirection = signal<'asc' | 'desc'>(this.sortDirection());
+  private readonly readStoredDetailSortColumn = (): 'name' | 'date' | 'dimensions' | 'size' | 'suffix' | 'hdr' => {
+    try {
+      const stored = globalThis.localStorage.getItem('light-matter.detailSortColumn');
+      return stored === 'name' || stored === 'date' || stored === 'dimensions' || stored === 'size' || stored === 'suffix' || stored === 'hdr' ? stored : 'date';
+    } catch { return 'date'; }
+  };
+
+  private readonly readStoredDetailSortDirection = (): 'asc' | 'desc' => {
+    try {
+      const stored = globalThis.localStorage.getItem('light-matter.detailSortDirection');
+      return stored === 'asc' || stored === 'desc' ? stored : this.sortDirection();
+    } catch { return this.sortDirection(); }
+  };
+
+  readonly detailSortColumn = signal<'name' | 'date' | 'dimensions' | 'size' | 'suffix' | 'hdr'>(this.readStoredDetailSortColumn());
+  readonly detailSortDirection = signal<'asc' | 'desc'>(this.readStoredDetailSortDirection());
 
   readonly sortedDetailImages = computed(() => {
     const images = [...(this.images() ?? [])];
@@ -134,6 +148,11 @@ export class ImagesComponent {
       this.detailSortColumn.set(column);
       this.detailSortDirection.set(column === 'name' ? 'asc' : 'desc');
     }
+
+    try {
+      globalThis.localStorage.setItem('light-matter.detailSortColumn', this.detailSortColumn());
+      globalThis.localStorage.setItem('light-matter.detailSortDirection', this.detailSortDirection());
+    } catch { /* Keep the selected detail sort for the current session. */ }
 
     if (column !== 'dimensions' && column !== 'hdr') return;
 
