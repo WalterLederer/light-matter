@@ -3140,7 +3140,9 @@ export class ImageView {
       .subscribe(event => {
         if (this.isPointerOverLocationMap &&
             (event.key === 'ArrowLeft' || event.key === 'ArrowRight' ||
-             event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+             event.key === 'ArrowUp' || event.key === 'ArrowDown' ||
+             event.key === '+' || event.key === '=' || event.key === 'Add' ||
+             event.key === '-' || event.key === '_' || event.key === 'Subtract')) {
           event.preventDefault();
         }
         if (event.key === 'Escape' && this.dialog.openDialogs.length > 0) {
@@ -3172,6 +3174,19 @@ export class ImageView {
           const horizontal = event.key === 'ArrowLeft' ? -80 : event.key === 'ArrowRight' ? 80 : 0;
           const vertical = event.key === 'ArrowUp' ? -80 : event.key === 'ArrowDown' ? 80 : 0;
           this.locationMapInstance?.panBy([horizontal, vertical], { animate: false });
+          return;
+        }
+
+        // While the pointer is over the GPS map, +/- control map zoom instead
+        // of changing the displayed image size. Outside the map they retain
+        // their normal image zoom behavior.
+        if (this.isPointerOverLocationMap &&
+            (event.key === '+' || event.key === '=' || event.key === 'Add' ||
+             event.key === '-' || event.key === '_' || event.key === 'Subtract')) {
+          event.preventDefault();
+          event.stopPropagation();
+          const zoomIn = event.key === '+' || event.key === '=' || event.key === 'Add';
+          this.adjustLocationMapZoom(zoomIn ? 1 : -1);
           return;
         }
 
