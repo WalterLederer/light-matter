@@ -107,8 +107,6 @@ export class ExifInfoComponent {
     }
   };
 
-  readonly copyPathStatus = signal('');
-
   readonly normalizedPath = () => {
     const value = this.path();
     // Windows drive-letter and UNC paths must be copied with native backslashes.
@@ -123,20 +121,6 @@ export class ExifInfoComponent {
     }
     // For non-Windows paths, preserve Unix-style separators.
     return value.replace(/\\/g, '/');
-  };
-
-  readonly copyFullPath = async (): Promise<void> => {
-    const path = this.normalizedPath();
-    if (!path) return;
-    try {
-      await navigator.clipboard.writeText(path);
-      this.copyPathStatus.set('Copied');
-      window.setTimeout(() => this.copyPathStatus.set(''), 1800);
-    } catch (error) {
-      console.error('Failed to copy image path to clipboard', error);
-      this.copyPathStatus.set('Copy failed');
-      window.setTimeout(() => this.copyPathStatus.set(''), 2500);
-    }
   };
 
   readonly dynamicRangeDiagnostics = () => {
