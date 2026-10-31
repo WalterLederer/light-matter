@@ -461,7 +461,7 @@ export class ImageView {
     try { this.document.defaultView?.localStorage.setItem('light-matter.activeImageSidebarTab', tab); } catch { /* Ignore unavailable storage. */ }
   };
 
-  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, basic: true, rgb: true, rgbLevels: false, inverse: false, loupe: true, loupeRenderer: false, highlight: true, toneCurve: false, mode: true, histogram: false, info: true, general: true, actions: false });
+  protected readonly sidebarSections = signal<Record<string, boolean>>({ zoom: true, brightness: true, basic: true, rgb: true, rgbLevels: false, inverse: false, loupe: true, loupeRenderer: false, highlight: true, toneCurve: false, mode: true, histogram: false, info: true, general: true, actions: false, copy: false });
   protected readonly sidebarSectionExpanded = (key: string): boolean => ['corrections', 'highlight', 'mode', 'info', 'general'].includes(key) || this.sidebarSections()[key] === true;
   protected readonly toggleSidebarSection = (key: string): void => {
     const sections = { ...this.sidebarSections(), [key]: !this.sidebarSectionExpanded(key) };
@@ -2182,7 +2182,8 @@ export class ImageView {
           .open(this.dialog, {
             title: 'Copy image?',
             description: `Copy "${image.path}" to "${destinationFolder}"?`,
-            confirmLabel: 'Copy'
+            confirmLabel: 'Copy',
+            defaultAction: 'confirm'
           })
           .subscribe(async () => {
             const result = await desktop.FileSystem.copyFile(image.path, destinationFolder);
@@ -2198,7 +2199,8 @@ export class ImageView {
         ConfirmationDialogComponent
           .open(this.dialog, {
             title: 'Delete image?',
-            description: `Do you want to permanently delete "${image.path}" from disk?`
+            description: `Do you want to permanently delete "${image.path}" from disk?`,
+            defaultAction: 'cancel'
           })
           .subscribe(async () => {
             const deleted = await this.viewNavigator.deleteImage(image.path);
