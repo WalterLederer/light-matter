@@ -2121,11 +2121,27 @@ export class ImageView {
 
   protected readonly copyDestinationFileCount = signal<number | null>(null);
 
+  protected readonly copyDestinationFolderSize = signal<number | null>(null);
+
   protected readonly sourceFileCount = signal<number | null>(null);
+
+  protected readonly sourceFolderSize = signal<number | null>(null);
 
   protected readonly sourceFolderPath = signal<string | null>(null);
 
   private sourceFileCountFolder: string | null = null;
+
+  protected readonly formatFolderSize = (bytes: number | null): string => {
+    if (bytes === null) return '—';
+    const units = ['KB', 'MB', 'GB'];
+    let value = bytes / 1024;
+    let unit = 0;
+    while (value >= 1024 && unit < units.length - 1) {
+      value /= 1024;
+      unit++;
+    }
+    return `${value.toFixed(2)} ${units[unit]}`;
+  };
 
   private readonly refreshSourceFileCount = async (imagePath: string, force = false): Promise<void> => {
     const desktop = this.desktop;
@@ -2135,11 +2151,13 @@ export class ImageView {
       this.sourceFolderPath.set(folder);
       if (!force && folder === this.sourceFileCountFolder) return;
       this.sourceFileCountFolder = folder;
-      const files = await desktop.FileSystem.readDir(folder);
-      this.sourceFileCount.set(files.filter(file => !file.isDirectory).length);
+      const files = (await desktop.FileSystem.readDir(folder)).filter(file => !file.isDirectory);
+      this.sourceFileCount.set(files.length);
+      this.sourceFolderSize.set(files.reduce((total, file) => total + file.size, 0));
     } catch (error) {
-      console.error('Failed to count files in source folder', error);
+      console.error('Failed to read source folder statistics', error);
       this.sourceFileCount.set(null);
+      this.sourceFolderSize.set(null);
     }
   };
 
@@ -2147,11 +2165,13 @@ export class ImageView {
     const desktop = this.desktop;
     if (!desktop) return;
     try {
-      const files = await desktop.FileSystem.readDir(folder);
-      this.copyDestinationFileCount.set(files.filter(file => !file.isDirectory).length);
+      const files = (await desktop.FileSystem.readDir(folder)).filter(file => !file.isDirectory);
+      this.copyDestinationFileCount.set(files.length);
+      this.copyDestinationFolderSize.set(files.reduce((total, file) => total + file.size, 0));
     } catch (error) {
-      console.error('Failed to count files in destination folder', error);
+      console.error('Failed to read destination folder statistics', error);
       this.copyDestinationFileCount.set(null);
+      this.copyDestinationFolderSize.set(null);
     }
   };
 
