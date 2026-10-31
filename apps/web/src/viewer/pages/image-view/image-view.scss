@@ -1849,27 +1849,18 @@
 }
 
 
-.image-location-panel .location-gpx-colors {
-  display: inline-flex;
+.image-location-panel .location-gpx-color-select-label {
   flex: 0 0 auto;
-  align-items: center;
-  gap: 5px;
+  white-space: nowrap;
 }
-.image-location-panel .location-gpx-color-button {
-  width: 17px;
-  height: 17px;
-  flex: 0 0 17px;
-  padding: 0;
-  border: 2px solid rgb(255 255 255 / 55%);
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 35%);
-  cursor: pointer;
-}
-.image-location-panel .location-gpx-color-button.selected {
-  outline: 2px solid var(--color-content-default);
-  outline-offset: 2px;
-}
-.image-location-panel .location-gpx-color-button:focus-visible {
-  outline: 2px solid var(--color-content-default);
-  outline-offset: 3px;
+.image-location-panel .location-gpx-color-select {
+  flex: 0 0 auto;
+  min-width: 92px;
+  max-width: 112px;
+  padding: 3px 22px 3px 7px;
+  border: 1px solid var(--color-element-neutral-medium);
+  border-radius: 4px;
+  background: var(--color-element-neutral-low);
+  color: var(--color-content-default);
+  font: inherit;
 }
