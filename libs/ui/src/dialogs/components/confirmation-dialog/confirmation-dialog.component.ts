@@ -35,9 +35,10 @@ export class ConfirmationDialogComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     // Focus the native button inside ui-action-button. The cdkFocusInitial
     // attribute on the custom-element host cannot focus its internal button.
-    const buttons = this.elementRef.nativeElement.querySelectorAll<HTMLButtonElement>(
+    const host = this.elementRef.nativeElement as HTMLElement;
+    const buttons = host.querySelectorAll(
       'button:not(:disabled)'
-    );
+    ) as NodeListOf<HTMLButtonElement>;
     const initialButton = this.options.defaultAction === 'cancel'
       ? buttons[1]
       : buttons[0];
