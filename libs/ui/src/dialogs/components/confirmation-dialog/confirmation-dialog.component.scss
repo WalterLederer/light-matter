@@ -2,3 +2,9 @@
   display: block;
   max-width: 500px;
 }
+
+:host ::ng-deep ui-action-button.default-action button {
+  outline: 2px solid #2684ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
