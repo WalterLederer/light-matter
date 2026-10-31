@@ -420,6 +420,7 @@
                 <select id="location-map-color" [value]="locationMapColor()" (change)="changeLocationMapColor($any($event.target).value)">
                   <option value="original">Original</option>
                   <option value="light">Light</option>
+                  <option value="extra-light">Extra light</option>
                   <option value="dark">Dark</option>
                   <option value="grayscale">Grayscale</option>
                   <option value="pastel">Pastel</option>
@@ -454,6 +455,7 @@
             <div class="location-map-stage">
               <div #locationMapElement class="location-map-frame"
                    [class.map-color-light]="locationMapColor() === 'light'"
+                   [class.map-color-extra-light]="locationMapColor() === 'extra-light'"
                    [class.map-color-dark]="locationMapColor() === 'dark'"
                    [class.map-color-grayscale]="locationMapColor() === 'grayscale'"
                    [class.map-color-pastel]="locationMapColor() === 'pastel'"
