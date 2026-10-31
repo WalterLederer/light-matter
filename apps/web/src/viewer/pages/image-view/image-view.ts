@@ -37,6 +37,7 @@ const HDR_WEBGPU_BRIGHTNESS_CORRECTION = 0.4;
 interface LeafletMap {
   setView(center: [number, number], zoom: number, options?: { animate?: boolean }): LeafletMap;
   getZoom(): number;
+  setZoom(zoom: number, options?: { animate?: boolean }): LeafletMap;
   invalidateSize(options?: { animate?: boolean; pan?: boolean }): LeafletMap;
   on(event: 'zoomend', callback: () => void): LeafletMap;
   remove(): void;
@@ -794,15 +795,24 @@ export class ImageView {
     }
   };
   private locationMapZoom = this.readStoredLocationMapZoom();
+  protected readonly locationMapZoomLevel = signal(this.locationMapZoom);
   private locationMapRequest = 0;
 
   private readonly storeLocationMapZoom = (zoom: number): void => {
     this.locationMapZoom = Math.max(1, Math.min(20, zoom));
+    this.locationMapZoomLevel.set(this.locationMapZoom);
     try {
       this.document.defaultView?.localStorage.setItem('light-matter.locationMapZoom', String(this.locationMapZoom));
     } catch {
       // The current map zoom remains active for this session.
     }
+  };
+
+  protected readonly changeLocationMapZoom = (value: string | number): void => {
+    const zoom = Math.max(1, Math.min(20, Math.round(Number(value))));
+    if (!Number.isFinite(zoom)) return;
+    this.storeLocationMapZoom(zoom);
+    this.locationMapInstance?.setZoom(zoom, { animate: false });
   };
 
   private readonly applyLocationMapColor = (): void => {
