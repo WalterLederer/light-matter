@@ -405,22 +405,14 @@
             <div class="location-coordinate-readout">
               <strong>GPS coordinates:</strong>
               <span>{{formatGpsCoordinate(coordinates.latitude, 'N', 'S')}}, {{formatGpsCoordinate(coordinates.longitude, 'O', 'W')}}</span>
-              <div class="location-header-actions">
-                <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy location'}}</button>
-                <a class="location-map-link"
-                   [href]="'https://www.openstreetmap.org/?mlat=' + coordinates.latitude + '&mlon=' + coordinates.longitude + '#map=16/' + coordinates.latitude + '/' + coordinates.longitude"
-                   target="_blank"
-                   rel="noopener noreferrer">Open location in OpenStreetMap</a>
+              <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy location'}}</button>
+              <div class="location-map-style-row">
+                <label for="location-map-style">Map style</label>
+                <select id="location-map-style" [value]="locationMapStyle()" (change)="changeLocationMapStyle($any($event.target).value)">
+                  <option value="standard">Standard</option>
+                  <option value="satellite">Satellite</option>
+                </select>
               </div>
-            </div>
-            <div class="location-map-style-row">
-              <label for="location-map-style">Map style</label>
-              <select id="location-map-style" [value]="locationMapStyle()" (change)="changeLocationMapStyle($any($event.target).value)">
-                <option value="standard">Standard</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="satellite">Satellite</option>
-              </select>
             </div>
             <div #locationMapElement class="location-map-frame" role="application" aria-label="Interactive map showing the image GPS location"></div>
             @if (locationMapError(); as mapError) {
