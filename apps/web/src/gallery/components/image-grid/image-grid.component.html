@@ -45,7 +45,6 @@
          [class.disabled]="viewMode() === 'details'"
          [attr.aria-disabled]="viewMode() === 'details'"
          title="Thumbnail size">
-      <ui-text [inherit]="true">Small</ui-text>
       <button class="zoom-step-button"
               type="button"
               title="Smaller thumbnails (-)"
@@ -54,7 +53,7 @@
               (click)="adjustThumbnailSize(-1)">−</button>
       <ui-slider [formControl]="thumbSizeSlider"
                  [min]="0"
-                 [max]="8"
+                 [max]="10"
                  aria-label="Thumbnail size" />
       <button class="zoom-step-button"
               type="button"
@@ -62,7 +61,6 @@
               aria-label="Larger thumbnails"
               [disabled]="viewMode() === 'details'"
               (click)="adjustThumbnailSize(1)">+</button>
-      <ui-text [inherit]="true">Large</ui-text>
     </div>
 
   </aside>
