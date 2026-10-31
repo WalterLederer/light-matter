@@ -873,6 +873,9 @@ export class ImageView {
     }
   };
 
+  protected readonly formatGpsCoordinate = (value: number, positiveDirection: string, negativeDirection: string): string =>
+    `${Math.abs(value).toFixed(6)}° ${value >= 0 ? positiveDirection : negativeDirection}`;
+
   protected readonly gpsCoordinates = computed(() => {
     const tags = this.imageTags() as (Record<string, unknown> | null);
     if (!tags) return null;
