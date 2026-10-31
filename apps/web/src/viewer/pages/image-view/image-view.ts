@@ -945,15 +945,22 @@ export class ImageView {
         this.locationMapInstance.on('zoomend', () => {
           if (this.locationMapInstance) this.storeLocationMapZoom(this.locationMapInstance.getZoom());
         });
-      } else {
-        // Recenter on the new image while keeping the zoom chosen by the user.
-        this.locationMapMarker?.setLatLng(position);
-        this.locationMapInstance.setView(position, this.locationMapInstance.getZoom(), { animate: false });
       }
 
       this.locationMapError.set(null);
+
+      // Image navigation can change the sidebar/map layout after this effect runs.
+      // Wait for the layout to settle, update Leaflet's dimensions first, and only
+      // then recenter. Calling setView before invalidateSize can briefly offset the map.
       this.document.defaultView?.requestAnimationFrame(() => {
-        if (request === this.locationMapRequest) this.locationMapInstance?.invalidateSize({ animate: false, pan: false });
+        this.document.defaultView?.requestAnimationFrame(() => {
+          if (request !== this.locationMapRequest || this.locationMapContainer !== container) return;
+          const map = this.locationMapInstance;
+          if (!map) return;
+          map.invalidateSize({ animate: false, pan: false });
+          this.locationMapMarker?.setLatLng(position);
+          map.setView(position, map.getZoom(), { animate: false });
+        });
       });
     } catch (error) {
       if (request === this.locationMapRequest) {
