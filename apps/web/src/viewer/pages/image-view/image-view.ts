@@ -763,7 +763,7 @@ export class ImageView {
   protected readonly locationMapError = signal<string | null>(null);
   protected readonly locationMapStyle = signal(this.readStoredLocationMapStyle());
   protected readonly locationMapColor = signal(this.readStoredLocationMapColor());
-  private readonly locationMapColors = ['original', 'light', 'extra-light', 'dark', 'grayscale', 'pastel', 'contrast', 'night'] as const;
+  private readonly locationMapColors = ['original', 'light', 'extra-light', 'ultra-light', 'dark', 'grayscale', 'pastel', 'contrast', 'night'] as const;
 
   private readStoredLocationMapColor(): typeof this.locationMapColors[number] {
     try {
@@ -1026,6 +1026,7 @@ export class ImageView {
       original: 'none',
       light: 'brightness(1.12) saturate(.82)',
       'extra-light': 'brightness(1.3) saturate(.72) contrast(.94)',
+      'ultra-light': 'brightness(1.48) saturate(.64) contrast(.9)',
       dark: 'brightness(.68) contrast(1.16) saturate(.82)',
       grayscale: 'grayscale(1)',
       pastel: 'saturate(.62) brightness(1.12) contrast(.88)',
