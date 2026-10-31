@@ -767,20 +767,13 @@ export class ImageView {
   protected readonly onLocationMapPointerLeave = (): void => { this.isPointerOverLocationMap = false; };
   protected readonly locationMapError = signal<string | null>(null);
   protected readonly locationMapStyle = signal(this.readStoredLocationMapStyle());
-  protected readonly locationWebApp = signal(this.readStoredLocationWebApp());
-
-  private readStoredLocationWebApp(): string {
-    try {
-      const stored = this.document.defaultView?.localStorage.getItem('light-matter.locationWebApp');
-      return ['google-earth', 'google-maps', 'openstreetmap', 'bing-maps', 'here-wego', 'google-street-view', 'mapillary'].includes(stored ?? '')
-        ? stored!
-        : 'google-maps';
-    } catch {
-      return 'google-maps';
-    }
-  }
+  // The external-map selector is an action menu and always returns to its dummy option.
+  protected readonly locationWebApp = signal('');
 
   protected readonly openLocationWebApp = (webApp: string): void => {
+    if (!webApp) return;
+    // Reset immediately so the same destination can be selected again.
+    this.locationWebApp.set('');
     const coordinates = this.gpsCoordinates();
     const latitude = coordinates?.latitude;
     const longitude = coordinates?.longitude;
@@ -801,12 +794,6 @@ export class ImageView {
     const url = urls[webApp];
     if (!url) return;
 
-    this.locationWebApp.set(webApp);
-    try {
-      this.document.defaultView?.localStorage.setItem('light-matter.locationWebApp', webApp);
-    } catch {
-      // Keep the selected destination for the current session.
-    }
     this.document.defaultView?.open(url, '_blank', 'noopener,noreferrer');
   };
   protected readonly locationMapColor = signal(this.readStoredLocationMapColor());
