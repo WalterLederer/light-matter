@@ -1652,6 +1652,17 @@
   flex: 0 0 auto;
   white-space: nowrap;
 }
+.image-location-panel .location-center-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.image-location-panel .location-center-icon {
+  display: inline-block;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
 .image-location-panel .location-map-style-row {
   display: flex;
   flex: 0 0 auto;
