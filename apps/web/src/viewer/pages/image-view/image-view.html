@@ -409,22 +409,19 @@
             </div>
             <div class="location-gpx-row">
               <strong>GPX</strong>
-              <button type="button" class="location-gpx-import-button" (click)="importGpxTrack()">Import GPX Track</button>
+              <button type="button" class="location-gpx-import-button" (click)="importGpxTrack()">Import</button>
               <label class="location-gpx-toggle">
                 <input type="checkbox" [checked]="gpxTrackVisible()" [disabled]="!gpxTrackFileName()" (change)="setGpxTrackVisible($any($event.target).checked)" />
                 Track overlay
               </label>
-              <div class="location-gpx-colors" role="group" aria-label="GPX track color">
+              <label class="location-gpx-color-select-label" for="location-gpx-track-color">Color</label>
+              <select id="location-gpx-track-color" class="location-gpx-color-select"
+                      [value]="gpxTrackColor()"
+                      (change)="setGpxTrackColor($any($event.target).value)">
                 @for (color of gpxTrackColors; track color.value) {
-                  <button type="button" class="location-gpx-color-button"
-                          [style.background-color]="color.value"
-                          [class.selected]="gpxTrackColor() === color.value"
-                          [attr.aria-label]="color.name"
-                          [attr.aria-pressed]="gpxTrackColor() === color.value"
-                          [title]="color.name"
-                          (click)="setGpxTrackColor(color.value)"></button>
+                  <option [value]="color.value">{{color.name}}</option>
                 }
-              </div>
+              </select>
               <span class="location-gpx-filename" [title]="gpxTrackFileName() || ''">{{gpxTrackFileName() || ''}}</span>
             </div>
             @if (gpxTrackStatus(); as gpxError) {
