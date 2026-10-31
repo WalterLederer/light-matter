@@ -2558,12 +2558,33 @@ export class ImageView {
           return;
         }
 
-        if ((event.shiftKey && event.key !== '+' && event.key !== '_') || event.ctrlKey || event.altKey || event.metaKey) {
+        if (event.key === 'Escape') {
+          this.goBack();
           return;
         }
 
-        if (event.key === 'Escape') {
-          this.goBack();
+        // Image navigation keys are global: they work regardless of which
+        // control currently has focus, including selects and text inputs.
+        if (event.key === ' ' || event.key === 'Spacebar' || event.key === 'Space' ||
+            event.key === 'ArrowRight' || event.key === 'PageDown') {
+          event.preventDefault();
+          this.traceDebugSwitching(`key ${event.key}`);
+          this.hasNext$
+            .pipe(take(1), filter(flag => flag))
+            .subscribe(() => this.nextPhoto());
+          return;
+        }
+
+        if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
+          event.preventDefault();
+          this.traceDebugSwitching(`key ${event.key}`);
+          this.hasPrevious$
+            .pipe(take(1), filter(flag => flag))
+            .subscribe(() => this.prevPhoto());
+          return;
+        }
+
+        if ((event.shiftKey && event.key !== '+' && event.key !== '_') || event.ctrlKey || event.altKey || event.metaKey) {
           return;
         }
 
@@ -2634,29 +2655,7 @@ export class ImageView {
             this.toggleSidebarSection('general');
             break;
 
-          case 'arrowleft':
-            event.preventDefault();
-            this.traceDebugSwitching('key ArrowLeft');
-            this.hasPrevious$
-              .pipe(
-                take(1),
-                filter(flag => flag)
-              )
-              .subscribe(() => this.prevPhoto());
-            break;
 
-          case 'arrowright':
-          case ' ':
-          case 'spacebar':
-            event.preventDefault();
-            this.traceDebugSwitching(`key ${event.key}`);
-            this.hasNext$
-              .pipe(
-                take(1),
-                filter(flag => flag)
-              )
-              .subscribe(() => this.nextPhoto());
-            break;
 
           case 'delete':
             event.preventDefault();
