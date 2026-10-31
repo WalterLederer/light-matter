@@ -793,33 +793,36 @@ export class ImageView {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
       maxNativeZoom: 19,
-      maxDisplayZoom: 20    },
+      maxDisplayZoom: 20
+    },
     satellite: {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> — Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
       maxZoom: 19,
       maxNativeZoom: 19,
-      maxDisplayZoom: 20    },
+      maxDisplayZoom: 20
+    },
     cycling: {
       url: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; <a href="https://www.cyclosm.org/">CyclOSM</a>',
       maxZoom: 20,
       maxNativeZoom: 20,
-      maxDisplayZoom: 20    },
+      maxDisplayZoom: 20
+    },
     topographic: {
       url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
       attribution: 'Kartendaten: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, SRTM &middot; Kartendarstellung: &copy; <a href="https://opentopomap.org/">OpenTopoMap</a> (CC-BY-SA)',
       maxZoom: 17,
-      maxDisplayZoom: 20
       maxNativeZoom: 17,
+      maxDisplayZoom: 20
     },
     humanitarian: {
       url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; <a href="https://www.hotosm.org/">Humanitarian OpenStreetMap Team</a>',
       maxZoom: 19,
-      maxDisplayZoom: 20
       maxNativeZoom: 19,
-    },
+      maxDisplayZoom: 20
+    }
   } as const;
 
   private readStoredLocationMapStyle(): 'standard' | 'satellite' | 'cycling' | 'topographic' | 'humanitarian' {
