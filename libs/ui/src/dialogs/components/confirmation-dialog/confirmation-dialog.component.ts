@@ -44,7 +44,8 @@ export class ConfirmationDialogComponent {
     event.preventDefault();
     event.stopPropagation();
 
-    const activeIndex = buttons.indexOf(this.elementRef.nativeElement.ownerDocument.activeElement as HTMLButtonElement);
+    const activeElement = this.elementRef.nativeElement.ownerDocument.activeElement;
+    const activeIndex = Array.prototype.indexOf.call(buttons, activeElement) as number;
     const direction = event.key === 'ArrowRight' ? 1 : -1;
     const nextIndex = activeIndex < 0
       ? (direction > 0 ? 0 : buttons.length - 1)
