@@ -404,7 +404,7 @@
           @if (gpsCoordinates(); as coordinates) {
             <div class="location-coordinate-readout">
               <strong>GPS coordinates:</strong>
-              <span>{{coordinates.latitude.toFixed(6)}}, {{coordinates.longitude.toFixed(6)}}</span>
+              <span>{{formatGpsCoordinate(coordinates.latitude, 'N', 'S')}}, {{formatGpsCoordinate(coordinates.longitude, 'O', 'W')}}</span>
               <div class="location-header-actions">
                 <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy location'}}</button>
                 <a class="location-map-link"
