@@ -1,10 +1,11 @@
-export type ThumbnailSize = 'extraSmall' | 'extraSmallPlus' | 'small' | 'smallMedium' | 'medium' | 'mediumLarge' | 'large' | 'smallPlus' | 'smallMediumPlus' | 'mediumPlus' | 'mediumLargePlus';
-export const allThumbnailSizes = [ 'extraSmall', 'extraSmallPlus', 'small', 'smallPlus', 'smallMedium', 'smallMediumPlus', 'medium', 'mediumPlus', 'mediumLarge', 'mediumLargePlus', 'large' ] as const;
+export type ThumbnailSize = 'extraSmallMinus' | 'extraSmall' | 'extraSmallPlus' | 'small' | 'smallMedium' | 'medium' | 'mediumLarge' | 'large' | 'smallPlus' | 'smallMediumPlus' | 'mediumPlus' | 'mediumLargePlus';
+export const allThumbnailSizes = [ 'extraSmallMinus', 'extraSmall', 'extraSmallPlus', 'small', 'smallPlus', 'smallMedium', 'smallMediumPlus', 'medium', 'mediumPlus', 'mediumLarge', 'mediumLargePlus', 'large' ] as const;
 export const defaultThumbnailSize: ThumbnailSize = 'small';
 export const thumbnailDimensions: Record<ThumbnailSize, {
   width: number;
   height: number;
 }> = {
+  extraSmallMinus: { width: 96, height: 64 },
   extraSmall: { width: 144, height: 96 },
   extraSmallPlus: { width: 168, height: 112 },
   small: { width: 192, height: 128 },
@@ -18,6 +19,7 @@ export const thumbnailDimensions: Record<ThumbnailSize, {
   large: { width: 384, height: 256 }
 };
 export const getThumbnailSize = (width?: number, height?: number): ThumbnailSize => {
+  if (width === thumbnailDimensions.extraSmallMinus.width && height === thumbnailDimensions.extraSmallMinus.height) return 'extraSmallMinus';
   if (width === thumbnailDimensions.extraSmall.width && height === thumbnailDimensions.extraSmall.height) return 'extraSmall';
   if (width === thumbnailDimensions.extraSmallPlus.width && height === thumbnailDimensions.extraSmallPlus.height) return 'extraSmallPlus';
   if (width === thumbnailDimensions.smallPlus.width && height === thumbnailDimensions.smallPlus.height) return 'smallPlus';
