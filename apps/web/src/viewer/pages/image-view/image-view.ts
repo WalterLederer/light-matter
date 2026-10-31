@@ -54,7 +54,7 @@ interface LeafletTileLayer {
 
 interface LeafletApi {
   map(element: HTMLElement, options?: { zoomControl?: boolean }): LeafletMap;
-  tileLayer(url: string, options: { attribution: string; maxZoom: number }): LeafletTileLayer;
+  tileLayer(url: string, options: { attribution: string; maxZoom: number; maxNativeZoom?: number }): LeafletTileLayer;
   marker(position: [number, number]): LeafletMarker;
 }
 
@@ -806,7 +806,9 @@ export class ImageView {
     topographic: {
       url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
       attribution: 'Kartendaten: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, SRTM &middot; Kartendarstellung: &copy; <a href="https://opentopomap.org/">OpenTopoMap</a> (CC-BY-SA)',
-      maxZoom: 17
+      maxZoom: 17,
+      maxNativeZoom: 17,
+      maxDisplayZoom: 19
     },
     humanitarian: {
       url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
@@ -844,7 +846,8 @@ export class ImageView {
     const style = this.locationMapStyles[this.locationMapStyle()];
     this.locationMapTileLayer = leaflet.tileLayer(style.url, {
       attribution: style.attribution,
-      maxZoom: style.maxZoom
+      maxZoom: style.maxDisplayZoom ?? style.maxZoom,
+      ...(style.maxNativeZoom ? { maxNativeZoom: style.maxNativeZoom } : {})
     }).addTo(this.locationMapInstance);
   };
 
@@ -877,7 +880,8 @@ export class ImageView {
         const mapStyle = this.locationMapStyles[this.locationMapStyle()];
         this.locationMapTileLayer = leaflet.tileLayer(mapStyle.url, {
           attribution: mapStyle.attribution,
-          maxZoom: mapStyle.maxZoom
+          maxZoom: mapStyle.maxDisplayZoom ?? mapStyle.maxZoom,
+          ...(mapStyle.maxNativeZoom ? { maxNativeZoom: mapStyle.maxNativeZoom } : {})
         }).addTo(this.locationMapInstance);
         this.locationMapMarker = leaflet.marker(position).addTo(this.locationMapInstance);
         this.locationMapInstance.on('zoomend', () => {
