@@ -401,7 +401,9 @@
       }
       @if (activeImageSidebarTab() === 'location') {
         <section class="image-location-panel" aria-label="Image GPS location">
+          <button class="section-heading" type="button" (click)="toggleSidebarSection('mapSettings')"><span class="section-chevron">{{sidebarSectionExpanded('mapSettings') ? 'v' : '>'}}</span>Map settings</button>
           @if (gpsCoordinates(); as coordinates) {
+            @if (sidebarSectionExpanded('mapSettings')) {
             <div class="location-coordinate-readout">
               <strong>GPS/GNSS:</strong>
               <span>{{formatGpsCoordinate(coordinates.latitude, 'N', 'S')}}, {{formatGpsCoordinate(coordinates.longitude, 'O', 'W')}}</span>
@@ -470,6 +472,7 @@
             </div>
             @if (gpxTrackStatus(); as gpxError) {
               <p class="location-no-gps">{{gpxError}}</p>
+            }
             }
             <div class="location-map-stage">
               <div #locationMapElement class="location-map-frame"
