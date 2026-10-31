@@ -84,7 +84,10 @@ const loadLeaflet = (document: Document): Promise<LeafletApi> => {
       else reject(new Error('Leaflet loaded but its API was not available.'));
     };
     script.addEventListener('load', finish, { once: true });
-    script.addEventListener('error', () => reject(new Error('Could not load the Leaflet map library.')), { once: true });
+    script.addEventListener('error', () => {
+      script.remove();
+      reject(new Error('Could not load the Leaflet map library.'));
+    }, { once: true });
     if (!existing) {
       script.id = scriptId;
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -1144,8 +1147,8 @@ export class ImageView {
     this.destroyRef.onDestroy(() => {
       this.sidebarResizeCleanup?.();
       this.loupeResizeObserver?.disconnect();
-    this.locationMapRequest++;
-    this.disposeLocationMap();
+      this.locationMapRequest++;
+      this.disposeLocationMap();
       this.loupeResizeObserver = null;
       if (this.loupeResizeTimer !== null) clearTimeout(this.loupeResizeTimer);
       this.loupeResizeTimer = null;
