@@ -35,6 +35,7 @@ interface LeafletMap {
   fitBounds(bounds: [[number, number], [number, number]], options?: { padding?: [number, number]; maxZoom?: number; animate?: boolean }): LeafletMap;
   getZoom(): number;
   setZoom(zoom: number, options?: { animate?: boolean }): LeafletMap;
+  panBy(offset: [number, number], options?: { animate?: boolean }): LeafletMap;
   invalidateSize(options?: { animate?: boolean; pan?: boolean }): LeafletMap;
   on(event: 'zoomend', callback: () => void): LeafletMap;
   remove(): void;
@@ -57,7 +58,7 @@ interface LeafletTileLayer {
 }
 
 interface LeafletApi {
-  map(element: HTMLElement, options?: { zoomControl?: boolean; minZoom?: number; maxZoom?: number }): LeafletMap;
+  map(element: HTMLElement, options?: { zoomControl?: boolean; keyboard?: boolean; minZoom?: number; maxZoom?: number }): LeafletMap;
   tileLayer(url: string, options: { attribution: string; maxZoom: number; maxNativeZoom?: number }): LeafletTileLayer;
   marker(position: [number, number]): LeafletMarker;
   polyline(positions: [number, number][], options?: { color?: string; weight?: number; opacity?: number; lineCap?: string; lineJoin?: string }): LeafletPolyline;
@@ -761,6 +762,9 @@ export class ImageView {
   protected readonly copyLocationStatus = signal('');
 
   protected readonly locationMapElement = viewChild<ElementRef<HTMLDivElement>>('locationMapElement');
+  private isPointerOverLocationMap = false;
+  protected readonly onLocationMapPointerEnter = (): void => { this.isPointerOverLocationMap = true; };
+  protected readonly onLocationMapPointerLeave = (): void => { this.isPointerOverLocationMap = false; };
   protected readonly locationMapError = signal<string | null>(null);
   protected readonly locationMapStyle = signal(this.readStoredLocationMapStyle());
   protected readonly locationMapColor = signal(this.readStoredLocationMapColor());
@@ -1190,7 +1194,7 @@ export class ImageView {
       if (!this.locationMapInstance || this.locationMapContainer !== container) {
         this.disposeLocationMap();
         this.locationMapContainer = container;
-        this.locationMapInstance = leaflet.map(container, { zoomControl: false, minZoom: 1, maxZoom: 20 })
+        this.locationMapInstance = leaflet.map(container, { zoomControl: false, keyboard: false, minZoom: 1, maxZoom: 20 })
           .setView(position, this.locationMapZoom, { animate: false });
         const mapStyle = this.locationMapStyles[this.locationMapStyle()];
         this.locationMapTileLayer = leaflet.tileLayer(mapStyle.url, {
@@ -3107,6 +3111,20 @@ export class ImageView {
 
         if (event.key === 'Escape') {
           this.goBack();
+          return;
+        }
+
+        // Arrow keys pan the GPS map only while the pointer is over it.
+        // Disable Leaflet's built-in keyboard handler and pan explicitly so
+        // the same keys never trigger image navigation in this situation.
+        if (this.isPointerOverLocationMap &&
+            (event.key === 'ArrowLeft' || event.key === 'ArrowRight' ||
+             event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+          event.preventDefault();
+          event.stopPropagation();
+          const horizontal = event.key === 'ArrowLeft' ? -80 : event.key === 'ArrowRight' ? 80 : 0;
+          const vertical = event.key === 'ArrowUp' ? -80 : event.key === 'ArrowDown' ? 80 : 0;
+          this.locationMapInstance?.panBy([horizontal, vertical], { animate: false });
           return;
         }
 
