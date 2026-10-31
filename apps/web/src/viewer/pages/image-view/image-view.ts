@@ -770,9 +770,11 @@ export class ImageView {
   // The external-map selector is an action menu and always returns to its dummy option.
   protected readonly locationWebApp = signal('');
 
-  protected readonly openLocationWebApp = (webApp: string): void => {
+  protected readonly openLocationWebApp = (select: HTMLSelectElement): void => {
+    const webApp = select.value;
     if (!webApp) return;
-    // Reset immediately so the same destination can be selected again.
+    // Reset the native select directly; the signal is already empty before this change event.
+    select.selectedIndex = 0;
     this.locationWebApp.set('');
     const coordinates = this.gpsCoordinates();
     const latitude = coordinates?.latitude;
