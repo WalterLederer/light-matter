@@ -9,7 +9,7 @@
     <ui-action-button cdkFocusInitial
                       variant="primary"
                       (pressed)="dialogRef.close(true)">
-      Yes
+      {{ options.confirmLabel ?? 'Yes' }}
     </ui-action-button>
 
     <ui-action-button (pressed)="dialogRef.close(false)">
