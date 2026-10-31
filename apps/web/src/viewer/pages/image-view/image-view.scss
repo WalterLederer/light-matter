@@ -1775,6 +1775,10 @@
   accent-color: #fff;
   cursor: pointer;
 }
+.image-location-panel .location-map-opacity-control input[type="range"] {
+  flex: 0 0 calc(100% - 110px);
+  width: calc(100% - 110px);
+}
 .image-location-panel .location-map-frame.leaflet-container {
   font: inherit;
   background: #e8e4dc;
