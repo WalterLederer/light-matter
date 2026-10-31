@@ -1,7 +1,7 @@
 import { IpcMainInvokeEvent } from 'electron';
 import { ApiResponse, FileInfo, SortDirection, SortType, supportedFileExtensions } from 'internal-api';
 import { Dirent, statSync } from 'node:fs';
-import { readdir, readFile, unlink } from 'node:fs/promises';
+import { copyFile, readdir, readFile, unlink } from 'node:fs/promises';
 import { dirname, extname, join } from 'node:path';
 import { IpcHandler } from '../app/decorators/ipc-handler';
 import { writeJsonAtomically } from './json-file';
@@ -83,6 +83,18 @@ export class FileSystem {
       };
     } catch (_) {
       return { success: false, errorMessage: `Failed to read directory at ${path}.` };
+    }
+  };
+
+  @IpcHandler({ name: 'FileSystem.copyFile' })
+  readonly copyFile = async (_: IpcMainInvokeEvent, sourcePath: string, destinationDirectory: string): Promise<ApiResponse<undefined>> => {
+    try {
+      const destinationPath = join(destinationDirectory, sourcePath.split(/[\\/]/).pop() ?? '');
+      await copyFile(sourcePath, destinationPath, 1);
+      return { success: true, data: undefined };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { success: false, errorMessage: `Failed to copy file: ${message}` };
     }
   };
 
