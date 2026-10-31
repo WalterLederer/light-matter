@@ -1688,6 +1688,10 @@
   color: var(--color-content-default);
   font: inherit;
 }
+.image-location-panel .location-map-style-row .location-web-app-select {
+  min-width: 145px;
+}
+
 .image-location-panel .location-map-stage {
   position: relative;
   flex: 1 1 0;
