@@ -481,6 +481,14 @@
                          title="Adjust map opacity without affecting the GPS marker or GPX track">
                   <label for="location-map-opacity" title="Map opacity">Map {{ locationMapOpacity() }}%</label>
                 </div>
+                <div class="location-map-opacity-control location-gpx-opacity-control">
+                  <input id="location-gpx-opacity" type="range" min="0" max="100" step="1"
+                         [value]="gpxTrackOpacity()"
+                         [attr.aria-valuetext]="'GPX track opacity ' + gpxTrackOpacity() + ' percent'"
+                         (input)="changeGpxTrackOpacity($any($event.target).value)"
+                         title="Adjust GPX track opacity independently of the map and GPS marker">
+                  <label for="location-gpx-opacity" title="GPX track opacity">Track {{ gpxTrackOpacity() }}%</label>
+                </div>
               </div>
             </div>
             @if (locationMapError(); as mapError) {
