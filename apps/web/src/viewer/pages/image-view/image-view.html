@@ -405,16 +405,18 @@
             <div class="location-coordinate-readout">
               <strong>GPS coordinates:</strong>
               <span>{{coordinates.latitude.toFixed(6)}}, {{coordinates.longitude.toFixed(6)}}</span>
-              <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy location'}}</button>
+              <div class="location-header-actions">
+                <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy location'}}</button>
+                <a class="location-map-link"
+                   [href]="'https://www.openstreetmap.org/?mlat=' + coordinates.latitude + '&mlon=' + coordinates.longitude + '#map=16/' + coordinates.latitude + '/' + coordinates.longitude"
+                   target="_blank"
+                   rel="noopener noreferrer">Open location in OpenStreetMap</a>
+              </div>
             </div>
             <div #locationMapElement class="location-map-frame" role="application" aria-label="Interactive map showing the image GPS location"></div>
             @if (locationMapError(); as mapError) {
               <p class="location-no-gps">Map could not be loaded: {{mapError}}</p>
             }
-            <a class="location-map-link"
-               [href]="'https://www.openstreetmap.org/?mlat=' + coordinates.latitude + '&mlon=' + coordinates.longitude + '#map=16/' + coordinates.latitude + '/' + coordinates.longitude"
-               target="_blank"
-               rel="noopener noreferrer">Open location in OpenStreetMap</a>
           } @else {
             <p class="location-no-gps">No GPS coordinates are available in this image's metadata.</p>
           }
