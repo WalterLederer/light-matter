@@ -1161,8 +1161,8 @@ export class ImageView {
           map.invalidateSize({ animate: false, pan: false });
           this.locationMapMarker?.setLatLng(position);
           map.setView(position, map.getZoom(), { animate: false });
-          // Keep an imported GPX overlay visible and aligned after image navigation.
-          this.applyGpxTrack(this.gpxTrackVisible());
+          // Keep the imported GPX overlay visible without changing the user's map zoom.
+          this.applyGpxTrack(false);
         });
       });
     } catch (error) {
