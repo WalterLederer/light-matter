@@ -439,11 +439,11 @@
               <div class="location-map-zoom-overlay">
                 <button type="button" class="location-map-zoom-button" (click)="adjustLocationMapZoom(-1)" aria-label="Zoom out" title="Zoom out">−</button>
                  <button type="button" class="location-map-zoom-button" (click)="adjustLocationMapZoom(1)" aria-label="Zoom in" title="Zoom in">+</button>
-                 <label for="location-map-zoom">Zoom {{ locationMapZoomLevel() }}</label>
                 <input id="location-map-zoom" type="range" min="1" max="20" step="1"
                        [value]="locationMapZoomLevel()"
                        [attr.aria-valuetext]="'Map zoom level ' + locationMapZoomLevel()"
                        (input)="changeLocationMapZoom($any($event.target).value)">
+                 <label for="location-map-zoom">Zoom {{ locationMapZoomLevel() }}</label>
               </div>
             </div>
             @if (locationMapError(); as mapError) {
