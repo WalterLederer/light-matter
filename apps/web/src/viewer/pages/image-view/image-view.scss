@@ -771,6 +771,8 @@
  .image-controls-sidebar .sidebar-resize-handle:hover::after {background:#65a9ff}
  .image-controls-sidebar header {padding-left:8px}
  .image-controls-sidebar .sidebar-image-information {align-items:stretch}
+ .image-controls-sidebar .copy-destination-path {padding:7px 8px;border:1px solid rgb(255 255 255 / 16%);border-radius:4px;background:rgb(0 0 0 / 18%);overflow-wrap:anywhere;line-height:1.4;color:#d7dbe2}
+ .image-controls-sidebar .copy-photo-status {overflow-wrap:anywhere;color:#c9d7e8;line-height:1.4}
  .image-controls-sidebar .sidebar-image-information app-exif-info {display:block;max-width:100%;overflow-wrap:anywhere}
  .histogram-overlay {left:auto;max-width:calc(100vw - 330px);max-height:calc(100vh - 24px);overflow:auto}
  .image-controls-sidebar header {display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;font-size:15px}
