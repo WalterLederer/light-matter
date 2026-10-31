@@ -54,7 +54,7 @@ interface LeafletTileLayer {
 }
 
 interface LeafletApi {
-  map(element: HTMLElement, options?: { zoomControl?: boolean }): LeafletMap;
+  map(element: HTMLElement, options?: { zoomControl?: boolean; minZoom?: number; maxZoom?: number }): LeafletMap;
   tileLayer(url: string, options: { attribution: string; maxZoom: number; maxNativeZoom?: number }): LeafletTileLayer;
   marker(position: [number, number]): LeafletMarker;
 }
@@ -927,7 +927,7 @@ export class ImageView {
       if (!this.locationMapInstance || this.locationMapContainer !== container) {
         this.disposeLocationMap();
         this.locationMapContainer = container;
-        this.locationMapInstance = leaflet.map(container, { zoomControl: true })
+        this.locationMapInstance = leaflet.map(container, { zoomControl: true, minZoom: 1, maxZoom: 20 })
           .setView(position, this.locationMapZoom, { animate: false });
         const mapStyle = this.locationMapStyles[this.locationMapStyle()];
         this.locationMapTileLayer = leaflet.tileLayer(mapStyle.url, {
