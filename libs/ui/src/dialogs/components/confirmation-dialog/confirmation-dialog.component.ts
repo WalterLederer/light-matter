@@ -8,6 +8,7 @@ import { DialogComponent } from '../dialog/dialog.component';
 export interface ConfirmationDialogOptions {
   title: string;
   description: string;
+  confirmLabel?: string;
 }
 
 @Component({
