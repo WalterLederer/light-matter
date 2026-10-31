@@ -2121,6 +2121,8 @@ export class ImageView {
 
   protected readonly sourceFileCount = signal<number | null>(null);
 
+  protected readonly sourceFolderPath = signal<string | null>(null);
+
   private sourceFileCountFolder: string | null = null;
 
   private readonly refreshSourceFileCount = async (imagePath: string, force = false): Promise<void> => {
@@ -2128,6 +2130,7 @@ export class ImageView {
     if (!desktop) return;
     try {
       const folder = await desktop.FileSystem.dirname(imagePath);
+      this.sourceFolderPath.set(folder);
       if (!force && folder === this.sourceFileCountFolder) return;
       this.sourceFileCountFolder = folder;
       const files = await desktop.FileSystem.readDir(folder);
@@ -2135,6 +2138,18 @@ export class ImageView {
     } catch (error) {
       console.error('Failed to count files in source folder', error);
       this.sourceFileCount.set(null);
+    }
+  };
+
+  private readonly refreshDestinationFileCount = async (folder: string): Promise<void> => {
+    const desktop = this.desktop;
+    if (!desktop) return;
+    try {
+      const files = await desktop.FileSystem.readDir(folder);
+      this.copyDestinationFileCount.set(files.filter(file => !file.isDirectory).length);
+    } catch (error) {
+      console.error('Failed to count files in destination folder', error);
+      this.copyDestinationFileCount.set(null);
     }
   };
 
@@ -2164,8 +2179,8 @@ export class ImageView {
     const result = await desktop.Dialogs.openFolder(initialFolder);
     if (result.success) {
       this.copyDestinationFolder.set(result.data);
-      this.copyDestinationFileCount.set(null);
       this.copyPhotoStatus.set('');
+      await this.refreshDestinationFileCount(result.data);
     }
   };
 
@@ -2185,8 +2200,8 @@ export class ImageView {
         return;
       }
       this.copyDestinationFolder.set(bestOf.path);
-      this.copyDestinationFileCount.set(null);
       this.copyPhotoStatus.set('');
+      await this.refreshDestinationFileCount(bestOf.path);
     } catch (error) {
       this.copyPhotoStatus.set(error instanceof Error ? error.message : String(error));
     }
@@ -2218,14 +2233,7 @@ export class ImageView {
             }
 
             this.copyPhotoStatus.set(`Copied to ${destinationFolder}`);
-            try {
-              const files = await desktop.FileSystem.readDir(destinationFolder);
-              this.copyDestinationFileCount.set(files.filter(file => !file.isDirectory).length);
-            } catch (error) {
-              console.error('Failed to count files in copy destination', error);
-              this.copyDestinationFileCount.set(null);
-              this.copyPhotoStatus.set(`Copied to ${destinationFolder}, but the destination file count could not be read.`);
-            }
+            await this.refreshDestinationFileCount(destinationFolder);
           })
       );
   };
