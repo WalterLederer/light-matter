@@ -1716,7 +1716,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  width: min(440px, calc(100% - 20px));
+  width: min(570px, calc(100% - 20px));
   padding: 7px 12px;
   border: 1px solid rgb(255 255 255 / 28%);
   border-radius: 7px;
@@ -1738,10 +1738,10 @@
   flex: 1 1 0;
   min-width: 0;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .image-location-panel .location-map-opacity-control {
-  padding-left: 9px;
+  padding-left: 8px;
   border-left: 1px solid rgb(255 255 255 / 35%);
 }
 .image-location-panel .location-map-zoom-overlay .location-map-zoom-button {
@@ -1763,7 +1763,7 @@
 }
  .image-location-panel .location-map-zoom-overlay label {
   flex: 0 0 auto;
-  min-width: 54px;
+  min-width: 48px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
