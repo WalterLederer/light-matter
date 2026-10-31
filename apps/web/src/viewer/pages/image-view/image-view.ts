@@ -803,7 +803,7 @@ export class ImageView {
 
       this.locationMapError.set(null);
       this.document.defaultView?.requestAnimationFrame(() => {
-        if (request === this.locationMapRequest) this.locationMapInstance?.invalidateSize({ animate: false });
+        if (request === this.locationMapRequest) this.locationMapInstance?.invalidateSize({ animate: false, pan: false });
       });
     } catch (error) {
       if (request === this.locationMapRequest) {
