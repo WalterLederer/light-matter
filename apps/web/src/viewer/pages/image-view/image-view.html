@@ -86,7 +86,7 @@
     <button class="show-controls-sidebar" type="button" title="Show image controls" aria-label="Show image controls" (click)="toggleControlsSidebar()">⚙</button>
   }
   @if (!fullScreen && controlsSidebarVisible()) {
-    <aside class="image-controls-sidebar" aria-label="Image controls" [style.width.px]="sidebarWidth()">
+    <aside class="image-controls-sidebar" [class.location-tab-active]="activeImageSidebarTab() === 'location'" aria-label="Image controls" [style.width.px]="sidebarWidth()">
       <nav class="image-sidebar-tabs" role="tablist" aria-label="Image settings tabs">@for (tab of imageSidebarTabs; track tab.id) { <button type="button" role="tab" [class.active]="activeImageSidebarTab() === tab.id" [attr.aria-selected]="activeImageSidebarTab() === tab.id" (click)="setActiveImageSidebarTab(tab.id)">{{tab.label}}</button> }<button class="sidebar-close-tab" type="button" aria-label="Close sidebar" title="Close sidebar" (click)="toggleControlsSidebar()">×</button></nav>
       <div class="sidebar-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize sidebar" title="Drag to resize sidebar" (pointerdown)="startSidebarResize($event)"></div>
       @if (activeImageSidebarTab() === 'cache') {
@@ -403,8 +403,9 @@
         <section class="image-location-panel" aria-label="Image GPS location">
           @if (gpsCoordinates(); as coordinates) {
             <div class="location-coordinate-readout">
-              <strong>GPS coordinates</strong>
+              <strong>GPS coordinates:</strong>
               <span>{{coordinates.latitude.toFixed(6)}}, {{coordinates.longitude.toFixed(6)}}</span>
+              <button type="button" class="location-copy-button" (click)="copyLocation()">{{copyLocationStatus() || 'Copy location'}}</button>
             </div>
             <div class="location-map-frame">
               <iframe [src]="locationMapUrl()"
