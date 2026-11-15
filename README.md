@@ -1,4 +1,7 @@
-# Light Matter
+> **Notice:** This repository was created solely for pull requests and testing purposes. It is not intended for general use, and should not be used as an active or production repository. Please refer to the official repository for the maintained version.
+>
+>
+> # Light Matter
 
 A simple image viewer with HDR photo support for Windows and Linux (macOS
 support is coming soon).
